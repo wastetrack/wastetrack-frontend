@@ -152,6 +152,9 @@ export class TokenManager {
     // User data in localStorage
     localStorage.setItem('user', JSON.stringify(data));
     
+    // Also store in cookie for middleware
+    document.cookie = `token=${data.access_token}; path=/; secure; samesite=strict`;
+    
     // Broadcast to other tabs
     if (this.tabSync) {
       this.tabSync.broadcast('LOGIN', {

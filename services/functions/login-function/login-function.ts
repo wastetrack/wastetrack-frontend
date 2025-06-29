@@ -3,6 +3,7 @@ import { alerts } from '../../../component/alerts/alerts';
 import { LoginRequest } from '../../../app/auth/login/page';
 import { getTokenManager } from '../../utils/token-manager/token-manager';
 import { emailVerificationApi } from '../../api/email-verification-api/email-verification-api';
+import { useRouter } from 'next/navigation';
 
 export const loginFunctions = {
   async handleLogin(credentials: LoginRequest) {
@@ -20,14 +21,25 @@ export const loginFunctions = {
       // Case 1: Successful login with verified email
       if (response.data && response.data.access_token && response.data.is_email_verified) {
         const tokenManager = getTokenManager();
-        tokenManager.storeTokens(response.data);
+        // Store token and role
+        tokenManager.storeTokens({
+          ...response.data,
+          role: response.data.role // Make sure role is included
+        });
         
         await alerts.success('Login Berhasil! 🎉', 'Selamat datang kembali!');
+        
+        const redirectPath = this.getRoleBasedRedirect(response.data.role);
+        
+        // Add delay before redirect
+        setTimeout(() => {
+          window.location.href = redirectPath;
+        }, 1000);
         
         return { 
           success: true, 
           data: response.data,
-          redirect: this.getRoleBasedRedirect(response.data.role)
+          redirect: redirectPath
         };
       }
       
@@ -121,22 +133,16 @@ export const loginFunctions = {
   },
 
   getRoleBasedRedirect(role: string): string {
-    switch (role) {
-      case 'customer':
-        return '/dashboard/customer';
-      case 'collector-central':
-        return '/dashboard/collector-central';
-      case 'collector-unit':
-        return '/dashboard/collector-unit';
-      case 'industry':
-        return '/dashboard/offtaker';
-      case 'wastebank-central':
-        return '/dashboard/wastebank-central';
-      case 'wastebank-unit':
-        return 'dashboard/wastebank-unit';
-      default:
-        return '/dashboard';
-    }
+    const routes = {
+      'customer': '/dashboard/customer',
+      'collector-central': '/dashboard/collector-central',
+      'collector-unit': '/dashboard/collector-unit',
+      'industry': '/dashboard/offtaker',
+      'wastebank-central': '/dashboard/wastebank-central',
+      'wastebank-unit': '/dashboard/wastebank-unit'
+    };
+
+    return routes[role as keyof typeof routes] || '/dashboard';
   },
 
   logout() {
