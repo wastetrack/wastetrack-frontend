@@ -123,17 +123,17 @@ export const loginFunctions = {
   getRoleBasedRedirect(role: string): string {
     switch (role) {
       case 'customer':
-        return '/customer/homepage';
+        return '/dashboard/customer';
       case 'collector-central':
-        return '/collector-central/homepage';
+        return '/dashboard/collector-central';
       case 'collector-unit':
-        return '/collector-unit/homepage';
+        return '/dashboard/collector-unit';
       case 'industry':
-        return '/offtaker/homepage';
+        return '/dashboard/offtaker';
       case 'wastebank-central':
-        return '/wastebank-central/homepage';
+        return '/dashboard/wastebank-central';
       case 'wastebank-unit':
-        return '/wastebank-unit/homepage';
+        return 'dashboard/wastebank-unit';
       default:
         return '/dashboard';
     }
