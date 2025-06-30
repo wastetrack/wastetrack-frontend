@@ -57,13 +57,28 @@ export const loginAPI = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
       const response = await apiClient.post('/api/auth/login', credentials);
+      
+      const tokenManager = getTokenManager();
+      tokenManager.storeTokens(response.data.data);
+      
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const message = error.response?.data?.message || 'Login failed';
-        throw new Error(message);
+        console.log('Login Error:', error.response?.data);
+        
+        // Check for too many sessions error
+        if (error.response?.data?.errors === 'Too many active sessions') {
+          throw new Error('Too many active sessions');
+        }
+        
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           'Invalid credentials';
+        
+        throw new Error(errorMessage);
       }
-      throw new Error('Network error occurred');
+      console.log('Network Error:', error);
+      throw new Error('Network error occurred. Please try again.');
     }
   }
 };

@@ -1,4 +1,4 @@
-import { alerts } from '../../../component/alerts/alerts';
+import { alerts } from '../../../components/alerts/alerts';
 
 export interface FormData {
   email: string;
@@ -6,7 +6,8 @@ export interface FormData {
   confirmPassword: string;
   role: string;
   fullName: string;
-  phone: string;
+  phone: string;      // Formatted phone (with dashes)
+  phoneClean: string; // Clean phone number for DB
   institution: string;
   address: string;
   city: string;
@@ -123,7 +124,7 @@ export const transformFormDataToApi = (formData: FormData) => {
     email: formData.email,
     password: formData.password,
     role: formData.role,
-    phone_number: formData.phone,
+    phone_number: formData.phoneClean || formData.phone.replace(/-/g, ''), // Send clean number to API
     institution: formData.institution || undefined,
     address: formData.address,
     city: formData.city,
@@ -290,4 +291,21 @@ export const safeAlert = {
       alert(`Validation Error: ${message}`);
     }
   }
+};
+
+export const handleRegisterError = async (error: any) => {
+  // Specific error handling for registration
+  const errorMessage = error?.message || 'Terjadi kesalahan saat registrasi';
+  
+  if (errorMessage.includes('Email sudah terdaftar')) {
+    await safeAlert.error('Registrasi Gagal', errorMessage);
+    return;
+  }
+
+  if (errorMessage.includes('Data registrasi tidak valid')) {
+    await safeAlert.error('Data Tidak Valid', errorMessage);
+    return;
+  }
+
+  await safeAlert.error('Registrasi Gagal', errorMessage);
 };

@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, LogIn, Check, Bell, Zap } from 'lucide-react';
 import { loginFunctions } from '../../../services/functions/login-function/login-function';
-import { alerts } from '../../../component/alerts/alerts';
+import { alerts } from '../../../components/alerts/alerts';
+import { getTokenManager } from '../../../services/utils/token-manager/token-manager';
 
 // Interfaces defined here for login page
 export interface LoginRequest {
@@ -49,22 +50,23 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Clean URL on component mount if it contains sensitive data
   useEffect(() => {
+    // Clean URL on component mount if it contains sensitive data
     const email = searchParams.get('email');
     const password = searchParams.get('password');
     
     if (email || password) {
-      // Clear the URL immediately for security
-      window.history.replaceState({}, '', '/auth/login');
-      
-      // Show security warning
+      router.replace('/auth/login');
       alerts.error(
         'Peringatan Keamanan! 🚨', 
         'Kredensial login tidak boleh muncul di URL. Halaman telah dibersihkan untuk keamanan Anda.'
       );
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    loginFunctions.checkAndRedirectIfAuthenticated(router);
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -72,8 +74,8 @@ export default function LoginPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent default form submission
-    e.stopPropagation(); // Stop event bubbling
+    e.preventDefault();
+    e.stopPropagation();
     
     setLoading(true);
 
@@ -93,14 +95,12 @@ export default function LoginPage() {
     }
 
     try {
-      const result = await loginFunctions.handleLogin(formData);
+      // Pastikan router dioper ke fungsi handleLogin
+      const result = await loginFunctions.handleLogin(formData, router);
       
-      if (result.success && 'redirect' in result && result.redirect) {
-        // Clear form data before redirect for security
+      if (result.success) {
         setFormData({ email: '', password: '' });
-        
-        // Use router.replace instead of router.push to prevent back button issues
-        router.replace(result.redirect);
+        // Router push sudah ditangani di dalam loginFunctions
       } else if ('needsVerification' in result && result.needsVerification) {
         // Email not verified - already handled in loginFunctions
         console.log('Email verification required');
@@ -120,7 +120,6 @@ export default function LoginPage() {
     } catch (error) {
       console.error('Login error:', error);
       alerts.error('Error', 'Terjadi kesalahan yang tidak terduga saat login');
-      // Clear password for security
       setFormData(prev => ({ ...prev, password: '' }));
     } finally {
       setLoading(false);

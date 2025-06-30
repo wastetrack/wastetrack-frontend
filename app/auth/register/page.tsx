@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UserPlus } from 'lucide-react';
-import RegisterForm from '../../../component/register-form/register-form';
+import RegisterForm from '../../../components/register-form/register-form';
 import { registerApi } from '../../../services/api/register-api/register-api';
 import { 
   FormData, 
@@ -12,7 +12,7 @@ import {
   transformFormDataToApi, 
   getRedirectPath 
 } from '../../../services/functions/register-function/register-function';
-import { alerts } from '../../../component/alerts/alerts';
+import { alerts } from '../../../components/alerts/alerts';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,6 +25,7 @@ export default function RegisterPage() {
     role: 'customer',
     fullName: '',
     phone: '',
+    phoneClean: '',
     institution: '',
     address: '',
     city: '',

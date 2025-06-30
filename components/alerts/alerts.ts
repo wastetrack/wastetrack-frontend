@@ -9,7 +9,7 @@ export const alerts = {
       background: '#f0fff4',
       color: '#333',
       iconColor: '#10b981',
-      timer: 5000,
+      timer: 8000, // Increased from 5000
       showConfirmButton: false,
       customClass: {
         popup: 'w-[90%] max-w-sm sm:max-w-md rounded-md sm:rounded-lg shadow-lg',
@@ -307,7 +307,6 @@ export const alerts = {
               <li>• Periksa link verifikasi di email</li>
               <li>• Minta kirim ulang email verifikasi</li>
               <li>• Pastikan link masih berlaku (24 jam)</li>
-              <li>• Hubungi support jika masalah berlanjut</li>
             </ul>
           </div>
         </div>
@@ -315,15 +314,11 @@ export const alerts = {
       background: '#fff5f5',
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'Coba Lagi',
-      showCancelButton: true,
-      cancelButtonText: 'Hubungi Support',
-      cancelButtonColor: '#6b7280',
       customClass: {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium',
-        cancelButton: 'text-sm font-medium'
+        confirmButton: 'text-sm font-medium'
       }
     });
   },
@@ -491,7 +486,6 @@ export const alerts = {
             <ul class="text-sm text-gray-700 space-y-1">
               <li>• Refresh halaman and coba lagi</li>
               <li>• Periksa koneksi internet</li>
-              <li>• Hubungi support jika masalah berlanjut</li>
             </ul>
           </div>
         </div>
@@ -499,15 +493,11 @@ export const alerts = {
       background: '#fff5f5',
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'Coba Lagi',
-      showCancelButton: true,
-      cancelButtonText: 'Hubungi Support',
-      cancelButtonColor: '#6b7280',
       customClass: {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium',
-        cancelButton: 'text-sm font-medium'
+        confirmButton: 'text-sm font-medium'
       }
     });
   },
@@ -562,10 +552,6 @@ export const alerts = {
               <li>• <strong>Gunakan email lain</strong> - Untuk akun baru</li>
               <li>• <strong>Reset password</strong> - Jika lupa password</li>
             </ul>
-          </div>
-          
-          <div class="bg-gray-50 p-3 rounded-lg">
-            <p class="text-xs text-gray-600">💬 Butuh bantuan? Hubungi tim support kami</p>
           </div>
         </div>
       `,
@@ -634,7 +620,86 @@ export const alerts = {
       confirmButtonColor: '#10b981',
       allowOutsideClick: false,
     });
-  }
+  },
+
+  // Auth Related Alerts
+  passwordMismatch: () => {
+    return Swal.fire({
+      icon: 'error',
+      title: 'Password Tidak Cocok',
+      html: `
+        <div class="text-left space-y-3">
+          <p class="text-gray-600 mb-3">Password yang Anda masukkan tidak sama.</p>
+          
+          <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+            <p class="text-sm font-medium text-yellow-800">⚠️ Pastikan:</p>
+            <ul class="text-sm text-yellow-700 space-y-1">
+              <li>• Password baru dan konfirmasi harus sama persis</li>
+              <li>• Perhatikan huruf besar/kecil</li>
+              <li>• Tidak ada spasi di awal atau akhir</li>
+            </ul>
+          </div>
+        </div>
+      `,
+      confirmButtonColor: '#f59e0b',
+      confirmButtonText: 'Coba Lagi',
+    });
+  },
+
+  resetPasswordSuccess: () => {
+    return Swal.fire({
+      icon: 'success',
+      title: 'Password Berhasil Diubah',
+      text: 'Silakan login dengan password baru Anda',
+      confirmButtonColor: '#10b981',
+      confirmButtonText: 'Login Sekarang',
+    });
+  },
+
+  resetPasswordLinkSent: (email: string) => {
+    return Swal.fire({
+      icon: 'success',
+      title: 'Link Reset Password Terkirim',
+      html: `
+        <div class="text-left space-y-3">
+          <p class="text-gray-600 mb-3">Kami telah mengirim link reset password ke email <strong>${email}</strong></p>
+          
+          <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+            <p class="text-sm font-medium text-blue-800">📧 Langkah selanjutnya:</p>
+            <ul class="text-sm text-blue-700 space-y-1">
+              <li>• Cek inbox email Anda</li>
+              <li>• Klik link reset password</li>
+              <li>• Buat password baru</li>
+            </ul>
+          </div>
+          
+          <div class="bg-gray-50 p-3 rounded-lg mt-3">
+            <p class="text-xs text-gray-600">💡 Link berlaku selama 1 jam</p>
+          </div>
+        </div>
+      `,
+      confirmButtonColor: '#10b981',
+      confirmButtonText: 'Mengerti',
+    });
+  },
+
+  invalidResetToken: () => {
+    return Swal.fire({
+      icon: 'error',
+      title: 'Link Tidak Valid',
+      html: `
+        <div class="text-left space-y-3">
+          <p class="text-gray-600 mb-3">Link reset password tidak valid atau sudah kadaluarsa.</p>
+          
+          <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+            <p class="text-sm text-red-700">Silakan minta link reset password baru</p>
+          </div>
+        </div>
+      `,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Minta Link Baru',
+    });
+  },
 };
 
 // Export a test function to verify alerts work
@@ -647,7 +712,15 @@ export const testAlerts = () => {
 // if (typeof window !== 'undefined') {
 //   if (!Swal) {
 //     console.error('SweetAlert2 is not loaded properly!');
+//     throw new Error('SweetAlert2 initialization failed');
 //   } else {
 //     console.log('SweetAlert2 loaded successfully');
 //   }
 // }
+
+// Add error handling wrapper
+const handleAlertError = (error: any, fallbackMessage: string) => {
+  console.error('Alert error:', error);
+  // Fallback to basic browser alert
+  alert(fallbackMessage);
+};

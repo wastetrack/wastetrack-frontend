@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle, Mail, AlertCircle, RefreshCw, ArrowLeft, Clock } from 'lucide-react';
 import { emailVerificationFunctions } from '../../../services/functions/email-verif-function/email-verification-function';
-import { alerts } from '../../../component/alerts/alerts';
+import { alerts } from '../../../components/alerts/alerts';
 import Link from 'next/link';
 
 export default function VerifyEmailPage() {

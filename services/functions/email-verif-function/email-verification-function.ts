@@ -1,6 +1,6 @@
 // Imports
 import { emailVerificationApi } from '../../api/email-verification-api/email-verification-api';
-import { alerts } from '../../../component/alerts/alerts';
+import { alerts } from '../../../components/alerts/alerts';
 
 // Types & Interfaces
 export interface VerificationResult {

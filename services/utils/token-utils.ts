@@ -15,17 +15,20 @@ export const tokenUtils = {
   isTokenExpired(token: string): boolean {
     const decoded = this.decodeToken(token);
     if (!decoded) return true;
-    
-    const currentTime = Date.now() / 1000;
-    return decoded.exp < currentTime;
+    return decoded.exp < (Date.now() / 1000);
   },
 
-  isTokenExpiringSoon(token: string, bufferMinutes: number = 5): boolean {
+  isTokenExpiringSoon(token: string, bufferMinutes: number = 1): boolean {
     const decoded = this.decodeToken(token);
     if (!decoded) return true;
     
     const currentTime = Date.now() / 1000;
-    const bufferTime = bufferMinutes * 60; // Convert to seconds
+    const bufferTime = bufferMinutes * 60;
     return decoded.exp < (currentTime + bufferTime);
+  },
+
+  getTokenExpirationTime(token: string): number | null {
+    const decoded = this.decodeToken(token);
+    return decoded?.exp || null;
   }
 };

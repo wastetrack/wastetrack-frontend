@@ -98,10 +98,15 @@ export const registerApi = {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const message = error.response?.data?.message || 'Registration failed';
-        throw new Error(message);
+        if (error.response?.status === 409) {
+          throw new Error('Email sudah terdaftar. Silakan gunakan email lain atau login.');
+        }
+        if (error.response?.status === 400) {
+          throw new Error(error.response.data?.message || 'Data registrasi tidak valid');
+        }
+        throw new Error(error.response?.data?.message || 'Registrasi gagal');
       }
-      throw new Error('Network error occurred');
+      throw new Error('Terjadi kesalahan jaringan');
     }
   }
 };

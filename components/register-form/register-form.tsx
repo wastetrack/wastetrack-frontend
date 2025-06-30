@@ -35,16 +35,64 @@ export default function RegisterForm({
   const [locationLoading, setLocationLoading] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
+  const handleBlur = (fieldName: string) => {
+    setTouchedFields(prev => new Set([...prev, fieldName]));
+  };
+
+  const formatPhoneDisplay = (value: string) => {
+    // Remove all non-digits
+    const numbers = value.replace(/\D/g, '');
+    
+    // Make sure it starts with '08'
+    if (!numbers.startsWith('08')) {
+      return numbers.startsWith('8') ? '0' + numbers : '08';
+    }
+    
+    // Split into groups of 4
+    const groups = [];
+    for (let i = 0; i < numbers.length && i < 12; i += 4) {
+      groups.push(numbers.slice(i, i + 4));
+    }
+    
+    return groups.join('-');
+  };
+
+  const getCleanPhoneNumber = (phone: string) => {
+    return phone.replace(/-/g, '');
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    if (name === 'phone') {
+      const formattedValue = formatPhoneDisplay(value);
+      const cleanValue = getCleanPhoneNumber(formattedValue);
+      
+      onFormDataChange({
+        ...formData,
+        [name]: formattedValue,
+        phoneClean: cleanValue // Add this to your FormData interface
+      });
+      return;
+    }
+
     onFormDataChange({
       ...formData,
       [name]: value
     });
   };
 
-  const handleBlur = (fieldName: string) => {
-    setTouchedFields(prev => new Set([...prev, fieldName]));
+  const isValidEmail = (email: string) => {
+    // RFC 5322 standard email validation
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  const isValidIndonesianPhone = (phone: string) => {
+    // Remove dashes and check format
+    const cleanNumber = phone.replace(/-/g, '');
+    const phoneRegex = /^08[1-9][0-9]{7,9}$/;
+    return phoneRegex.test(cleanNumber);
   };
 
   const getFieldError = (fieldName: string, value: string, isRequired: boolean = true) => {
@@ -56,7 +104,8 @@ export default function RegisterForm({
     
     switch (fieldName) {
       case 'email':
-        if (!value.includes('@')) return 'Format email tidak valid';
+        if (!value.includes('@')) return 'Email harus mengandung @';
+        if (!isValidEmail(value)) return 'Format email tidak valid (contoh: nama@domain.com)';
         if (value.length > 100) return 'Email maksimal 100 karakter';
         break;
       case 'password':
@@ -67,8 +116,9 @@ export default function RegisterForm({
         if (value !== formData.password) return 'Konfirmasi password tidak sesuai';
         break;
       case 'phone':
-        if (value.length < 10) return 'Nomor telepon minimal 10 digit';
-        if (value.length > 20) return 'Nomor telepon maksimal 20 digit';
+        if (!isValidIndonesianPhone(value)) {
+          return 'Format: 08xx-xxxx-xxxx (10-12 digit)';
+        }
         break;
       case 'fullName':
         if (value.trim().length < 2) return 'Nama minimal 2 karakter';
@@ -91,7 +141,6 @@ export default function RegisterForm({
         if (value.trim().length > 50) return 'Provinsi maksimal 50 karakter';
         break;
     }
-    
     return '';
   };
 
@@ -144,7 +193,7 @@ export default function RegisterForm({
       return;
     }
 
-    if (!formData.email.includes('@')) {
+    if (!isValidEmail(formData.email)) {
       return;
     }
 
@@ -409,7 +458,7 @@ export default function RegisterForm({
                   value={formData.phone}
                   onChange={handleChange}
                   onBlur={() => handleBlur('phone')}
-                  placeholder="Masukkan nomor telepon Anda"
+                  placeholder="Contoh: 0812-3456-7890"
                   className={`text-sm w-full p-3 pl-10 text-gray-800 bg-white border rounded-lg shadow-sm sm:text-base focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-gray-400 placeholder:text-xs sm:placeholder:text-sm ${
                     touchedFields.has('phone') && !isFieldValid('phone', formData.phone)
                       ? 'border-red-300 bg-red-50'
@@ -418,6 +467,22 @@ export default function RegisterForm({
                       : 'border-gray-200'
                   }`}
                   required
+                  maxLength={14} // 12 digits + 2 dashes
+                  onKeyDown={(e) => {
+                    // Allow: backspace, delete, tab, escape, enter, dash
+                    if ([8, 9, 13, 27, 46, 189, 109].includes(e.keyCode) ||
+                        // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                        (([65, 67, 86, 88].includes(e.keyCode)) && (e.ctrlKey === true)) ||
+                        // Allow: home, end, left, right
+                        (e.keyCode >= 35 && e.keyCode <= 39)) {
+                      return;
+                    }
+                    // Block any non-number inputs
+                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && 
+                        (e.keyCode < 96 || e.keyCode > 105)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
                 {touchedFields.has('phone') && isFieldValid('phone', formData.phone) && (
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -429,9 +494,12 @@ export default function RegisterForm({
                 <p className={`mt-1 text-xs ${
                   isFieldValid('phone', formData.phone) ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {getFieldError('phone', formData.phone) || 'Nomor telepon valid'}
+                  {getFieldError('phone', formData.phone) || 'Format nomor telepon valid'}
                 </p>
               )}
+              <p className="mt-1 text-xs text-gray-500">
+                Masukkan nomor telepon yang dimulai dengan 08
+              </p>
             </div>
 
             {/* Institution */}
