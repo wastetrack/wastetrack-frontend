@@ -1,5 +1,5 @@
 'use client';
-import { LogoutButton } from '../../../components/logout-button/logout-button';
+import { LogoutButton } from '../../../../components/logout-button/logout-button';
 
 export default function CustomerDashboard() {
   return (

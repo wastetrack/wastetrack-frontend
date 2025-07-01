@@ -1,4 +1,6 @@
-//redirect/landing page
+"use client";
+
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -10,9 +12,12 @@ export default function Home() {
           Sistem Manajemen Limbah yang Okegas Okegas
         </p>
         <div className="space-y-3">
-          <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-            Mulai Sekarang
-          </button>
+            <button 
+              onClick={() => window.location.href = '/login'} 
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            >
+              Mulai Sekarang
+            </button>
           <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors">
             Pelajari Lebih Lanjut
           </button>

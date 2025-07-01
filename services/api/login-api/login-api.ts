@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { LoginRequest, LoginResponse } from '../../../app/auth/login/page';
+import { LoginRequest, LoginResponse } from '../../../app/(auth)/login/page';
 import { getTokenManager } from '../../utils/token-manager/token-manager';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';

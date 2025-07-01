@@ -243,25 +243,11 @@ export const getCurrentLocation = (): Promise<{
   });
 };
 
-export const getRedirectPath = (role: string): string => {
-  switch (role) {
-    case 'admin':
-      return '/admin/dashboard';
-    case 'waste_bank_unit':
-    case 'waste_bank_central':
-      return '/waste-bank/dashboard';
-    case 'waste_collector_unit':
-    case 'waste_collector_central':
-      return '/collector/dashboard';
-    case 'customer':
-      return '/customer/dashboard';
-    case 'industry':
-      return '/offtaker/dashboard';
-    case 'government':
-      return '/government/dashboard';
-    default:
-      return '/dashboard';
-  }
+// Function to get the redirect path after registration
+// This function is used to determine where to redirect the user after successful registration
+export const getRedirectPath = (): string => {
+  // Always redirect to verify email page after registration
+  return '/verify-email';
 }
 
 // Simplified alert wrapper for register functions
@@ -293,9 +279,9 @@ export const safeAlert = {
   }
 };
 
-export const handleRegisterError = async (error: any) => {
+export const handleRegisterError = async (error: Error | { message: string } | string | unknown) => {
   // Specific error handling for registration
-  const errorMessage = error?.message || 'Terjadi kesalahan saat registrasi';
+  const errorMessage = typeof error === 'string' ? error : (error as Error)?.message || 'Terjadi kesalahan saat registrasi';
   
   if (errorMessage.includes('Email sudah terdaftar')) {
     await safeAlert.error('Registrasi Gagal', errorMessage);

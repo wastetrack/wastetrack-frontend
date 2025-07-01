@@ -133,9 +133,9 @@ export class TokenManager {
     
     // Use router if provided, otherwise fallback to window.location
     if (router) {
-      router.push('/auth/login');
+      router.push('/login');
     } else {
-      window.location.href = '/auth/login';
+      window.location.href = '/login';
     }
   }
   
