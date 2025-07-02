@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   CheckCircle,
@@ -14,7 +14,29 @@ import { emailVerificationFunctions } from '@/helpers/utils/verify-email/verify-
 import { alerts } from '@/components/alerts/alerts';
 import Link from 'next/link';
 
-export default function VerifyEmailPage() {
+// Loading component untuk Suspense fallback
+function VerifyEmailLoading() {
+  return (
+    <div className='flex min-h-screen flex-col justify-center bg-gray-50 py-12 sm:px-6 lg:px-8'>
+      <div className='sm:mx-auto sm:w-full sm:max-w-md'>
+        <div className='bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10'>
+          <div className='text-center'>
+            <div className='mx-auto mb-6 h-16 w-16'>
+              <RefreshCw className='h-16 w-16 animate-spin text-blue-500' />
+            </div>
+            <h2 className='mb-4 text-2xl font-bold text-gray-900'>
+              Loading...
+            </h2>
+            <p className='text-gray-600'>Please wait a moment</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Komponen utama yang menggunakan useSearchParams
+function VerifyEmailContent() {
   const [status, setStatus] = useState<
     'loading' | 'success' | 'error' | 'resend'
   >('loading');
@@ -273,5 +295,14 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Export default component yang dibungkus dengan Suspense
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<VerifyEmailLoading />}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
