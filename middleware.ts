@@ -1,7 +1,7 @@
 // In middleware.ts
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { jwtDecode } from "jwt-decode";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { jwtDecode } from 'jwt-decode';
 
 // Define protected routes outside the middleware function
 const PROTECTED_ROUTES = {
@@ -10,7 +10,7 @@ const PROTECTED_ROUTES = {
   '/collector-unit/dashboard': ['waste_collector_unit'],
   '/offtaker/dashboard': ['industry'],
   '/wastebank-central/dashboard': ['waste_bank_central'],
-  '/wastebank-unit/dashboard': ['waste_bank_unit']
+  '/wastebank-unit/dashboard': ['waste_bank_unit'],
 } as const;
 
 export function middleware(request: NextRequest) {
@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
 
   if (token) {
     try {
-      const decoded = jwtDecode<{ 
+      const decoded = jwtDecode<{
         role: string;
         exp: number;
         iat: number;
@@ -28,15 +28,17 @@ export function middleware(request: NextRequest) {
       }>(token);
 
       userRole = decoded.role;
-      
+
       // Debug logs for token timing
       console.log('Token timing:', {
         issuedAt: new Date(decoded.iat * 1000).toLocaleString(),
         notBefore: new Date(decoded.nbf * 1000).toLocaleString(),
         expiresAt: new Date(decoded.exp * 1000).toLocaleString(),
-        timeUntilExpiry: Math.round((decoded.exp * 1000 - Date.now()) / 1000 / 60) + ' minutes'
+        timeUntilExpiry:
+          Math.round((decoded.exp * 1000 - Date.now()) / 1000 / 60) +
+          ' minutes',
       });
-      
+
       console.log('Full decoded token:', decoded);
       console.log('Authorization check - User Role:', userRole);
 
@@ -44,14 +46,18 @@ export function middleware(request: NextRequest) {
       const isTokenValid = decoded.exp > now;
 
       // Cek juga refresh token harus ada
-      if (request.nextUrl.pathname === '/auth/login' && userRole && refreshToken) {
+      if (
+        request.nextUrl.pathname === '/auth/login' &&
+        userRole &&
+        refreshToken
+      ) {
         const roleBasedRedirect: Record<string, string> = {
-          'customer': '/customer/dashboard',
-          'waste_collector_central': '/collector-central/dashboard',
-          'waste_collector_unit': '/collector-unit/dashboard',
-          'industry': '/offtaker/dashboard',
-          'waste_bank_central': '/wastebank-central/dashboard',
-          'waste_bank_unit': '/wastebank-unit/dashboard'
+          customer: '/customer/dashboard',
+          waste_collector_central: '/collector-central/dashboard',
+          waste_collector_unit: '/collector-unit/dashboard',
+          industry: '/offtaker/dashboard',
+          waste_bank_central: '/wastebank-central/dashboard',
+          waste_bank_unit: '/wastebank-unit/dashboard',
         };
         const redirectPath = roleBasedRedirect[userRole] || '/dashboard';
         return NextResponse.redirect(new URL(redirectPath, request.url));
@@ -72,7 +78,9 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
-    const allowedRoles = PROTECTED_ROUTES[path as keyof typeof PROTECTED_ROUTES] as readonly string[];
+    const allowedRoles = PROTECTED_ROUTES[
+      path as keyof typeof PROTECTED_ROUTES
+    ] as readonly string[];
     if (!userRole || !allowedRoles.includes(userRole)) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
@@ -86,5 +94,5 @@ export const config = {
     '/:path*/dashboard',
     '/api/protected/:path*',
     '/((?!auth|_next/static|_next/image|favicon.ico).*)',
-  ]
-}
+  ],
+};

@@ -1,14 +1,14 @@
 'use client';
-import { LogoutButton } from '../../../../components/logout-button/logout-button';
+import { LogoutButton } from '@/components/logout-button/logout-button';
 
 export default function CollectorCentralDashboard() {
-    return (
-        <div className="p-4">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Collector Central Dashboard</h1>
-                <LogoutButton />
-            </div>
-            <p className="mt-2">Welcome to the Collector Central dashboard.</p>
-        </div>
-    );
+  return (
+    <div className='p-4'>
+      <div className='flex items-center justify-between'>
+        <h1 className='text-2xl font-bold'>Collector Central Dashboard</h1>
+        <LogoutButton />
+      </div>
+      <p className='mt-2'>Welcome to the Collector Central dashboard.</p>
+    </div>
+  );
 }

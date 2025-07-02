@@ -1,16 +1,60 @@
-import { refreshAPI } from '../../api/refresh-token-api/refresh-token-api';
-import { tokenUtils } from '../token-utils';
-import { cookieUtils } from '../cookie-utils';
+import { refreshAPI } from '@/services/api/refresh-token-api/refresh-token-api';
+import { cookieUtils } from './cookie-utils';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from 'jwt-decode';
 
 let tokenManagerInstance: TokenManager | null = null;
 
 export class TokenManager {
   private refreshPromise: Promise<string | null> | null = null;
-  private tabSync: any = null; // Define tabSync property
+  private tabSync: BroadcastChannel | null = null;
 
-  storeTokens(data: any) {
+  constructor() {
+    // Initialize tab synchronization if in browser environment
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      this.tabSync = new BroadcastChannel('token_sync');
+      this.setupTabSyncListeners();
+    }
+  }
+
+  private setupTabSyncListeners() {
+    if (!this.tabSync) return;
+
+    this.tabSync.onmessage = (event) => {
+      if (event.data.type === 'TOKEN_REFRESHED') {
+        // Update tokens from other tabs
+        sessionStorage.setItem('access_token', event.data.access_token);
+        localStorage.setItem('user', JSON.stringify(event.data.user));
+      } else if (event.data.type === 'LOGOUT') {
+        // Logout triggered from other tab
+        this.performLogoutWithoutBroadcast();
+      }
+    };
+  }
+
+  private performLogoutWithoutBroadcast() {
+    if (typeof window === 'undefined') return;
+
+    // Clear all tokens and data without broadcasting
+    sessionStorage.removeItem('access_token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('session_id');
+    localStorage.removeItem('refresh_token');
+
+    // Clear cookies
+    cookieUtils.delete('refresh_token');
+    cookieUtils.delete('token');
+
+    // Redirect to login
+    window.location.href = '/login';
+  }
+
+  storeTokens(data: {
+    access_token: string;
+    refresh_token: string;
+    role?: string;
+    [key: string]: unknown;
+  }) {
     if (typeof window === 'undefined') return;
 
     // Access token (15 menit)
@@ -40,13 +84,16 @@ export class TokenManager {
   }
 
   // Tambahkan fungsi utilitas untuk cek waktu expired token
-  private isTokenExpiringSoon(token: string, thresholdMinutes: number = 1): boolean {
+  private isTokenExpiringSoon(
+    token: string,
+    thresholdMinutes: number = 1
+  ): boolean {
     try {
       const decoded: { exp: number } = jwtDecode(token);
       const now = Date.now() / 1000; // detik
       // Jika waktu expired kurang dari threshold (dalam menit)
       return decoded.exp - now < thresholdMinutes * 60;
-    } catch (e) {
+    } catch {
       // Jika gagal decode, anggap token sudah tidak valid
       return true;
     }
@@ -54,7 +101,7 @@ export class TokenManager {
 
   private async refreshAccessToken(): Promise<string | null> {
     if (typeof window === 'undefined') return null;
-    
+
     // Prevent multiple simultaneous refresh calls
     if (this.refreshPromise) {
       return await this.refreshPromise;
@@ -72,28 +119,32 @@ export class TokenManager {
     try {
       const refreshToken = cookieUtils.get('refresh_token');
       const currentAccessToken = sessionStorage.getItem('access_token');
-      
+
       if (!refreshToken) {
         this.logout();
         return null;
       }
-      
+
       // Use current access token for auth (even if expired, backend might accept it for refresh)
-      const response = await refreshAPI.refreshToken(refreshToken, currentAccessToken || '');
-      
+      const response = await refreshAPI.refreshToken(
+        refreshToken,
+        currentAccessToken || ''
+      );
+
       // Store new tokens
       this.storeTokens(response.data);
-      
+
       // Broadcast token refresh to other tabs
       if (this.tabSync) {
-        this.tabSync.broadcast('TOKEN_REFRESHED', {
+        this.tabSync.postMessage({
+          type: 'TOKEN_REFRESHED',
           access_token: response.data.access_token,
-          user: response.data
+          user: response.data,
         });
       }
-      
+
       return response.data.access_token;
-    } catch (error) {
+    } catch {
       this.logout();
       return null;
     }
@@ -102,35 +153,39 @@ export class TokenManager {
   // Get current user
   getCurrentUser() {
     if (typeof window === 'undefined') return null;
-    
+
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   }
-  
+
   // Check if user is authenticated
   isAuthenticated(): boolean {
     if (typeof window === 'undefined') return false;
-    
+
     const refreshToken = cookieUtils.get('refresh_token');
     const user = this.getCurrentUser();
     return !!(refreshToken && user);
   }
-  
+
   // Logout
   logout(router?: AppRouterInstance) {
     if (typeof window === 'undefined') return;
-    
+
     // Clear all tokens and data
     sessionStorage.removeItem('access_token');
     localStorage.removeItem('user');
     localStorage.removeItem('session_id');
+    localStorage.removeItem('refresh_token');
+
+    // Clear cookies
     cookieUtils.delete('refresh_token');
-    
+    cookieUtils.delete('token');
+
     // Broadcast logout to other tabs
     if (this.tabSync) {
-      this.tabSync.broadcast('LOGOUT');
+      this.tabSync.postMessage({ type: 'LOGOUT' });
     }
-    
+
     // Use router if provided, otherwise fallback to window.location
     if (router) {
       router.push('/login');
@@ -138,11 +193,11 @@ export class TokenManager {
       window.location.href = '/login';
     }
   }
-  
+
   // Cleanup (call when component unmounts)
   cleanup() {
     if (this.tabSync) {
-      this.tabSync.cleanup();
+      this.tabSync.close();
     }
   }
 }

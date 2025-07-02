@@ -61,10 +61,13 @@ class CookieUtils {
     return null;
   }
 
-  delete(name: string, options: Omit<CookieOptions, 'expires' | 'maxAge'> = {}): void {
+  delete(
+    name: string,
+    options: Omit<CookieOptions, 'expires' | 'maxAge'> = {}
+  ): void {
     this.set(name, '', {
       ...options,
-      expires: new Date(0)
+      expires: new Date(0),
     });
   }
 

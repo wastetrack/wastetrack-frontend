@@ -1,7 +1,8 @@
 import axios from 'axios';
-import { getTokenManager } from '../../utils/token-manager/token-manager';
+import { getTokenManager } from '@/lib/token-manager';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
 
 // Configure axios instance
 const apiClient = axios.create({
@@ -38,7 +39,7 @@ apiClient.interceptors.response.use(
       // Try to refresh token one more time
       const tokenManager = getTokenManager();
       const refreshedToken = await tokenManager.getValidAccessToken();
-      
+
       if (refreshedToken && error.config && !error.config._retry) {
         error.config._retry = true;
         error.config.headers.Authorization = `Bearer ${refreshedToken}`;
@@ -99,14 +100,18 @@ export const registerApi = {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 409) {
-          throw new Error('Email sudah terdaftar. Silakan gunakan email lain atau login.');
+          throw new Error(
+            'Email sudah terdaftar. Silakan gunakan email lain atau login.'
+          );
         }
         if (error.response?.status === 400) {
-          throw new Error(error.response.data?.message || 'Data registrasi tidak valid');
+          throw new Error(
+            error.response.data?.message || 'Data registrasi tidak valid'
+          );
         }
         throw new Error(error.response?.data?.message || 'Registrasi gagal');
       }
       throw new Error('Terjadi kesalahan jaringan');
     }
-  }
+  },
 };

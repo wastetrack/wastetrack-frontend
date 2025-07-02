@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
 
 // Configure axios instance for refresh
 const refreshClient = axios.create({
@@ -37,15 +38,22 @@ export interface RefreshTokenResponse {
 }
 
 export const refreshAPI = {
-  async refreshToken(refreshToken: string, accessToken: string): Promise<RefreshTokenResponse> {
+  async refreshToken(
+    refreshToken: string,
+    accessToken: string
+  ): Promise<RefreshTokenResponse> {
     try {
-      const response = await refreshClient.post('/api/auth/refresh-token', {
-        refresh_token: refreshToken
-      }, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
+      const response = await refreshClient.post(
+        '/api/auth/refresh-token',
+        {
+          refresh_token: refreshToken,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         }
-      });
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -54,5 +62,5 @@ export const refreshAPI = {
       }
       throw new Error('Network error occurred during token refresh');
     }
-  }
+  },
 };

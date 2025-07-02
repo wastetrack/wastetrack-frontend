@@ -12,10 +12,11 @@ export const alerts = {
       timer: 8000, // Increased from 5000
       showConfirmButton: false,
       customClass: {
-        popup: 'w-[90%] max-w-sm sm:max-w-md rounded-md sm:rounded-lg shadow-lg',
+        popup:
+          'w-[90%] max-w-sm sm:max-w-md rounded-md sm:rounded-lg shadow-lg',
         title: 'text-base sm:text-xl font-semibold text-gray-800',
-        htmlContainer: 'text-sm sm:text-base text-gray-600'
-      }
+        htmlContainer: 'text-sm sm:text-base text-gray-600',
+      },
     });
   },
 
@@ -33,8 +34,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-sm sm:max-w-md rounded-md sm:rounded-lg',
         title: 'text-xl sm:text-2xl font-semibold text-gray-800',
         htmlContainer: 'text-sm sm:text-base text-gray-600',
-        confirmButton: 'text-sm sm:text-base'
-      }
+        confirmButton: 'text-sm sm:text-base',
+      },
     });
   },
 
@@ -53,7 +54,7 @@ export const alerts = {
           </div>
         `,
         confirmButtonText: 'Oke, Mantap!',
-        confirmButtonColor: '#10b981'
+        confirmButtonColor: '#10b981',
       });
     } catch (error) {
       console.error('Alert test failed:', error);
@@ -95,8 +96,8 @@ export const alerts = {
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
         confirmButton: 'text-sm font-medium',
-        cancelButton: 'text-sm font-medium'
-      }
+        cancelButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -134,8 +135,8 @@ export const alerts = {
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
         confirmButton: 'text-sm font-medium',
-        cancelButton: 'text-sm font-medium'
-      }
+        cancelButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -169,8 +170,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -209,8 +210,8 @@ export const alerts = {
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
         confirmButton: 'text-sm font-medium',
-        cancelButton: 'text-sm font-medium'
-      }
+        cancelButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -245,8 +246,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -282,8 +283,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -318,8 +319,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -349,8 +350,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -363,7 +364,7 @@ export const alerts = {
         showConfirmButton: false,
         didOpen: () => {
           Swal.showLoading();
-        }
+        },
       });
     } catch (error) {
       console.error('Loading alert error:', error);
@@ -396,8 +397,8 @@ export const alerts = {
         title: 'text-base sm:text-xl font-semibold text-gray-800',
         htmlContainer: 'text-sm sm:text-base text-gray-600',
         confirmButton: 'text-sm font-medium sm:text-base',
-        cancelButton: 'text-sm font-medium sm:text-base'
-      }
+        cancelButton: 'text-sm font-medium sm:text-base',
+      },
     });
   },
 
@@ -431,8 +432,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -462,8 +463,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -497,8 +498,8 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -531,8 +532,8 @@ export const alerts = {
       customClass: {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
-        htmlContainer: 'text-sm'
-      }
+        htmlContainer: 'text-sm',
+      },
     });
   },
 
@@ -566,8 +567,8 @@ export const alerts = {
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
         confirmButton: 'text-sm font-medium',
-        cancelButton: 'text-sm font-medium'
-      }
+        cancelButton: 'text-sm font-medium',
+      },
     });
   },
 
@@ -601,13 +602,16 @@ export const alerts = {
         popup: 'w-[90%] max-w-md rounded-lg',
         title: 'text-lg font-semibold text-gray-800',
         htmlContainer: 'text-sm',
-        confirmButton: 'text-sm font-medium'
-      }
+        confirmButton: 'text-sm font-medium',
+      },
     });
   },
 
   // New: Registration success with email verification alert
-  registrationSuccessWithVerification: async (fullName: string, email: string) => {
+  registrationSuccessWithVerification: async (
+    fullName: string,
+    email: string
+  ) => {
     return await Swal.fire({
       icon: 'success',
       title: 'Registration Successful!',

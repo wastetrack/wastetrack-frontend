@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
+const API_URL =
+  process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
 
 export interface ResetPasswordResponse {
   success: boolean;
@@ -8,7 +9,10 @@ export interface ResetPasswordResponse {
 
 export const resetPasswordApi = {
   // Reset password with token
-  resetPassword: async (token: string, newPassword: string): Promise<ResetPasswordResponse> => {
+  resetPassword: async (
+    token: string,
+    newPassword: string
+  ): Promise<ResetPasswordResponse> => {
     try {
       const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: 'POST',
@@ -19,7 +23,7 @@ export const resetPasswordApi = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to reset password');
       }
@@ -32,8 +36,9 @@ export const resetPasswordApi = {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to reset password',
+        message:
+          error instanceof Error ? error.message : 'Failed to reset password',
       };
     }
-  }
+  },
 };

@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
+const API_URL =
+  process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
 
 export interface ForgotPasswordResponse {
   success: boolean;
@@ -19,7 +20,7 @@ export const forgotPasswordApi = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to request password reset');
       }
@@ -32,8 +33,11 @@ export const forgotPasswordApi = {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to request password reset',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to request password reset',
       };
     }
-  }
+  },
 };
