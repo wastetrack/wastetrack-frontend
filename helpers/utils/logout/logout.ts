@@ -1,5 +1,5 @@
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { logoutApi } from '../../../services/api/logout-api/logout-api';
+import { logoutAPI } from '@/services/api/auth';
 import { deleteCookie } from 'cookies-next';
 import { AxiosError } from 'axios';
 
@@ -82,7 +82,7 @@ export const handleLogout = async (
     // Attempt to logout from server if refresh token exists
     if (refreshToken) {
       try {
-        await logoutApi(refreshToken);
+        await logoutAPI(refreshToken);
       } catch (apiError) {
         // Log the API error but don't fail the logout process
         console.warn('Server logout failed:', handleLogoutError(apiError));

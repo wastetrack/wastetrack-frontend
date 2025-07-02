@@ -1,4 +1,4 @@
-import { refreshAPI } from '@/services/api/refresh-token-api/refresh-token-api';
+import { refreshAPI } from '@/services/api/auth';
 import { cookieUtils } from './cookie-utils';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { jwtDecode } from 'jwt-decode';

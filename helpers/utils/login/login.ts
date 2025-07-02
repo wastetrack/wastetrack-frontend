@@ -1,8 +1,8 @@
-import { loginAPI } from '../../../services/api/login-api/login-api';
-import { alerts } from '../../../components/alerts/alerts';
-import { LoginRequest } from '../../../types/auth';
-import { getTokenManager } from '../../../lib/token-manager';
-import { emailVerificationApi } from '../../../services/api/email-verification-api/email-verification-api';
+import { loginAPI } from '@/services/api/auth';
+import { alerts } from '@/components/alerts/alerts';
+import { LoginRequest } from '@/types/auth';
+import { getTokenManager } from '@/lib/token-manager';
+import { emailVerificationAPI } from '@/services/api/auth';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { jwtDecode } from 'jwt-decode';
 import { AxiosError } from 'axios';
@@ -145,7 +145,7 @@ export const loginFunctions = {
     if (result.isConfirmed) {
       try {
         const resendResponse =
-          await emailVerificationApi.resendVerification(email);
+          await emailVerificationAPI.resendVerification(email);
         if (resendResponse.success) {
           await alerts.emailVerificationSent();
         } else {
