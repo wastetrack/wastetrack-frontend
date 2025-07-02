@@ -1,5 +1,6 @@
 // Constants
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL =
+  process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
 
 // Types & Interfaces
 export interface EmailVerificationResponse {
@@ -22,7 +23,7 @@ export const emailVerificationApi = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Verification failed');
       }
@@ -41,7 +42,9 @@ export const emailVerificationApi = {
   },
 
   // Resend verification email
-  resendVerification: async (email: string): Promise<EmailVerificationResponse> => {
+  resendVerification: async (
+    email: string
+  ): Promise<EmailVerificationResponse> => {
     try {
       const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
         method: 'POST',
@@ -52,7 +55,7 @@ export const emailVerificationApi = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to resend verification');
       }
@@ -65,23 +68,31 @@ export const emailVerificationApi = {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to resend verification',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to resend verification',
       };
     }
   },
 
   // Check email verification status
-  checkVerificationStatus: async (email: string): Promise<EmailVerificationResponse> => {
+  checkVerificationStatus: async (
+    email: string
+  ): Promise<EmailVerificationResponse> => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/check-verification-status?email=${encodeURIComponent(email)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${API_URL}/api/auth/check-verification-status?email=${encodeURIComponent(email)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to check verification status');
       }
@@ -94,7 +105,10 @@ export const emailVerificationApi = {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to check verification status',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to check verification status',
       };
     }
   },

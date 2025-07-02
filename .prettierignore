@@ -1,0 +1,38 @@
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env*
+
+# Config files
+package.json
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Prettier config itself
+.prettierrc*
+.prettierignore
+
+# Static assets
+public/
+
+# Type definitions
+*.d.ts
+
+# Logs
+*.log
+
+# IDE/Editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
