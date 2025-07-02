@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
@@ -8,7 +8,38 @@ import { loginFunctions } from '@/helpers/utils/login/login';
 import { alerts } from '@/components/alerts/alerts';
 import { LoginRequest } from '@/types/auth';
 
-export default function LoginForm() {
+// Loading component untuk Suspense fallback
+function LoginFormLoading() {
+  return (
+    <div className='w-full space-y-4 rounded-lg sm:p-4 max-w-2xl md:p-6'>
+      <div className='flex flex-col items-center'>
+        <div className='flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 mb-6'>
+          <LogIn size={20} className='text-emerald-600 h-6 sw-6 animate-pulse' />
+        </div>
+        <h1 className='text-center text-base font-bold text-gray-800 sm:text-lg md:text-xl lg:text-2xl'>
+          Loading...
+        </h1>
+        <p className='mt-2 text-center text-xs text-gray-600 sm:text-base'>
+          Mohon tunggu sebentar
+        </p>
+      </div>
+      <div className='space-y-4 sm:space-y-5'>
+        <div className='animate-pulse'>
+          <div className='h-4 bg-gray-200 rounded mb-2'></div>
+          <div className='h-12 bg-gray-200 rounded'></div>
+        </div>
+        <div className='animate-pulse'>
+          <div className='h-4 bg-gray-200 rounded mb-2'></div>
+          <div className='h-12 bg-gray-200 rounded'></div>
+        </div>
+        <div className='h-12 bg-gray-200 rounded animate-pulse'></div>
+      </div>
+    </div>
+  );
+}
+
+// Komponen utama yang menggunakan useSearchParams
+function LoginFormContent() {
   const [formData, setFormData] = useState<LoginRequest>({
     email: '',
     password: '',
@@ -207,5 +238,14 @@ export default function LoginForm() {
         </p>
       </form>
     </div>
+  );
+}
+
+// Export default component yang dibungkus dengan Suspense
+export default function LoginForm() {
+  return (
+    <Suspense fallback={<LoginFormLoading />}>
+      <LoginFormContent />
+    </Suspense>
   );
 }

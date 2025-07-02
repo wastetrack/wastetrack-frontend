@@ -4,7 +4,7 @@ const API_URL =
 export interface ForgotPasswordResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 export const forgotPasswordApi = {

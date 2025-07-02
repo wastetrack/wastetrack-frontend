@@ -78,7 +78,9 @@ export const forgotPasswordFunctions = {
         return {
           success: true,
           message: result.message || 'Password reset link sent successfully',
-          data: result.data,
+          data: result.data && typeof result.data === 'object' 
+            ? result.data as { [key: string]: unknown }
+            : undefined,
         };
       } else {
         // Handle API failure

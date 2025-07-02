@@ -6,7 +6,7 @@ const API_URL =
 export interface EmailVerificationResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 // API Functions

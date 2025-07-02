@@ -712,18 +712,8 @@ export const testAlerts = () => {
   alerts.test();
 };
 
-// Check if SweetAlert2 is loaded properly
-// if (typeof window !== 'undefined') {
-//   if (!Swal) {
-//     console.error('SweetAlert2 is not loaded properly!');
-//     throw new Error('SweetAlert2 initialization failed');
-//   } else {
-//     console.log('SweetAlert2 loaded successfully');
-//   }
-// }
-
-// Add error handling wrapper
-const handleAlertError = (error: any, fallbackMessage: string) => {
+// Add error handling wrapper for future use
+export const handleAlertError = (error: unknown, fallbackMessage: string) => {
   console.error('Alert error:', error);
   // Fallback to basic browser alert
   alert(fallbackMessage);

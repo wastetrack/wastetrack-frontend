@@ -4,7 +4,7 @@ const API_URL =
 export interface ResetPasswordResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 export const resetPasswordApi = {
