@@ -1,6 +1,6 @@
 import { loginAPI } from '../../../services/api/login-api/login-api';
 import { alerts } from '../../../components/alerts/alerts';
-import { LoginRequest } from '../../../app/(auth)/login/page';
+import { LoginRequest } from '../../../types/auth';
 import { getTokenManager } from '../../../lib/token-manager';
 import { emailVerificationApi } from '../../../services/api/email-verification-api/email-verification-api';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
