@@ -19,14 +19,14 @@ export interface FormData {
 }
 
 export const ROLES = {
-  admin: 'Super Admin',
+  // admin: 'Super Admin',
+  customer: 'Nasabah',
   waste_bank_unit: 'Bank Sampah Unit',
   waste_collector_unit: 'Pegawai BSU',
   waste_bank_central: 'Bank Sampah Induk',
   waste_collector_central: 'Pegawai BSI',
-  customer: 'Nasabah',
   industry: 'Offtaker', // Display as Offtaker but send as industry
-  government: 'Pemerintah',
+  // government: 'Pemerintah',
 };
 
 export const ROLE_DESCRIPTIONS = {

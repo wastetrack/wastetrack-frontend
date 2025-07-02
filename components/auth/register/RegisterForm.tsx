@@ -1,31 +1,22 @@
-import { useState } from 'react';
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
 import {
+  Eye,
+  EyeOff,
   Mail,
   Lock,
   User,
   Phone,
   Building2,
   MapPin,
-  Eye,
-  EyeOff,
-  MapPinIcon,
-  EyeIcon,
+  UserPlus,
 } from 'lucide-react';
-import {
-  FormData,
-  ROLES,
-  ROLE_DESCRIPTIONS,
-  getCurrentLocation,
-} from '@/helpers/utils/register/register';
-import { alerts } from '../alerts/alerts';
-
-interface RegisterFormProps {
-  formData: FormData;
-  onFormDataChange: (data: FormData) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  loading: boolean;
-  error: string;
-}
+import { RegisterFormProps } from '@/types/auth';
+import { getCurrentLocation } from '@/helpers/utils/register/register';
+import { alerts } from '@/components/alerts/alerts';
+import { ROLES, ROLE_DESCRIPTIONS } from '@/helpers/utils/register/register';
 
 export default function RegisterForm({
   formData,
@@ -222,13 +213,20 @@ export default function RegisterForm({
   };
 
   return (
-    <div className='w-full max-w-2xl rounded-xl'>
-      {/* Header */}
-      <div className='mb-8 text-center'>
-        <h2 className='mb-2 text-lg font-bold text-gray-800 sm:text-3xl'>
+    <div className='w-full rounded-lg'>
+      {/* Header Icon */}
+      <div className='mb-6 text-center'>
+        <div className='inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100'>
+          <UserPlus size={20} className='text-emerald-600 h-6 w-6' />
+        </div>
+      </div>
+
+      {/* Form Header */}
+      <div className='mb-6 text-center'>
+        <h1 className='mb-2 text-base font-bold text-gray-800 sm:text-2xl'>
           Buat Akun
-        </h2>
-        <p className='mt-2 text-sm text-gray-600 sm:text-base'>
+        </h1>
+        <p className='mt-2 text-xs text-gray-600 sm:text-base'>
           {step === 1 ? 'Pilih role Anda' : 'Lengkapi informasi Anda'}
         </p>
       </div>
@@ -279,14 +277,14 @@ export default function RegisterForm({
           <>
             {/* Role Selection */}
             <div>
-              <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+              <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                 Pilih Role Anda
               </label>
               <select
                 name='role'
                 value={formData.role}
                 onChange={handleChange}
-                className='w-full rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base'
+                className='w-full rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-800 sm:text-base'
               >
                 {Object.entries(ROLES).map(([key, value]) => (
                   <option key={key} value={key}>
@@ -294,7 +292,7 @@ export default function RegisterForm({
                   </option>
                 ))}
               </select>
-              <p className='mt-2 text-sm text-gray-600'>
+              <p className='mt-1 text-sm text-center text-gray-400'>
                 {
                   ROLE_DESCRIPTIONS[
                     formData.role as keyof typeof ROLE_DESCRIPTIONS
@@ -305,12 +303,12 @@ export default function RegisterForm({
 
             {/* Email */}
             <div>
-              <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+              <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                 Alamat Email <span className='text-red-500'>*</span>
               </label>
               <div className='relative'>
-                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
-                  <Mail className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4'>
+                  <Mail className='h-4 w-4 text-gray-400' />
                 </div>
                 <input
                   type='email'
@@ -319,7 +317,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('email')}
                   placeholder='Masukkan email Anda'
-                  className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                  className={`w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('email') &&
                     !isFieldValid('email', formData.email)
                       ? 'border-red-300 bg-red-50'
@@ -333,13 +331,13 @@ export default function RegisterForm({
                 {touchedFields.has('email') &&
                   isFieldValid('email', formData.email) && (
                     <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
-                      <span className='text-green-500'>✓</span>
+                      <span className='hidden text-green-500'>✓</span>
                     </div>
                   )}
               </div>
               {touchedFields.has('email') && (
                 <p
-                  className={`mt-1 text-xs ${
+                  className={`mt-1 text-[10px] sm:text-xs ${
                     isFieldValid('email', formData.email)
                       ? 'text-green-600'
                       : 'text-red-600'
@@ -352,12 +350,12 @@ export default function RegisterForm({
 
             {/* Password */}
             <div>
-              <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+              <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                 Kata Sandi <span className='text-red-500'>*</span>
               </label>
               <div className='relative'>
-                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
-                  <Lock className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4'>
+                  <Lock className='h-4 w-4 text-gray-400' />
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -366,7 +364,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('password')}
                   placeholder='Minimal 8 karakter'
-                  className={`w-full rounded-lg border bg-white p-3 pl-10 pr-10 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                  className={`w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 pr-10 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:pr-12 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('password') &&
                     !isFieldValid('password', formData.password)
                       ? 'border-red-300 bg-red-50'
@@ -381,7 +379,7 @@ export default function RegisterForm({
                 <div className='absolute inset-y-0 right-0 flex items-center space-x-2 pr-3'>
                   {touchedFields.has('password') &&
                     isFieldValid('password', formData.password) && (
-                      <span className='text-green-500'>✓</span>
+                      <span className='hidden text-green-500'>✓</span>
                     )}
                   <span
                     onClick={() => setShowPassword((prev) => !prev)}
@@ -390,16 +388,16 @@ export default function RegisterForm({
                     tabIndex={0}
                   >
                     {showPassword ? (
-                      <EyeIcon className='h-5 w-5 text-gray-400' />
+                      <Eye className='h-4.5 w.5 text-gray-400' />
                     ) : (
-                      <EyeOff className='h-5 w-5 text-gray-400' />
+                      <EyeOff className='h-4.5 w.5 text-gray-400' />
                     )}
                   </span>
                 </div>
               </div>
               {touchedFields.has('password') && (
                 <p
-                  className={`mt-1 text-xs ${
+                  className={`text-[10px] sm:text-xs ${
                     isFieldValid('password', formData.password)
                       ? 'text-green-600'
                       : 'text-red-600'
@@ -413,12 +411,12 @@ export default function RegisterForm({
 
             {/* Confirm Password */}
             <div>
-              <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+              <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                 Konfirmasi Kata Sandi <span className='text-red-500'>*</span>
               </label>
               <div className='relative'>
-                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
-                  <Lock className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4'>
+                  <Lock className='h-4 w-4 text-gray-400' />
                 </div>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
@@ -427,7 +425,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('confirmPassword')}
                   placeholder='Konfirmasi kata sandi Anda'
-                  className={`w-full rounded-lg border bg-white p-3 pl-10 pr-10 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                  className={`w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 pr-10 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:pr-12 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('confirmPassword') &&
                     !isFieldValid('confirmPassword', formData.confirmPassword)
                       ? 'border-red-300 bg-red-50'
@@ -446,7 +444,7 @@ export default function RegisterForm({
                     isFieldValid(
                       'confirmPassword',
                       formData.confirmPassword
-                    ) && <span className='text-green-500'>✓</span>}
+                    ) && <span className='hidden text-green-500'>✓</span>}
                   <span
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className='cursor-pointer select-none text-gray-500'
@@ -454,16 +452,16 @@ export default function RegisterForm({
                     tabIndex={0}
                   >
                     {showConfirmPassword ? (
-                      <EyeIcon className='h-5 w-5 text-gray-400' />
+                      <Eye className='h-4.5 w.5 text-gray-400' />
                     ) : (
-                      <EyeOff className='h-5 w-5 text-gray-400' />
+                      <EyeOff className='h-4.5 w.5 text-gray-400' />
                     )}
                   </span>
                 </div>
               </div>
               {touchedFields.has('confirmPassword') && (
                 <p
-                  className={`mt-1 text-xs ${
+                  className={`text-[10px] sm:text-xs ${
                     isFieldValid('confirmPassword', formData.confirmPassword)
                       ? 'text-green-600'
                       : 'text-red-600'
@@ -479,12 +477,12 @@ export default function RegisterForm({
           <>
             {/* Full Name */}
             <div>
-              <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+              <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                 Nama Lengkap <span className='text-red-500'>*</span>
               </label>
               <div className='relative'>
-                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
-                  <User className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4'>
+                  <User className='h-4 w-4 text-gray-400' />
                 </div>
                 <input
                   type='text'
@@ -493,7 +491,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('fullName')}
                   placeholder='Masukkan nama lengkap Anda'
-                  className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                  className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('fullName') &&
                     !isFieldValid('fullName', formData.fullName)
                       ? 'border-red-300 bg-red-50'
@@ -507,13 +505,13 @@ export default function RegisterForm({
                 {touchedFields.has('fullName') &&
                   isFieldValid('fullName', formData.fullName) && (
                     <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
-                      <span className='text-green-500'>✓</span>
+                      <span className='hidden text-green-500'>✓</span>
                     </div>
                   )}
               </div>
               {touchedFields.has('fullName') && (
                 <p
-                  className={`mt-1 text-xs ${
+                  className={`text-[10px] sm:text-xs ${
                     isFieldValid('fullName', formData.fullName)
                       ? 'text-green-600'
                       : 'text-red-600'
@@ -526,12 +524,12 @@ export default function RegisterForm({
 
             {/* Phone Number */}
             <div>
-              <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+              <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                 Nomor Telepon <span className='text-red-500'>*</span>
               </label>
               <div className='relative'>
-                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
-                  <Phone className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4'>
+                  <Phone className='h-4 w-4 text-gray-400' />
                 </div>
                 <input
                   type='tel'
@@ -539,8 +537,8 @@ export default function RegisterForm({
                   value={formData.phone}
                   onChange={handleChange}
                   onBlur={() => handleBlur('phone')}
-                  placeholder='Contoh: 0812-3456-7890'
-                  className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                  placeholder='0812-3456-7890'
+                  className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('phone') &&
                     !isFieldValid('phone', formData.phone)
                       ? 'border-red-300 bg-red-50'
@@ -575,13 +573,13 @@ export default function RegisterForm({
                 {touchedFields.has('phone') &&
                   isFieldValid('phone', formData.phone) && (
                     <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
-                      <span className='text-green-500'>✓</span>
+                      <span className='hidden text-green-500'>✓</span>
                     </div>
                   )}
               </div>
               {touchedFields.has('phone') && (
                 <p
-                  className={`mt-1 text-xs ${
+                  className={`text-[10px] sm:text-xs ${
                     isFieldValid('phone', formData.phone)
                       ? 'text-green-600'
                       : 'text-red-600'
@@ -591,20 +589,17 @@ export default function RegisterForm({
                     'Format nomor telepon valid'}
                 </p>
               )}
-              <p className='mt-1 text-xs text-gray-500'>
-                Masukkan nomor telepon yang dimulai dengan 08
-              </p>
             </div>
 
             {/* Institution */}
             {formData.role !== 'customer' && (
               <div>
-                <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+                <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                   Institusi <span className='text-red-500'>*</span>
                 </label>
                 <div className='relative'>
-                  <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
-                    <Building2 className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                  <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4'>
+                    <Building2 className='h-4 w-4 text-gray-400' />
                   </div>
                   <input
                     type='text'
@@ -613,7 +608,7 @@ export default function RegisterForm({
                     onChange={handleChange}
                     onBlur={() => handleBlur('institution')}
                     placeholder='Masukkan nama institusi Anda'
-                    className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                    className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                       touchedFields.has('institution') &&
                       !isFieldValid(
                         'institution',
@@ -639,13 +634,13 @@ export default function RegisterForm({
                       formData.role !== 'customer'
                     ) && (
                       <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
-                        <span className='text-green-500'>✓</span>
+                        <span className='hidden text-green-500'>✓</span>
                       </div>
                     )}
                 </div>
                 {touchedFields.has('institution') && (
                   <p
-                    className={`mt-1 text-xs ${
+                    className={`text-[10px] sm:text-xs ${
                       isFieldValid(
                         'institution',
                         formData.institution,
@@ -667,12 +662,12 @@ export default function RegisterForm({
 
             {/* Address */}
             <div>
-              <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+              <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                 Alamat <span className='text-red-500'>*</span>
               </label>
               <div className='relative'>
-                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
-                  <MapPin className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4'>
+                  <MapPin className='h-4 w-4 text-gray-400' />
                 </div>
                 <input
                   type='text'
@@ -681,7 +676,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('address')}
                   placeholder='Masukkan alamat Anda'
-                  className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                  className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('address') &&
                     !isFieldValid('address', formData.address)
                       ? 'border-red-300 bg-red-50'
@@ -695,13 +690,13 @@ export default function RegisterForm({
                 {touchedFields.has('address') &&
                   isFieldValid('address', formData.address) && (
                     <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
-                      <span className='text-green-500'>✓</span>
+                      <span className='hidden text-green-500'>✓</span>
                     </div>
                   )}
               </div>
               {touchedFields.has('address') && (
                 <p
-                  className={`mt-1 text-xs ${
+                  className={`text-[10px] sm:text-xs ${
                     isFieldValid('address', formData.address)
                       ? 'text-green-600'
                       : 'text-red-600'
@@ -715,7 +710,7 @@ export default function RegisterForm({
             {/* City & Province */}
             <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
               <div>
-                <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+                <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                   Kota <span className='text-red-500'>*</span>
                 </label>
                 <input
@@ -725,7 +720,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('city')}
                   placeholder='Masukkan kota Anda'
-                  className={`w-full rounded-lg border bg-white p-3 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                  className={`w-full rounded-lg border bg-white p-3 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('city') &&
                     !isFieldValid('city', formData.city)
                       ? 'border-red-300 bg-red-50'
@@ -738,7 +733,7 @@ export default function RegisterForm({
                 />
                 {touchedFields.has('city') && (
                   <p
-                    className={`mt-1 text-xs ${
+                    className={`text-[10px] sm:text-xs ${
                       isFieldValid('city', formData.city)
                         ? 'text-green-600'
                         : 'text-red-600'
@@ -749,7 +744,7 @@ export default function RegisterForm({
                 )}
               </div>
               <div>
-                <label className='mb-1.5 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+                <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
                   Provinsi <span className='text-red-500'>*</span>
                 </label>
                 <input
@@ -759,7 +754,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('province')}
                   placeholder='Masukkan provinsi Anda'
-                  className={`w-full rounded-lg border bg-white p-3 text-sm text-gray-800 shadow-sm placeholder:text-xs placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 sm:text-base sm:placeholder:text-sm ${
+                  className={`w-full rounded-lg border bg-white p-3 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('province') &&
                     !isFieldValid('province', formData.province)
                       ? 'border-red-300 bg-red-50'
@@ -772,7 +767,7 @@ export default function RegisterForm({
                 />
                 {touchedFields.has('province') && (
                   <p
-                    className={`mt-1 text-xs ${
+                    className={`text-[10px] sm:text-xs ${
                       isFieldValid('province', formData.province)
                         ? 'text-green-600'
                         : 'text-red-600'
@@ -792,15 +787,15 @@ export default function RegisterForm({
                   type='button'
                   onClick={handleGetLocation}
                   disabled={locationLoading}
-                  className='flex items-center p-0 text-sm text-emerald-600 hover:text-emerald-500 focus:outline-none focus:ring-0 disabled:opacity-50'
+                  className='flex items-center p-0 text-xs sm:text-sm text-emerald-600 hover:text-emerald-500 focus:outline-none focus:ring-0 disabled:opacity-50'
                 >
-                  <MapPinIcon className='mr-2 h-4 w-4 sm:h-5 sm:w-5' />
+                  <MapPin className='mr-2 h-4 w-4' />
                   {locationLoading
                     ? 'Mendapatkan Lokasi...'
                     : 'Dapatkan Lokasi Saat Ini'}
                 </button>
                 {formData.coordinates && (
-                  <div className='flex items-center space-x-2'>
+                  <div className='hidden flex items-center space-x-2'>
                     <span className='text-sm font-medium text-green-600'>
                       📍 Lokasi berhasil didapat
                     </span>
@@ -822,7 +817,7 @@ export default function RegisterForm({
                         Lokasi GPS Diperlukan
                       </p>
                       <p className='mt-1 text-amber-700'>
-                        Silakan klik tombol "Dapatkan Lokasi Saat Ini" untuk
+                        Silakan klik tombol &quot;Dapatkan Lokasi Saat Ini&quot; untuk
                         mengisi koordinat lokasi Anda secara otomatis.
                       </p>
                     </div>
@@ -839,7 +834,7 @@ export default function RegisterForm({
             <button
               type='button'
               onClick={() => setStep(step - 1)}
-              className='mr-auto rounded-lg border border-gray-200 px-10 py-3 text-sm font-semibold text-gray-400 shadow-sm transition-colors hover:border-gray-400 hover:text-gray-500 focus:outline-none sm:text-base'
+              className='mr-auto mt-4 transform rounded-lg border border-gray-200 px-10 py-3 text-sm font-semibold text-gray-400 shadow-sm transition-all duration-200 hover:border-gray-400 hover:text-gray-500 hover:scale-[1.02] focus:outline-none sm:text-base'
             >
               Kembali
             </button>
@@ -848,7 +843,7 @@ export default function RegisterForm({
             <button
               type='button'
               onClick={handleNextStep}
-              className='ml-auto rounded-lg bg-emerald-600 px-10 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-70 sm:text-base'
+              className='ml-auto mt-4 px-12 transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
             >
               Lanjut
             </button>
@@ -857,13 +852,24 @@ export default function RegisterForm({
             <button
               type='submit'
               disabled={loading}
-              className='ml-auto rounded-lg bg-emerald-600 px-10 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:text-base'
+              className='ml-auto mt-4 px-10 transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
             >
               {loading ? 'Membuat Akun...' : 'Buat Akun'}
             </button>
           )}
         </div>
       </form>
+
+      {/* Footer - Login Link */}
+      <p className='mt-6 text-center text-xs text-gray-700 sm:text-sm'>
+        Sudah punya akun?{' '}
+        <Link
+          href='/login'
+          className='text-xs font-semibold text-emerald-600 hover:text-emerald-700 sm:text-sm'
+        >
+          Masuk
+        </Link>
+      </p>
     </div>
   );
 }
