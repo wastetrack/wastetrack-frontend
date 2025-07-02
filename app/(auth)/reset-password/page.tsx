@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, RefreshCw } from 'lucide-react';
 import { resetPasswordFunctions } from '@/helpers/utils/reset-password/reset-password';
@@ -11,9 +11,46 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Validate token when component mounts
+  useEffect(() => {
+    const tokenParam = searchParams?.get('token');
+    
+    if (!tokenParam) {
+      setIsValidToken(false);
+      alerts.invalidResetToken().then(() => {
+        router.push('/forgot-password');
+      });
+      return;
+    }
+
+    setToken(tokenParam);
+    
+    // Optionally validate token with API
+    const validateToken = async () => {
+      try {
+        const result = await resetPasswordFunctions.validateResetToken(tokenParam);
+        setIsValidToken(result.success);
+        
+        if (!result.success) {
+          await alerts.invalidResetToken();
+          router.push('/forgot-password');
+        }
+      } catch (error) {
+        console.error('Token validation error:', error);
+        setIsValidToken(false);
+        await alerts.invalidResetToken();
+        router.push('/forgot-password');
+      }
+    };
+
+    validateToken();
+  }, [searchParams, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +60,6 @@ export default function ResetPassword() {
       return;
     }
 
-    const token = searchParams.get('token');
     if (!token) {
       await alerts.invalidResetToken();
       router.push('/forgot-password');
@@ -44,6 +80,37 @@ export default function ResetPassword() {
       setIsLoading(false);
     }
   };
+
+  // Show loading while validating token
+  if (isValidToken === null) {
+    return (
+      <div style={{ margin: '-24px' }}>
+        <div className='flex min-h-screen items-center justify-center bg-gray-100'>
+          <div className='w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow text-center'>
+            <RefreshCw className='h-8 w-8 animate-spin mx-auto text-emerald-600' />
+            <p className='text-gray-600'>Validating reset token...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render form if token is invalid
+  if (isValidToken === false) {
+    return (
+      <div style={{ margin: '-24px' }}>
+        <div className='flex min-h-screen items-center justify-center bg-gray-100'>
+          <div className='w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow text-center'>
+            <div className='text-red-500'>
+              <Lock className='h-8 w-8 mx-auto mb-4' />
+              <h2 className='text-xl font-bold text-gray-800 mb-2'>Invalid Reset Link</h2>
+              <p className='text-gray-600'>This password reset link is invalid or has expired.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ margin: '-24px' }}>
