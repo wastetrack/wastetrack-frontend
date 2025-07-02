@@ -222,7 +222,7 @@ function LoginFormContent() {
         <button
           type='submit'
           disabled={loading}
-          className='mt-4 w-full transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 active:scale-[0.1] sm:text-base'
+          className='mt-4 w-full transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
         >
           {loading ? 'Masuk...' : 'Masuk'}
         </button>
