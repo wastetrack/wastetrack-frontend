@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   CheckCircle,
@@ -28,32 +28,7 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const checkInterval = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    const token = searchParams.get('token');
-    const emailParam = searchParams.get('email');
-
-    if (emailParam) {
-      setEmail(emailParam);
-    }
-
-    if (token) {
-      handleVerification(token);
-    } else if (emailParam) {
-      setStatus('resend');
-      setMessage('Enter your email to resend verification');
-    } else {
-      setStatus('error');
-      setMessage('Invalid verification link');
-    }
-
-    return () => {
-      if (checkInterval.current) {
-        clearInterval(checkInterval.current);
-      }
-    };
-  }, [searchParams]);
-
-  const handleVerification = async (token: string) => {
+  const handleVerification = useCallback(async (token: string) => {
     try {
       setStatus('loading');
       setMessage('Verifying your email...');
@@ -79,6 +54,7 @@ export default function VerifyEmailPage() {
         await alerts.emailVerificationFailed(result.message);
       }
     } catch (error) {
+      console.error('Email verification error:', error);
       setStatus('error');
       setMessage('Verification failed. Please try again.');
 
@@ -87,7 +63,32 @@ export default function VerifyEmailPage() {
         'Verification failed. Please try again.'
       );
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const emailParam = searchParams.get('email');
+
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+
+    if (token) {
+      handleVerification(token);
+    } else if (emailParam) {
+      setStatus('resend');
+      setMessage('Enter your email to resend verification');
+    } else {
+      setStatus('error');
+      setMessage('Invalid verification link');
+    }
+
+    return () => {
+      if (checkInterval.current) {
+        clearInterval(checkInterval.current);
+      }
+    };
+  }, [searchParams, handleVerification]);
 
   const handleResendVerification = async () => {
     if (!email || cooldownActive) return;
@@ -115,6 +116,7 @@ export default function VerifyEmailPage() {
         startVerificationCheck();
       }
     } catch (error) {
+      console.error('Resend verification error:', error);
       await alerts.serverError();
     } finally {
       setIsLoading(false);
@@ -145,6 +147,7 @@ export default function VerifyEmailPage() {
         }
       } catch (error) {
         // Silent fail for background check
+        console.error('Background verification check error:', error);
       }
     }, 3000);
   };
@@ -212,7 +215,7 @@ export default function VerifyEmailPage() {
               Verify Your Email
             </h2>
             <p className='mb-6 text-gray-600'>
-              We'll send a verification link to your email address.
+              We&apos;ll send a verification link to your email address.
             </p>
 
             <div className='space-y-4'>

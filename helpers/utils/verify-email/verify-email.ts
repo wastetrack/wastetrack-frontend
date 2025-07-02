@@ -157,11 +157,20 @@ export const emailVerificationFunctions = {
 
       const result = await emailVerificationApi.checkVerificationStatus(email);
 
+      // Type guard to safely access the data
+      const isVerified = result.data && 
+        typeof result.data === 'object' && 
+        'is_email_verified' in result.data 
+          ? Boolean((result.data as { is_email_verified?: boolean }).is_email_verified)
+          : false;
+
       return {
         success: result.success,
         message: result.message,
-        isVerified: result.data?.is_email_verified || false,
-        data: result.data,
+        isVerified,
+        data: result.data && typeof result.data === 'object' 
+          ? result.data as { [key: string]: unknown; is_email_verified?: boolean }
+          : undefined,
       };
     } catch (error) {
       const errorMessage = handleApiError(error);

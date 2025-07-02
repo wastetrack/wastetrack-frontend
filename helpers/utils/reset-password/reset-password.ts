@@ -125,7 +125,9 @@ export const resetPasswordFunctions = {
         return {
           success: true,
           message: result.message,
-          data: result.data,
+          data: result.data && typeof result.data === 'object' 
+            ? result.data as { [key: string]: unknown }
+            : undefined,
         };
       } else {
         // Handle specific error cases
