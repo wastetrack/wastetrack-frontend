@@ -1,12 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, RefreshCw } from 'lucide-react';
 import { resetPasswordFunctions } from '@/helpers/utils/reset-password/reset-password';
 import { alerts } from '@/components/alerts/alerts';
 
-export default function ResetPassword() {
+// Loading component untuk Suspense fallback
+function LoadingPage() {
+  return (
+    <div style={{ margin: '-24px' }}>
+      <div className='flex min-h-screen items-center justify-center bg-gray-100'>
+        <div className='w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow text-center'>
+          <RefreshCw className='h-8 w-8 animate-spin mx-auto text-emerald-600' />
+          <p className='text-gray-600'>Loading...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Komponen utama yang menggunakan useSearchParams
+function ResetPasswordForm() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -200,5 +215,14 @@ export default function ResetPassword() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Export default component yang dibungkus dengan Suspense
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<LoadingPage />}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
