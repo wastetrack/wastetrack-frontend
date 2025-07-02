@@ -1,5 +1,5 @@
-import { emailVerificationApi } from '../../../services/api/email-verification-api/email-verification-api';
-import { alerts } from '../../../components/alerts/alerts';
+import { emailVerificationAPI } from '@/services/api/auth';
+import { alerts } from '@/components/alerts/alerts';
 import { AxiosError } from 'axios';
 
 // Types & Interfaces
@@ -44,7 +44,7 @@ export const emailVerificationFunctions = {
         };
       }
 
-      const result = await emailVerificationApi.verifyEmail(token);
+      const result = await emailVerificationAPI.verifyEmail(token);
 
       if (result.success) {
         await alerts.emailVerificationSuccess();
@@ -91,7 +91,7 @@ export const emailVerificationFunctions = {
         };
       }
 
-      const result = await emailVerificationApi.resendVerification(email);
+      const result = await emailVerificationAPI.resendVerification(email);
 
       if (result.success) {
         await alerts.emailVerificationSent();
@@ -155,7 +155,7 @@ export const emailVerificationFunctions = {
         };
       }
 
-      const result = await emailVerificationApi.checkVerificationStatus(email);
+      const result = await emailVerificationAPI.checkVerificationStatus(email);
 
       // Type guard to safely access the data
       const isVerified = result.data && 

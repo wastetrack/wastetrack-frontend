@@ -1,7 +1,6 @@
 import { AxiosError } from 'axios';
-
-import { alerts } from '../../../components/alerts/alerts';
-import { forgotPasswordApi } from '../../../services/api/forgot-password-api/forgot-password-api';
+import { alerts } from '@/components/alerts/alerts';
+import { forgotPasswordAPI } from '@/services/api/auth';
 
 export interface ForgotPasswordResult {
   success: boolean;
@@ -69,7 +68,7 @@ export const forgotPasswordFunctions = {
       }
 
       // Make API call with normalized email
-      const result = await forgotPasswordApi.requestReset(
+      const result = await forgotPasswordAPI.requestReset(
         email.trim().toLowerCase()
       );
 
@@ -187,7 +186,7 @@ export const forgotPasswordFunctions = {
         checkEmailExists?: (email: string) => Promise<{ exists: boolean }>;
       }
 
-      const api = forgotPasswordApi as ExtendedForgotPasswordApi;
+      const api = forgotPasswordAPI as ExtendedForgotPasswordApi;
       if (api.checkEmailExists) {
         const result = await api.checkEmailExists(email.trim().toLowerCase());
         return result.exists || false;

@@ -1,5 +1,5 @@
-import { resetPasswordApi } from '../../../services/api/reset-password-api/reset-password-api';
-import { alerts } from '../../../components/alerts/alerts';
+import { resetPasswordAPI } from '@/services/api/auth';
+import { alerts } from '@/components/alerts/alerts';
 import { AxiosError } from 'axios';
 
 export interface ResetPasswordResult {
@@ -115,7 +115,7 @@ export const resetPasswordFunctions = {
         };
       }
 
-      const result = await resetPasswordApi.resetPassword(token, newPassword);
+      const result = await resetPasswordAPI.resetPassword(token, newPassword);
 
       if (result.success) {
         await alerts.success(
@@ -199,7 +199,7 @@ export const resetPasswordFunctions = {
       }
 
       // Check if the API method exists using proper typing
-      const api = resetPasswordApi as ExtendedResetPasswordApi;
+      const api = resetPasswordAPI as ExtendedResetPasswordApi;
       if (api.requestPasswordReset) {
         const result = await api.requestPasswordReset(email);
 
@@ -255,7 +255,7 @@ export const resetPasswordFunctions = {
       }
 
       // Check if the API method exists using proper typing
-      const api = resetPasswordApi as ExtendedResetPasswordApi;
+      const api = resetPasswordAPI as ExtendedResetPasswordApi;
       if (api.validateResetToken) {
         const result = await api.validateResetToken(token);
 

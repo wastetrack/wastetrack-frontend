@@ -1,4 +1,4 @@
-const API_URL =
+const API_BASE_URL =
   process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
 
 export interface ResetPasswordResponse {
@@ -7,14 +7,14 @@ export interface ResetPasswordResponse {
   data?: unknown;
 }
 
-export const resetPasswordApi = {
+export const resetPasswordAPI = {
   // Reset password with token
   resetPassword: async (
     token: string,
     newPassword: string
   ): Promise<ResetPasswordResponse> => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

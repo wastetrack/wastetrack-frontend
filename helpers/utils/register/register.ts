@@ -1,4 +1,4 @@
-import { alerts } from '../../../components/alerts/alerts';
+import { alerts } from '@/components/alerts/alerts';
 
 export interface FormData {
   email: string;

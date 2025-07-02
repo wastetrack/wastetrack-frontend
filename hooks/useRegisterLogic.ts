@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { registerApi } from '@/services/api/register-api/register-api';
+import { registerAPI } from '@/services/api/auth';
 import { FormData } from '@/types/auth';
 import {
   validateForm,
@@ -55,7 +55,7 @@ export function useRegisterLogic() {
 
       // Transform and send data
       const apiData = transformFormDataToApi(formData);
-      await registerApi.register(apiData);
+      await registerAPI.register(apiData);
 
       // Close loading and show success with username
       alerts.close();

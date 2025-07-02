@@ -1,5 +1,5 @@
 // Constants
-const API_URL =
+const API_BASE_URL =
   process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
 
 // Types & Interfaces
@@ -10,11 +10,11 @@ export interface EmailVerificationResponse {
 }
 
 // API Functions
-export const emailVerificationApi = {
+export const emailVerificationAPI = {
   // Verify email with token
   verifyEmail: async (token: string): Promise<EmailVerificationResponse> => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/verify-email`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export const emailVerificationApi = {
     email: string
   ): Promise<EmailVerificationResponse> => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ export const emailVerificationApi = {
   ): Promise<EmailVerificationResponse> => {
     try {
       const response = await fetch(
-        `${API_URL}/api/auth/check-verification-status?email=${encodeURIComponent(email)}`,
+        `${API_BASE_URL}/api/auth/check-verification-status?email=${encodeURIComponent(email)}`,
         {
           method: 'GET',
           headers: {

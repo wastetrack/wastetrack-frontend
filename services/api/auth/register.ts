@@ -92,7 +92,7 @@ export interface RegisterResponse {
   };
 }
 
-export const registerApi = {
+export const registerAPI = {
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     try {
       const response = await apiClient.post('/api/auth/register', data);
