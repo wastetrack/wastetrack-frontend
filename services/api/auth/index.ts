@@ -6,6 +6,3 @@ export { refreshAPI, type RefreshTokenResponse } from './refresh-token';
 export { emailVerificationAPI, type EmailVerificationResponse } from './email-verification';
 export { forgotPasswordAPI, type ForgotPasswordResponse } from './forgot-password';
 export { resetPasswordAPI, type ResetPasswordResponse } from './reset-password';
-
-// Re-export auth types from the main types file for convenience
-export type { LoginRequest, LoginResponse } from '../../../types/auth';
