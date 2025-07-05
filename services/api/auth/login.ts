@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { LoginRequest, LoginResponse } from '../../../types/auth';
+import { LoginRequest, LoginResponse } from '@/types';
 import { getTokenManager } from '@/lib/token-manager';
 
 const API_BASE_URL =

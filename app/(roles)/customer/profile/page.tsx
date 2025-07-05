@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   customerProfileAPI, 
-  CustomerProfile,
-  UpdateCustomerProfileRequest 
-} from '@/services/api/customer/profile';
-import Swal from 'sweetalert2';
+  type CustomerProfile,
+  type UpdateCustomerProfileRequest 
+} from '@/services/api/customer';
+import { Alert } from '@/components/ui';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
@@ -74,11 +74,9 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      await Swal.fire({
+      await Alert.error({
         title: 'Gagal Memuat Profil',
         text: error instanceof Error ? error.message : 'Terjadi kesalahan saat memuat profil.',
-        icon: 'error',
-        confirmButtonColor: '#10B981',
       });
     } finally {
       setLoading(false);
@@ -111,25 +109,19 @@ export default function ProfilePage() {
         const updatedProfileData = response.data;
         setProfile(updatedProfileData);
         
-        await Swal.fire({
+        await Alert.success({
           title: 'Berhasil',
           text: 'Profil berhasil diperbarui.',
-          icon: 'success',
-          confirmButtonColor: '#10B981',
           timer: 1500,
-          timerProgressBar: true,
-          showConfirmButton: false,
         });
       } else {
         throw new Error('Failed to update profile - no data received');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      await Swal.fire({
+      await Alert.error({
         title: 'Gagal Menyimpan',
         text: error instanceof Error ? error.message : 'Terjadi kesalahan saat menyimpan profil.',
-        icon: 'error',
-        confirmButtonColor: '#10B981',
       });
     } finally {
       setSaving(false);

@@ -1,6 +1,6 @@
 import { loginAPI } from '@/services/api/auth';
-import { alerts } from '@/components/alerts/alerts';
-import { LoginRequest } from '@/types/auth';
+import { showToast } from '@/components/ui';
+import { LoginRequest } from '@/types';
 import { getTokenManager } from '@/lib/token-manager';
 import { emailVerificationAPI } from '@/services/api/auth';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
@@ -53,7 +53,9 @@ export const loginFunctions = {
     try {
       // Validate input
       if (!credentials.email || !credentials.password) {
-        await alerts.error('Input Error', 'Email dan password harus diisi');
+        showToast.error('Input Error', {
+          description: 'Email dan password harus diisi'
+        });
         return { success: false, message: 'Email dan password harus diisi' };
       }
 
@@ -116,7 +118,7 @@ export const loginFunctions = {
 
         // Show success alert and redirect
         try {
-          await alerts.success('Login Berhasil! 🎉', 'Selamat datang kembali!');
+          showToast.success('Login Berhasil! Selamat datang kembali!');
           this.performRedirect(router, redirectPath);
         } catch (alertError) {
           console.error('Alert error:', alertError);
@@ -141,29 +143,35 @@ export const loginFunctions = {
   },
 
   async handleEmailNotVerified(email: string): Promise<LoginResponse> {
-    const result = await alerts.emailNotVerified(email);
-    if (result.isConfirmed) {
-      try {
-        const resendResponse =
-          await emailVerificationAPI.resendVerification(email);
-        if (resendResponse.success) {
-          await alerts.emailVerificationSent();
-        } else {
-          await alerts.error('Failed to Send', resendResponse.message);
-        }
-      } catch (error) {
-        console.error('Resend verification error:', error);
-        await alerts.error('Error', 'Failed to resend verification email');
+    // Show warning showToast for unverified email
+    showToast.error('Email Belum Diverifikasi', {
+      description: `Email ${email} belum diverifikasi. Silakan cek email Anda untuk link verifikasi.`
+    });
+    
+    // Optionally try to resend verification automatically
+    try {
+      const resendResponse = await emailVerificationAPI.resendVerification(email);
+      if (resendResponse.success) {
+        showToast.success('Email Verifikasi Terkirim', {
+          description: 'Silakan cek email Anda untuk link verifikasi yang baru.'
+        });
+      } else {
+        showToast.error('Gagal Mengirim Email', {
+          description: resendResponse.message
+        });
       }
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      showToast.error('Error', {
+        description: 'Gagal mengirim ulang email verifikasi'
+      });
     }
+    
     return { success: false, needsVerification: true };
   },
 
   async handleInvalidCredentials(): Promise<LoginResponse> {
-    await alerts.error(
-      'Login Gagal',
-      'Email atau password yang Anda masukkan tidak valid'
-    );
+    showToast.error('Email atau password salah. Silakan coba lagi.');
     return { success: false, invalidCredentials: true };
   },
 
@@ -196,16 +204,17 @@ export const loginFunctions = {
 
       // Handle too many sessions
       if (error.response?.data?.errors === 'Too many active sessions') {
-        await alerts.error(
-          'Terlalu Banyak Sesi',
-          'Anda telah mencapai batas maksimal sesi aktif (5 sesi). Silakan logout dari perangkat lain.'
-        );
+        showToast.error('Terlalu Banyak Sesi', {
+          description: 'Anda telah mencapai batas maksimal sesi aktif (5 sesi). Silakan logout dari perangkat lain.'
+        });
         return { success: false, tooManySessions: true };
       }
 
       // Handle specific API error messages
       if (error.response?.data?.message) {
-        await alerts.error('Login Error', error.response.data.message);
+        showToast.error('Login Error', {
+          description: error.response.data.message
+        });
         return { success: false, message: error.response.data.message };
       }
     }
@@ -252,18 +261,16 @@ export const loginFunctions = {
       normalizedError.includes('server error') ||
       normalizedError.includes('internal server error')
     ) {
-      await alerts.error(
-        'Koneksi Bermasalah',
-        'Periksa koneksi internet Anda dan coba lagi.'
-      );
+      showToast.error('Koneksi Bermasalah', {
+        description: 'Periksa koneksi internet Anda dan coba lagi.'
+      });
       return { success: false, message: 'Network or server error' };
     }
 
     // Default error handling
-    await alerts.error(
-      'Ada Kendala',
-      'Terjadi kesalahan saat login. Silakan coba lagi.'
-    );
+    showToast.error('Ada Kendala', {
+      description: 'Terjadi kesalahan saat login. Silakan coba lagi.'
+    });
     return { success: false, message: errorMessage };
   },
 

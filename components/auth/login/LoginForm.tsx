@@ -3,19 +3,16 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { loginFunctions } from '@/helpers/utils/login/login';
-import { alerts } from '@/components/alerts/alerts';
-import { LoginRequest } from '@/types/auth';
+import { Alert } from '@/components/ui';
+import { LoginRequest } from '@/types';
 
 // Loading component untuk Suspense fallback
 function LoginFormLoading() {
   return (
     <div className='w-full space-y-4 rounded-lg sm:p-4 max-w-2xl md:p-6'>
       <div className='flex flex-col items-center'>
-        <div className='flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 mb-6'>
-          <LogIn size={20} className='text-emerald-600 h-6 sw-6 animate-pulse' />
-        </div>
         <h1 className='text-center text-base font-bold text-gray-800 sm:text-lg md:text-xl lg:text-2xl'>
           Loading...
         </h1>
@@ -46,26 +43,38 @@ function LoginFormContent() {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Pastikan komponen sudah ter-mount di client sebelum mengakses browser APIs
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     // Clean URL on component mount if it contains sensitive data
     const email = searchParams.get('email');
     const password = searchParams.get('password');
 
     if (email || password) {
-      router.replace('/login');
-      alerts.error(
-        'Peringatan Keamanan! 🚨',
-        'Kredensial login tidak boleh muncul di URL. Halaman telah dibersihkan untuk keamanan Anda.'
-      );
+      // Pastikan kita berada di browser sebelum melakukan replace
+      if (typeof window !== 'undefined') {
+        router.replace('/login');
+        Alert.error({
+          title: 'Peringatan Keamanan! 🚨',
+          text: 'Kredensial login tidak boleh muncul di URL. Halaman telah dibersihkan untuk keamanan Anda.'
+        });
+      }
     }
-  }, [searchParams, router]);
+  }, [mounted, searchParams, router]);
 
   useEffect(() => {
+    if (!mounted) return;
     loginFunctions.checkAndRedirectIfAuthenticated(router);
-  }, [router]);
+  }, [mounted, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -80,7 +89,10 @@ function LoginFormContent() {
 
     // Basic client-side validation
     if (!formData.email || !formData.password) {
-      alerts.validationError('Email dan password harus diisi');
+      Alert.error({
+        title: 'Validation Error',
+        text: 'Email dan password harus diisi'
+      });
       setLoading(false);
       return;
     }
@@ -88,7 +100,10 @@ function LoginFormContent() {
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      alerts.validationError('Format email tidak valid');
+      Alert.error({
+        title: 'Validation Error', 
+        text: 'Format email tidak valid'
+      });
       setLoading(false);
       return;
     }
@@ -118,19 +133,46 @@ function LoginFormContent() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      alerts.error('Error', 'Terjadi kesalahan yang tidak terduga saat login');
+      Alert.error({
+        title: 'Error',
+        text: 'Terjadi kesalahan yang tidak terduga saat login'
+      });
       setFormData((prev) => ({ ...prev, password: '' }));
     } finally {
       setLoading(false);
     }
   };
 
+  // Jangan render apa-apa sampai komponen ter-mount di client
+  if (!mounted) {
+    return (
+      <div className='w-full space-y-4 rounded-lg sm:p-4 max-w-2xl md:p-6'>
+        <div className='flex flex-col items-center'>
+          <h1 className='text-center text-base font-bold text-gray-800 sm:text-lg md:text-xl lg:text-2xl'>
+            Selamat Datang Kembali!
+          </h1>
+          <p className='mt-2 text-center text-xs text-gray-600  sm:text-base'>
+            Masuk ke akun Anda
+          </p>
+        </div>
+        <div className='space-y-4 sm:space-y-5'>
+          <div className='animate-pulse'>
+            <div className='h-4 bg-gray-200 rounded mb-2'></div>
+            <div className='h-12 bg-gray-200 rounded'></div>
+          </div>
+          <div className='animate-pulse'>
+            <div className='h-4 bg-gray-200 rounded mb-2'></div>
+            <div className='h-12 bg-gray-200 rounded'></div>
+          </div>
+          <div className='h-12 bg-gray-200 rounded animate-pulse'></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className='w-full space-y-4 rounded-lg sm:p-4 max-w-2xl md:p-6'>
       <div className='flex flex-col items-center'>
-        <div className='flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 mb-6'>
-          <LogIn size={20} className='text-emerald-600 h-6 sw-6' />
-        </div>
         <h1 className='text-center text-base font-bold text-gray-800 sm:text-lg md:text-xl lg:text-2xl'>
           Selamat Datang Kembali!
         </h1>

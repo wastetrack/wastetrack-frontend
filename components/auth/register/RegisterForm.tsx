@@ -13,10 +13,10 @@ import {
   MapPin,
   UserPlus,
 } from 'lucide-react';
-import { RegisterFormProps } from '@/types/auth';
+import { RegisterFormProps } from '@/types';
 import { getCurrentLocation } from '@/helpers/utils/register/register';
-import { alerts } from '@/components/alerts/alerts';
-import { ROLES, ROLE_DESCRIPTIONS } from '@/helpers/utils/register/register';
+import { ROLES, ROLE_DESCRIPTIONS } from '@/constants';
+import { Alert } from '@/components/ui';
 
 export default function RegisterForm({
   formData,
@@ -35,26 +35,34 @@ export default function RegisterForm({
     setTouchedFields((prev) => new Set([...prev, fieldName]));
   };
 
+  // Hybrid approach: Format with dash for display, but allow normal input
   const formatPhoneDisplay = (value: string) => {
     // Remove all non-digits
     const numbers = value.replace(/\D/g, '');
 
-    // Make sure it starts with '08'
-    if (!numbers.startsWith('08')) {
-      return numbers.startsWith('8') ? '0' + numbers : '08';
+    if (numbers.length === 0) return '';
+    
+    // Auto-correct: if starts with 8, add 0
+    if (numbers.startsWith('8') && !numbers.startsWith('08')) {
+      const corrected = '0' + numbers.slice(0, 12);
+      return formatWithDashes(corrected);
     }
+    
+    // Limit to 13 digits and format with dashes
+    const limited = numbers.slice(0, 13);
+    return formatWithDashes(limited);
+  };
 
-    // Split into groups of 4
-    const groups = [];
-    for (let i = 0; i < numbers.length && i < 12; i += 4) {
-      groups.push(numbers.slice(i, i + 4));
-    }
-
-    return groups.join('-');
+  const formatWithDashes = (numbers: string) => {
+    // Format: 0812-3456-7890
+    if (numbers.length <= 4) return numbers;
+    if (numbers.length <= 8) return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
+    if (numbers.length <= 12) return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8)}`;
+    return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8, 12)}-${numbers.slice(12)}`;
   };
 
   const getCleanPhoneNumber = (phone: string) => {
-    return phone.replace(/-/g, '');
+    return phone.replace(/\D/g, ''); // Clean any non-digits
   };
 
   const handleChange = (
@@ -88,9 +96,16 @@ export default function RegisterForm({
 
   const isValidIndonesianPhone = (phone: string) => {
     // Remove dashes and check format
-    const cleanNumber = phone.replace(/-/g, '');
-    const phoneRegex = /^08[1-9][0-9]{7,9}$/;
-    return phoneRegex.test(cleanNumber);
+    const cleanNumber = phone.replace(/\D/g, '');
+    
+    // Must start with 08 and have 10-13 digits total
+    if (!cleanNumber.startsWith('08')) return false;
+    if (cleanNumber.length < 10 || cleanNumber.length > 13) return false;
+    
+    // Third digit must be 1-9 (not 0)
+    if (cleanNumber.length >= 3 && cleanNumber[2] === '0') return false;
+    
+    return /^08[1-9][0-9]{7,10}$/.test(cleanNumber);
   };
 
   const getFieldError = (
@@ -121,7 +136,17 @@ export default function RegisterForm({
         break;
       case 'phone':
         if (!isValidIndonesianPhone(value)) {
-          return 'Format: 08xx-xxxx-xxxx (10-12 digit)';
+          const cleanNumber = value.replace(/\D/g, '');
+          if (cleanNumber.length < 10) {
+            return 'Nomor telepon minimal 10 digit';
+          } else if (cleanNumber.length > 13) {
+            return 'Nomor telepon maksimal 13 digit';
+          } else if (!cleanNumber.startsWith('08')) {
+            return 'Nomor harus dimulai dengan 08';
+          } else if (cleanNumber.length >= 3 && cleanNumber[2] === '0') {
+            return 'Digit ketiga tidak boleh 0';
+          }
+          return 'Format nomor telepon tidak valid';
         }
         break;
       case 'fullName':
@@ -179,9 +204,15 @@ export default function RegisterForm({
         error instanceof Error ? error.message : 'Error mendapatkan lokasi';
 
       if (errorMessage.includes('ditolak')) {
-        await alerts.locationPermissionDenied();
+        await Alert.warning({
+          title: 'Akses Lokasi Ditolak',
+          text: 'Untuk melanjutkan pendaftaran, kami memerlukan akses lokasi Anda. Silakan izinkan akses lokasi di browser.'
+        });
       } else {
-        await alerts.error('Gagal Mendapatkan Lokasi', errorMessage);
+        await Alert.error({
+          title: 'Gagal Mendapatkan Lokasi',
+          text: errorMessage
+        });
       }
     } finally {
       setLocationLoading(false);
@@ -215,7 +246,7 @@ export default function RegisterForm({
   return (
     <div className='w-full rounded-lg'>
       {/* Header Icon */}
-      <div className='mb-6 text-center'>
+      <div className='hidden mb-6 text-center'>
         <div className='inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100'>
           <UserPlus size={20} className='text-emerald-600 h-6 w-6' />
         </div>
@@ -548,25 +579,40 @@ export default function RegisterForm({
                         : 'border-gray-200'
                   }`}
                   required
-                  maxLength={14} // 12 digits + 2 dashes
+                  maxLength={16} // 13 digits + 3 dashes
                   onKeyDown={(e) => {
-                    // Allow: backspace, delete, tab, escape, enter, dash
+                    // Allow: backspace, delete, tab, escape, enter
                     if (
-                      [8, 9, 13, 27, 46, 189, 109].includes(e.keyCode) ||
+                      [8, 9, 13, 27, 46].includes(e.keyCode) ||
                       // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
                       ([65, 67, 86, 88].includes(e.keyCode) &&
                         e.ctrlKey === true) ||
-                      // Allow: home, end, left, right
-                      (e.keyCode >= 35 && e.keyCode <= 39)
+                      // Allow: home, end, left, right, up, down
+                      (e.keyCode >= 35 && e.keyCode <= 40)
                     ) {
                       return;
                     }
-                    // Block any non-number inputs
+                    // Only allow numbers (0-9)
                     if (
                       (e.shiftKey || e.keyCode < 48 || e.keyCode > 57) &&
                       (e.keyCode < 96 || e.keyCode > 105)
                     ) {
                       e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    // Allow paste but clean the pasted content
+                    e.preventDefault();
+                    const paste = e.clipboardData.getData('text');
+                    const cleanPaste = paste.replace(/\D/g, '');
+                    if (cleanPaste) {
+                      const formattedValue = formatPhoneDisplay(cleanPaste);
+                      const cleanValue = getCleanPhoneNumber(formattedValue);
+                      onFormDataChange({
+                        ...formData,
+                        phone: formattedValue,
+                        phoneClean: cleanValue,
+                      });
                     }
                   }}
                 />

@@ -1,5 +1,5 @@
 import { emailVerificationAPI } from '@/services/api/auth';
-import { alerts } from '@/components/alerts/alerts';
+import { Alert } from '@/components/ui';
 import { AxiosError } from 'axios';
 
 // Types & Interfaces
@@ -36,7 +36,10 @@ export const emailVerificationFunctions = {
       // Validate token
       if (!token || token.trim().length === 0) {
         const errorMsg = 'Invalid verification token';
-        await alerts.emailVerificationFailed(errorMsg);
+        await Alert.error({
+          title: 'Verifikasi Email Gagal',
+          text: errorMsg
+        });
         return {
           success: false,
           message: errorMsg,
@@ -47,7 +50,10 @@ export const emailVerificationFunctions = {
       const result = await emailVerificationAPI.verifyEmail(token);
 
       if (result.success) {
-        await alerts.emailVerificationSuccess();
+        await Alert.success({
+          title: 'Email Berhasil Diverifikasi! ✅',
+          text: 'Selamat! Email Anda telah berhasil diverifikasi.'
+        });
 
         return {
           success: true,
@@ -55,7 +61,10 @@ export const emailVerificationFunctions = {
           isVerified: true,
         };
       } else {
-        await alerts.emailVerificationFailed(result.message);
+        await Alert.error({
+          title: 'Verifikasi Email Gagal',
+          text: result.message
+        });
 
         return {
           success: false,
@@ -66,7 +75,10 @@ export const emailVerificationFunctions = {
     } catch (error) {
       const errorMessage = handleApiError(error);
 
-      await alerts.emailVerificationFailed(errorMessage);
+      await Alert.error({
+        title: 'Verifikasi Email Gagal',
+        text: errorMessage
+      });
 
       return {
         success: false,
@@ -84,7 +96,10 @@ export const emailVerificationFunctions = {
       // Validate email format
       if (!email || !email.includes('@')) {
         const errorMsg = 'Please provide a valid email address';
-        await alerts.error('Invalid Email', errorMsg);
+        await Alert.error({
+          title: 'Invalid Email',
+          text: errorMsg
+        });
         return {
           success: false,
           message: errorMsg,
@@ -94,7 +109,10 @@ export const emailVerificationFunctions = {
       const result = await emailVerificationAPI.resendVerification(email);
 
       if (result.success) {
-        await alerts.emailVerificationSent();
+        await Alert.success({
+          title: 'Email Verifikasi Terkirim! 📧',
+          text: 'Email verifikasi berhasil dikirim ke kotak masuk Anda.'
+        });
 
         return {
           success: true,
@@ -111,9 +129,15 @@ export const emailVerificationFunctions = {
           // Extract time if available, default to 60 seconds
           const timeMatch = result.message.match(/(\d+)/);
           const remainingTime = timeMatch ? parseInt(timeMatch[1]) : 60;
-          await alerts.emailVerificationCooldown(remainingTime);
+          await Alert.info({
+            title: 'Tunggu Sebentar ⏰',
+            text: `Anda baru saja meminta email verifikasi. Silakan tunggu ${remainingTime} detik sebelum meminta lagi.`
+          });
         } else {
-          await alerts.error('Failed to Send', result.message);
+          await Alert.error({
+            title: 'Failed to Send',
+            text: result.message
+          });
         }
 
         return {
@@ -129,9 +153,15 @@ export const emailVerificationFunctions = {
         errorMessage.toLowerCase().includes('rate limit') ||
         errorMessage.toLowerCase().includes('too many requests')
       ) {
-        await alerts.emailVerificationCooldown(60);
+        await Alert.info({
+          title: 'Tunggu Sebentar ⏰',
+          text: 'Anda baru saja meminta email verifikasi. Silakan tunggu 60 detik sebelum meminta lagi.'
+        });
       } else {
-        await alerts.error('Error', errorMessage);
+        await Alert.error({
+          title: 'Error',
+          text: errorMessage
+        });
       }
 
       return {
@@ -188,14 +218,21 @@ export const emailVerificationFunctions = {
     try {
       // Validate email format
       if (!email || !email.includes('@')) {
-        await alerts.error(
-          'Invalid Email',
-          'Please provide a valid email address'
-        );
+        Alert.error({
+          title: 'Invalid Email',
+          text: 'Please provide a valid email address'
+        });
         return false;
       }
 
-      const result = await alerts.emailNotVerified(email);
+      const result = await Alert.info({
+        title: 'Email Not Verified',
+        text: `Your email ${email} is not verified. Would you like to resend the verification email?`,
+        showConfirmButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'Resend Email',
+        cancelButtonText: 'Cancel'
+      });
 
       if (result.isConfirmed) {
         const resendResult =
@@ -206,7 +243,10 @@ export const emailVerificationFunctions = {
       return false;
     } catch (error) {
       const errorMessage = handleApiError(error);
-      await alerts.error('Error', errorMessage);
+      Alert.error({
+        title: 'Error',
+        text: errorMessage
+      });
       return false;
     }
   },

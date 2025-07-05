@@ -1,62 +1,175 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { customerProfileAPI, type CustomerProfile } from '@/services/api/customer';
+import { getTokenManager } from '@/lib/token-manager';
+import { 
+  HeroSection, 
+  EnvironmentalImpact, 
+  RecentPickups, 
+  EcoTip 
+} from '@/components/customer/dashboard';
+import type { 
+  Stats, 
+  Pickup 
+} from '@/types';
+
 export default function CustomerDashboard() {
+  // State for profile data
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Dummy data untuk stats yang belum ada API-nya
+  const stats: Stats = {
+    points: customerProfile?.user.points || 0,
+    impact: {
+      carbonReduced: customerProfile?.carbon_deficit || 0,
+      waterSaved: customerProfile?.water_saved || 0,
+      treesPreserved: customerProfile?.trees || 0
+    },
+    waste: {
+      total: customerProfile?.bags_stored || 0
+    },
+    pickups: {
+      pending: 2,
+      completed: 18,
+      cancelled: 1
+    }
+  };
+
+  const recentPickups: Pickup[] = [
+    {
+      id: '1',
+      status: 'completed',
+      wasteQuantities: { plastic: 3, paper: 2 },
+      date: '2025-07-03',
+      time: '14:30'
+    },
+    {
+      id: '2',
+      status: 'pending',
+      quantity: 4,
+      date: '2025-07-05',
+      time: '10:00'
+    },
+    {
+      id: '3',
+      status: 'in_progress',
+      wasteQuantities: { organic: 2, plastic: 1 },
+      date: '2025-07-04',
+      time: '16:15'
+    }
+  ];
+
+  const [displayedPickups] = useState<Pickup[]>(recentPickups.slice(0, 3));
+
+  // Fetch customer profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Get user ID from token
+        const tokenManager = getTokenManager();
+        const token = await tokenManager.getValidAccessToken();
+        
+        if (!token) {
+          throw new Error('No valid token found');
+        }
+
+        // Decode token to get user ID (assuming JWT payload contains user info)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.user_id || payload.sub || payload.id;
+        
+        if (!userId) {
+          throw new Error('User ID not found in token');
+        }
+
+        // Fetch profile
+        const response = await customerProfileAPI.getProfile(userId);
+        setCustomerProfile(response.data);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleViewAllPickups = (): void => {
+    // Navigate to pickups page
+    console.log('Navigate to all pickups');
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-2"></div>
+          <p className="text-gray-500">Memuat data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-500 mb-2">Error: {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Return early if no customer profile
+  if (!customerProfile) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-gray-500">Data profile tidak tersedia</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className='mb-6'>
-        <h1 className='text-2xl font-bold text-gray-800'>Dashboard Pelanggan</h1>
-        <p className='mt-2 text-gray-600'>Selamat datang di dashboard pelanggan WasteTrack.</p>
-      </div>
-      
-      {/* Dashboard Content */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-        {/* Quick Stats */}
-        <div className='bg-white rounded-lg shadow-sm border p-6'>
-          <h3 className='text-lg font-semibold text-gray-800 mb-2'>Total Poin</h3>
-          <p className='text-3xl font-bold text-emerald-600'>1,250</p>
-          <p className='text-sm text-gray-500 mt-1'>+50 poin hari ini</p>
-        </div>
-        
-        <div className='bg-white rounded-lg shadow-sm border p-6'>
-          <h3 className='text-lg font-semibold text-gray-800 mb-2'>Sampah Disetor</h3>
-          <p className='text-3xl font-bold text-blue-600'>24.5 kg</p>
-          <p className='text-sm text-gray-500 mt-1'>Bulan ini</p>
-        </div>
-        
-        <div className='bg-white rounded-lg shadow-sm border p-6'>
-          <h3 className='text-lg font-semibold text-gray-800 mb-2'>Pickup Terjadwal</h3>
-          <p className='text-3xl font-bold text-orange-600'>3</p>
-          <p className='text-sm text-gray-500 mt-1'>Minggu ini</p>
-        </div>
-      </div>
-      
-      {/* Recent Activity */}
-      <div className='mt-8 bg-white rounded-lg shadow-sm border p-6'>
-        <h3 className='text-lg font-semibold text-gray-800 mb-4'>Aktivitas Terbaru</h3>
-        <div className='space-y-4'>
-          <div className='flex items-center justify-between py-2 border-b border-gray-100'>
-            <div>
-              <p className='font-medium text-gray-800'>Penyetoran Sampah Plastik</p>
-              <p className='text-sm text-gray-500'>2 hari yang lalu</p>
-            </div>
-            <span className='text-emerald-600 font-semibold'>+25 poin</span>
-          </div>
-          <div className='flex items-center justify-between py-2 border-b border-gray-100'>
-            <div>
-              <p className='font-medium text-gray-800'>Pickup Sampah Organik</p>
-              <p className='text-sm text-gray-500'>5 hari yang lalu</p>
-            </div>
-            <span className='text-emerald-600 font-semibold'>+15 poin</span>
-          </div>
-          <div className='flex items-center justify-between py-2'>
-            <div>
-              <p className='font-medium text-gray-800'>Tukar Poin dengan Voucher</p>
-              <p className='text-sm text-gray-500'>1 minggu yang lalu</p>
-            </div>
-            <span className='text-red-600 font-semibold'>-100 poin</span>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {/* Hero Section Component */}
+      <HeroSection 
+        customerProfile={customerProfile}
+        points={stats.points}
+      />
+
+      {/* Environmental Impact Component */}
+      <EnvironmentalImpact 
+        impact={stats.impact}
+        waste={stats.waste}
+      />
+
+      {/* Recent Pickups Component */}
+      <RecentPickups 
+        pickups={stats.pickups}
+        displayedPickups={displayedPickups}
+        recentPickups={recentPickups}
+        onViewAllPickups={handleViewAllPickups}
+      />
+
+      {/* Eco Tip Component */}
+      <EcoTip />
     </div>
   );
 }

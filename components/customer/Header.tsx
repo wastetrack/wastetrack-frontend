@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Bell, User, LogOut, Settings } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { Alert } from '@/components/ui';
+import { showToast } from '@/components/ui';
 import { handleLogout } from '@/helpers/utils/logout/logout';
 
 interface Notification {
@@ -79,25 +80,13 @@ const Header: React.FC<HeaderProps> = ({
 
   const handleSignOut = async (): Promise<void> => {
     try {
-      const result = await Swal.fire({
+      const result = await Alert.confirm({
         title: 'Konfirmasi Logout',
         text: 'Apakah Anda yakin ingin keluar?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#10B981',
-        cancelButtonColor: '#EF4444',
         confirmButtonText: 'Ya, Keluar',
         cancelButtonText: 'Tidak',
-        customClass: {
-          popup: 'w-[90%] max-w-sm sm:max-w-md rounded-md sm:rounded-lg',
-          title: 'text-xl sm:text-2xl font-semibold text-gray-800',
-          htmlContainer: 'text-sm sm:text-base text-gray-600',
-          confirmButton: 'text-sm sm:text-base',
-          cancelButton: 'text-sm sm:text-base'
-        },
-        padding: '1em',
-        heightAuto: false,
-        scrollbarPadding: false
+        confirmButtonColor: '#10B981',
+        cancelButtonColor: '#EF4444',
       });
 
       if (result.isConfirmed) {
@@ -105,40 +94,10 @@ const Header: React.FC<HeaderProps> = ({
         const logoutResult = await handleLogout(router);
 
         if (logoutResult.success) {
-          await Swal.fire({
-            title: 'Berhasil Keluar',
-            text: 'Anda telah berhasil keluar dari akun Anda.',
-            icon: 'success',
-            confirmButtonColor: '#10B981',
-            timer: 1500,
-            timerProgressBar: true,
-            showConfirmButton: false,
-            customClass: {
-              popup: 'w-[90%] max-w-sm sm:max-w-md rounded-md sm:rounded-lg',
-              title: 'text-xl sm:text-2xl font-semibold text-gray-800',
-            },
-            padding: '1em',
-            heightAuto: false,
-            scrollbarPadding: false
-          });
+          showToast.success('Anda telah berhasil keluar dari akun Anda.');
         } else {
           // Even if logout failed on server, show success since user data is cleared
-          await Swal.fire({
-            title: 'Berhasil Keluar',
-            text: 'Anda telah keluar dari akun Anda.',
-            icon: 'success',
-            confirmButtonColor: '#10B981',
-            timer: 1500,
-            timerProgressBar: true,
-            showConfirmButton: false,
-            customClass: {
-              popup: 'w-[90%] max-w-sm sm:max-w-md rounded-md sm:rounded-lg',
-              title: 'text-xl sm:text-2xl font-semibold text-gray-800',
-            },
-            padding: '1em',
-            heightAuto: false,
-            scrollbarPadding: false
-          });
+          showToast.success('Anda telah keluar dari akun Anda.');
         }
         
         // The handleLogout function already redirects to /login
@@ -146,17 +105,9 @@ const Header: React.FC<HeaderProps> = ({
       }
     } catch (error) {
       console.error('Logout error:', error);
-      await Swal.fire({
+      await Alert.error({
         title: 'Gagal Keluar',
         text: 'Terjadi kesalahan saat mencoba keluar. Silakan coba lagi.',
-        icon: 'error',
-        confirmButtonColor: '#10B981',
-        customClass: {
-          popup: 'w-[90%] max-w-sm sm:max-w-md rounded-md sm:rounded-lg'
-        },
-        padding: '1em',
-        heightAuto: false,
-        scrollbarPadding: false
       });
     }
   };

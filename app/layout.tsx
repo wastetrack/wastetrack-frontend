@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
+import { Toaster } from 'sonner';
 import './globals.css';
 
 const poppins = Poppins({
@@ -23,6 +24,13 @@ export default function RootLayout({
     <html lang='id'>
       <body className={`${poppins.variable} font-poppins antialiased`}>
         {children}
+        <Toaster
+          position='top-right' // Bisa diadjust sesuai kebutuhan 
+          richColors
+          closeButton={false} // Menonaktifkan tombol close
+          expand={true}
+          theme='light' // Atur tema sesuai preferensi
+        />
       </body>
     </html>
   );
