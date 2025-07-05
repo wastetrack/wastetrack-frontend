@@ -21,28 +21,28 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div style={{ margin: '-24px' }}>
-      <div className='flex min-h-screen items-center justify-center bg-gray-100'>
-        <div className='w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow'>
+    <div>
+      <div className='flex min-h-screen items-center justify-center bg-gray-100 sm:px-6 lg:px-8'>
+        <div className='w-full max-w-md space-y-6 rounded-lg sm:bg-white p-6 sm:shadow-lg sm:p-8'>
           <div>
-            <h2 className='text-center text-2xl font-bold text-gray-800'>
+            <h2 className='text-center text-xl font-bold text-gray-800 sm:text-2xl'>
               Lupa Password
             </h2>
-            <p className='mt-2 text-center text-sm text-gray-600'>
+            <p className='mt-2 text-center text-xs text-gray-600 sm:text-sm'>
               Masukkan email Anda untuk mereset password
             </p>
           </div>
-          <form className='mt-8 space-y-6' onSubmit={handleSubmit}>
+          <form className='mt-6 space-y-4 sm:mt-8 sm:space-y-6' onSubmit={handleSubmit}>
             <div>
               <label
                 htmlFor='email'
-                className='mb-2 block text-left text-sm font-medium text-gray-500'
+                className='mb-2 block text-left text-xs font-medium text-gray-500 sm:text-sm'
               >
                 Alamat Email
               </label>
               <div className='relative'>
                 <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
-                  <Mail className='h-5 w-5 text-gray-400' />
+                  <Mail className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
                 </div>
                 <input
                   id='email'
@@ -51,7 +51,7 @@ export default function ForgotPassword() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className='w-full rounded-lg border border-gray-200 bg-white p-3 pl-10 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
+                  className='w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm'
                   placeholder='Masukkan email Anda'
                 />
               </div>
@@ -60,10 +60,10 @@ export default function ForgotPassword() {
               <button
                 type='submit'
                 disabled={isLoading}
-                className='w-full transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-400'
+                className='mt-4 w-full transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
               >
                 {isLoading ? (
-                  <RefreshCw className='mx-auto h-5 w-5 animate-spin' />
+                  <RefreshCw className='mx-auto h-4 w-4 animate-spin sm:h-5 sm:w-5' />
                 ) : (
                   'Kirim Link Reset Password'
                 )}
@@ -72,7 +72,7 @@ export default function ForgotPassword() {
             <div className='text-center'>
               <Link
                 href='/login'
-                className='text-sm font-medium text-emerald-600 transition-colors hover:text-emerald-700'
+                className='text-xs font-medium text-emerald-600 transition-colors hover:text-emerald-700 sm:text-sm'
               >
                 Kembali ke Login
               </Link>
