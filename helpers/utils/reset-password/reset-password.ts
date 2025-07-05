@@ -1,5 +1,5 @@
 import { resetPasswordAPI } from '@/services/api/auth';
-import { alerts } from '@/components/alerts/alerts';
+import { Alert } from '@/components/ui';
 import { AxiosError } from 'axios';
 
 export interface ResetPasswordResult {
@@ -98,7 +98,10 @@ export const resetPasswordFunctions = {
       // Validate token
       if (!token || token.trim().length === 0) {
         const errorMsg = 'Invalid reset token';
-        await alerts.error('Invalid Token', errorMsg);
+        Alert.error({
+          title: 'Invalid Token',
+          text: errorMsg
+        });
         return {
           success: false,
           message: errorMsg,
@@ -108,7 +111,10 @@ export const resetPasswordFunctions = {
       // Validate password
       const passwordValidation = validatePassword(newPassword);
       if (!passwordValidation.isValid) {
-        await alerts.error('Invalid Password', passwordValidation.message);
+        Alert.error({
+          title: 'Invalid Password',
+          text: passwordValidation.message
+        });
         return {
           success: false,
           message: passwordValidation.message,
@@ -118,10 +124,10 @@ export const resetPasswordFunctions = {
       const result = await resetPasswordAPI.resetPassword(token, newPassword);
 
       if (result.success) {
-        await alerts.success(
-          'Password Reset Successful! 🎉',
-          'Your password has been reset successfully. You can now login with your new password.'
-        );
+        Alert.success({
+          title: 'Password Reset Successful! 🎉',
+          text: 'Your password has been reset successfully. You can now login with your new password.'
+        });
         return {
           success: true,
           message: result.message,
@@ -136,12 +142,15 @@ export const resetPasswordFunctions = {
           (result.message.toLowerCase().includes('expired') ||
             result.message.toLowerCase().includes('invalid'))
         ) {
-          await alerts.error(
-            'Token Expired',
-            'Your password reset link has expired. Please request a new password reset.'
-          );
+          Alert.error({
+            title: 'Token Expired',
+            text: 'Your password reset link has expired. Please request a new password reset.'
+          });
         } else {
-          await alerts.error('Reset Failed', result.message);
+          Alert.error({
+            title: 'Reset Failed',
+            text: result.message
+          });
         }
 
         return {
@@ -157,20 +166,23 @@ export const resetPasswordFunctions = {
         errorMessage.toLowerCase().includes('token expired') ||
         errorMessage.toLowerCase().includes('invalid token')
       ) {
-        await alerts.error(
-          'Token Expired',
-          'Your password reset link has expired. Please request a new password reset.'
-        );
+        Alert.error({
+          title: 'Token Expired',
+          text: 'Your password reset link has expired. Please request a new password reset.'
+        });
       } else if (
         errorMessage.toLowerCase().includes('network') ||
         errorMessage.toLowerCase().includes('connection')
       ) {
-        await alerts.error(
-          'Connection Error',
-          'Please check your internet connection and try again.'
-        );
+        Alert.error({
+          title: 'Connection Error',
+          text: 'Please check your internet connection and try again.'
+        });
       } else {
-        await alerts.error('Reset Error', errorMessage);
+        Alert.error({
+          title: 'Reset Error',
+          text: errorMessage
+        });
       }
 
       return {
@@ -191,7 +203,10 @@ export const resetPasswordFunctions = {
       // Validate email format
       if (!email || !email.includes('@') || email.trim().length === 0) {
         const errorMsg = 'Please provide a valid email address';
-        await alerts.error('Invalid Email', errorMsg);
+        Alert.error({
+          title: 'Invalid Email',
+          text: errorMsg
+        });
         return {
           success: false,
           message: errorMsg,
@@ -204,17 +219,20 @@ export const resetPasswordFunctions = {
         const result = await api.requestPasswordReset(email);
 
         if (result.success) {
-          await alerts.success(
-            'Reset Link Sent! 📧',
-            'A password reset link has been sent to your email address. Please check your inbox.'
-          );
+          Alert.success({
+            title: 'Reset Link Sent! 📧',
+            text: 'A password reset link has been sent to your email address. Please check your inbox.'
+          });
           return {
             success: true,
             message: result.message,
             data: result.data,
           };
         } else {
-          await alerts.error('Failed to Send', result.message);
+          Alert.error({
+            title: 'Failed to Send',
+            text: result.message
+          });
           return {
             success: false,
             message: result.message,
@@ -223,7 +241,10 @@ export const resetPasswordFunctions = {
       } else {
         const errorMsg =
           'Password reset request functionality is not available. Please contact support.';
-        await alerts.error('Feature Not Available', errorMsg);
+        Alert.error({
+          title: 'Feature Not Available',
+          text: errorMsg
+        });
         return {
           success: false,
           message: errorMsg,
@@ -231,7 +252,10 @@ export const resetPasswordFunctions = {
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
-      await alerts.error('Request Error', errorMessage);
+      Alert.error({
+        title: 'Request Error',
+        text: errorMessage
+      });
       return {
         success: false,
         message: errorMessage,

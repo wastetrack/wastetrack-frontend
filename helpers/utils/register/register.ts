@@ -1,4 +1,4 @@
-import { alerts } from '@/components/alerts/alerts';
+import { Alert } from "@/components/ui";
 
 export interface FormData {
   email: string;
@@ -17,31 +17,6 @@ export interface FormData {
     longitude: number;
   } | null;
 }
-
-export const ROLES = {
-  // admin: 'Super Admin',
-  customer: 'Nasabah',
-  waste_bank_unit: 'Bank Sampah Unit',
-  waste_collector_unit: 'Pegawai BSU',
-  waste_bank_central: 'Bank Sampah Induk',
-  waste_collector_central: 'Pegawai BSI',
-  industry: 'Offtaker', // Display as Offtaker but send as industry
-  // government: 'Pemerintah',
-};
-
-export const ROLE_DESCRIPTIONS = {
-  admin: 'Mengelola semua aspek sistem dan mengawasi seluruh pengguna.',
-  waste_bank_unit: 'Bank sampah unit lokal untuk melayani masyarakat sekitar.',
-  waste_collector_unit:
-    'Pegawai bank sampah unit yang mengumpulkan sampah dari customer.',
-  waste_bank_central:
-    'Bank sampah pusat yang mengelola beberapa bank sampah unit.',
-  waste_collector_central:
-    'Pegawai bank sampah induk yang mengumpulkan sampah dari BSU.',
-  customer: 'Kelola sampah rumah tangga Anda dan dapatkan hadiah.',
-  industry: 'Akses bahan daur ulang dan kelola keberlanjutan.',
-  government: 'Memantau dan menganalisis dampak lingkungan serta kebijakan.',
-};
 
 export const validateForm = (formData: FormData) => {
   const errors: string[] = [];
@@ -74,12 +49,19 @@ export const validateForm = (formData: FormData) => {
     errors.push('Nama lengkap maksimal 100 karakter');
   }
 
-  if (!formData.phone || formData.phone.length < 10) {
+  // Validate phone number (clean version)
+  const cleanPhone = formData.phoneClean || formData.phone.replace(/\D/g, '');
+  if (!cleanPhone || cleanPhone.length < 10) {
     errors.push('Nomor telepon minimal 10 digit');
   }
 
-  if (formData.phone && formData.phone.length > 20) {
-    errors.push('Nomor telepon maksimal 20 digit');
+  if (cleanPhone && cleanPhone.length > 13) {
+    errors.push('Nomor telepon maksimal 13 digit');
+  }
+
+  // Validate Indonesian phone format
+  if (cleanPhone && !/^08[1-9][0-9]{7,10}$/.test(cleanPhone)) {
+    errors.push('Format nomor telepon tidak valid (harus dimulai dengan 08)');
   }
 
   if (
@@ -125,12 +107,15 @@ export const validateForm = (formData: FormData) => {
 };
 
 export const transformFormDataToApi = (formData: FormData) => {
+  // Ensure we always have clean phone number
+  const cleanPhoneNumber = formData.phoneClean || formData.phone.replace(/\D/g, '');
+  
   return {
     username: formData.fullName,
     email: formData.email,
     password: formData.password,
     role: formData.role,
-    phone_number: formData.phoneClean || formData.phone.replace(/-/g, ''), // Send clean number to API
+    phone_number: cleanPhoneNumber, // Always send clean number to API
     institution: formData.institution || undefined,
     address: formData.address,
     city: formData.city,
@@ -266,7 +251,10 @@ export const getRedirectPath = (): string => {
 export const safeAlert = {
   success: async (title: string, text?: string) => {
     try {
-      return alerts.success(title, text);
+      return Alert.success({
+        title,
+        text
+      });
     } catch (error) {
       console.error('Failed to show success alert:', error);
     }
@@ -274,7 +262,10 @@ export const safeAlert = {
 
   error: async (title: string, text?: string) => {
     try {
-      return alerts.error(title, text);
+      return Alert.error({
+        title,
+        text
+      });
     } catch (error) {
       console.error('Failed to show error alert:', error);
       alert(`Error: ${title}`);
@@ -283,7 +274,10 @@ export const safeAlert = {
 
   validationError: async (message: string) => {
     try {
-      return alerts.validationError(message);
+      return Alert.warning({
+        title: 'Data Tidak Valid',
+        text: message
+      });
     } catch (error) {
       console.error('Failed to show validation error:', error);
       alert(`Validation Error: ${message}`);

@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios';
-import { alerts } from '@/components/alerts/alerts';
+import { showToast } from '@/components/ui';
+import { Alert } from '@/components/ui';
 import { forgotPasswordAPI } from '@/services/api/auth';
 
 export interface ForgotPasswordResult {
@@ -49,8 +50,8 @@ export const forgotPasswordFunctions = {
     try {
       // Input validation
       if (!email || email.trim().length === 0) {
-        const errorMsg = 'Email address is required';
-        await alerts.error('Input Error', errorMsg);
+        const errorMsg = 'Alamat email wajib diisi';
+        showToast.error(errorMsg);
         return {
           success: false,
           message: errorMsg,
@@ -59,50 +60,108 @@ export const forgotPasswordFunctions = {
 
       // Email format validation
       if (!isValidEmail(email)) {
-        const errorMsg = 'Please enter a valid email address';
-        await alerts.error('Invalid Email', errorMsg);
+        const errorMsg = 'Masukkan alamat email yang valid';
+        showToast.error(errorMsg);
         return {
           success: false,
           message: errorMsg,
         };
       }
 
-      // Make API call with normalized email
-      const result = await forgotPasswordAPI.requestReset(
-        email.trim().toLowerCase()
-      );
+      const normalizedEmail = email.trim().toLowerCase();
 
-      if (result.success) {
-        await alerts.resetPasswordLinkSent(email);
+      // Show confirmation modal before sending
+      const confirmResult = await Alert.confirm({
+        title: 'Konfirmasi Email',
+        text: `Apakah Anda yakin ingin mengirim link reset password ke ${normalizedEmail}?`,
+        confirmButtonText: 'Ya, Kirim',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#6b7280'
+      });
+
+      // If user cancels, return early
+      if (!confirmResult.isConfirmed) {
+        return {
+          success: false,
+          message: 'Reset password dibatalkan',
+        };
+      }
+
+      // Use toast.promise for the password reset request
+      const forgotPasswordPromise = async () => {
+        const result = await forgotPasswordAPI.requestReset(normalizedEmail);
+
+        if (!result.success) {
+          // Check for specific error messages from backend
+          if (result.message === 'Email not found') {
+            throw new Error('Email tidak ditemukan dalam sistem. Pastikan email yang Anda masukkan sudah terdaftar.');
+          }
+          throw new Error(result.message || 'Gagal mengirim email reset password');
+        }
+
+        return result;
+      };
+
+      // Execute with toast promise and handle result properly
+      try {
+        await showToast.promise(
+          forgotPasswordPromise(),
+          {
+            loading: 'Mengirim link reset password...',
+            success: () => {
+              return `Link reset password telah dikirim ke ${email}! Silakan cek email Anda dan ikuti petunjuknya.`;
+            },
+            error: (error) => {
+              const errorMessage = error instanceof Error ? error.message : 'Gagal mengirim email reset password';
+              
+              // Return user-friendly message for "Email not found"
+              if (errorMessage.includes('Email tidak ditemukan')) {
+                return errorMessage; // Already in Indonesian
+              }
+              
+              return errorMessage;
+            }
+          }
+        );
+
         return {
           success: true,
-          message: result.message || 'Password reset link sent successfully',
-          data: result.data && typeof result.data === 'object' 
-            ? result.data as { [key: string]: unknown }
-            : undefined,
+          message: 'Password reset link sent successfully',
         };
-      } else {
-        // Handle API failure
-        const errorMessage =
-          result.message || 'Failed to send password reset email';
-        await alerts.error('Reset Failed', errorMessage);
+      } catch (error) {
+        // The toast already showed the error, just return the result
+        const errorMessage = error instanceof Error ? error.message : 'Gagal mengirim email reset password';
+        
+        // Check for specific backend error messages
+        if (errorMessage.includes('Email not found') || errorMessage.includes('Email tidak ditemukan')) {
+          return {
+            success: false,
+            message: 'Email not found',
+          };
+        }
+        
         return {
           success: false,
           message: errorMessage,
         };
       }
+
     } catch (error) {
       const errorMessage = handleApiError(error);
       console.error('Forgot password error:', error);
 
       // Handle specific error cases
+      if (errorMessage.includes('Email not found') || errorMessage.includes('Email tidak ditemukan')) {
+        // This case is already handled by the toast.promise error handler
+        return {
+          success: false,
+          message: 'Email not found',
+        };
+      }
+
       if (error instanceof AxiosError) {
-        // Handle specific HTTP status codes
         if (error.response?.status === 404) {
-          await alerts.error(
-            'Email Not Found',
-            'No account found with this email address.'
-          );
           return {
             success: false,
             message: 'Email not found',
@@ -110,10 +169,6 @@ export const forgotPasswordFunctions = {
         }
 
         if (error.response?.status === 429) {
-          await alerts.error(
-            'Too Many Requests',
-            'Please wait before requesting another password reset.'
-          );
           return {
             success: false,
             message: 'Rate limit exceeded',
@@ -121,10 +176,6 @@ export const forgotPasswordFunctions = {
         }
 
         if (error.response && error.response.status >= 500) {
-          await alerts.error(
-            'Server Error',
-            'Server is currently unavailable. Please try again later.'
-          );
           return {
             success: false,
             message: 'Server error',
@@ -138,10 +189,6 @@ export const forgotPasswordFunctions = {
         errorMessage.toLowerCase().includes('connection') ||
         errorMessage.toLowerCase().includes('timeout')
       ) {
-        await alerts.error(
-          'Connection Error',
-          'Please check your internet connection and try again.'
-        );
         return {
           success: false,
           message: 'Network error',
@@ -149,10 +196,6 @@ export const forgotPasswordFunctions = {
       }
 
       // Generic error handling
-      await alerts.error(
-        'Reset Failed',
-        'Failed to send password reset email. Please try again.'
-      );
       return {
         success: false,
         message: errorMessage,
@@ -174,30 +217,23 @@ export const forgotPasswordFunctions = {
    * @param email - Email address to check
    * @returns Promise resolving to boolean indicating if email exists
    */
+  /**
+   * Check if an email exists in the system (simplified version)
+   * @param email - Email address to check
+   * @returns Promise resolving to boolean indicating if email format is valid
+   */
   checkEmailExists: async (email: string): Promise<boolean> => {
     try {
       if (!isValidEmail(email)) {
         return false;
       }
 
-      // Check if API has email verification endpoint
-      interface ExtendedForgotPasswordApi {
-        requestReset: (email: string) => Promise<ForgotPasswordResult>;
-        checkEmailExists?: (email: string) => Promise<{ exists: boolean }>;
-      }
-
-      const api = forgotPasswordAPI as ExtendedForgotPasswordApi;
-      if (api.checkEmailExists) {
-        const result = await api.checkEmailExists(email.trim().toLowerCase());
-        return result.exists || false;
-      }
-
-      // If no specific endpoint, assume email exists for security
+      // Since backend doesn't have email checking endpoint yet,
+      // we only validate format here
       return true;
     } catch (error) {
       console.error('Email check error:', error);
-      // For security, assume email exists if check fails
-      return true;
+      return false;
     }
   },
 
@@ -207,10 +243,9 @@ export const forgotPasswordFunctions = {
    */
   showForgotPasswordHelp: async (): Promise<void> => {
     try {
-      // Use success alert as info alternative since alerts.info doesn't exist
-      await alerts.success(
-        'Forgot Password Help',
-        "Enter your email address and we'll send you a link to reset your password. The link will expire in 24 hours for security."
+      showToast.info(
+        "Masukkan alamat email Anda dan kami akan mengirimkan link untuk mereset password. Link akan kedaluwarsa dalam 24 jam untuk keamanan.",
+        { duration: 6000 }
       );
     } catch (error) {
       console.error('Error showing help:', error);
@@ -224,9 +259,9 @@ export const forgotPasswordFunctions = {
    */
   handleRateLimit: async (remainingTime: number = 60): Promise<void> => {
     try {
-      await alerts.error(
-        'Please Wait',
-        `You can request another password reset in ${remainingTime} seconds.`
+      showToast.warning(
+        `Anda dapat meminta reset password lagi dalam ${remainingTime} detik.`,
+        { duration: remainingTime * 1000 }
       );
     } catch (error) {
       console.error('Error showing rate limit:', error);
