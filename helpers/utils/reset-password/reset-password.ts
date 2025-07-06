@@ -100,7 +100,7 @@ export const resetPasswordFunctions = {
         const errorMsg = 'Invalid reset token';
         Alert.error({
           title: 'Invalid Token',
-          text: errorMsg
+          text: errorMsg,
         });
         return {
           success: false,
@@ -113,7 +113,7 @@ export const resetPasswordFunctions = {
       if (!passwordValidation.isValid) {
         Alert.error({
           title: 'Invalid Password',
-          text: passwordValidation.message
+          text: passwordValidation.message,
         });
         return {
           success: false,
@@ -126,14 +126,15 @@ export const resetPasswordFunctions = {
       if (result.success) {
         Alert.success({
           title: 'Password Reset Successful! 🎉',
-          text: 'Your password has been reset successfully. You can now login with your new password.'
+          text: 'Your password has been reset successfully. You can now login with your new password.',
         });
         return {
           success: true,
           message: result.message,
-          data: result.data && typeof result.data === 'object' 
-            ? result.data as { [key: string]: unknown }
-            : undefined,
+          data:
+            result.data && typeof result.data === 'object'
+              ? (result.data as { [key: string]: unknown })
+              : undefined,
         };
       } else {
         // Handle specific error cases
@@ -144,12 +145,12 @@ export const resetPasswordFunctions = {
         ) {
           Alert.error({
             title: 'Token Expired',
-            text: 'Your password reset link has expired. Please request a new password reset.'
+            text: 'Your password reset link has expired. Please request a new password reset.',
           });
         } else {
           Alert.error({
             title: 'Reset Failed',
-            text: result.message
+            text: result.message,
           });
         }
 
@@ -168,7 +169,7 @@ export const resetPasswordFunctions = {
       ) {
         Alert.error({
           title: 'Token Expired',
-          text: 'Your password reset link has expired. Please request a new password reset.'
+          text: 'Your password reset link has expired. Please request a new password reset.',
         });
       } else if (
         errorMessage.toLowerCase().includes('network') ||
@@ -176,12 +177,12 @@ export const resetPasswordFunctions = {
       ) {
         Alert.error({
           title: 'Connection Error',
-          text: 'Please check your internet connection and try again.'
+          text: 'Please check your internet connection and try again.',
         });
       } else {
         Alert.error({
           title: 'Reset Error',
-          text: errorMessage
+          text: errorMessage,
         });
       }
 
@@ -205,7 +206,7 @@ export const resetPasswordFunctions = {
         const errorMsg = 'Please provide a valid email address';
         Alert.error({
           title: 'Invalid Email',
-          text: errorMsg
+          text: errorMsg,
         });
         return {
           success: false,
@@ -221,7 +222,7 @@ export const resetPasswordFunctions = {
         if (result.success) {
           Alert.success({
             title: 'Reset Link Sent! 📧',
-            text: 'A password reset link has been sent to your email address. Please check your inbox.'
+            text: 'A password reset link has been sent to your email address. Please check your inbox.',
           });
           return {
             success: true,
@@ -231,7 +232,7 @@ export const resetPasswordFunctions = {
         } else {
           Alert.error({
             title: 'Failed to Send',
-            text: result.message
+            text: result.message,
           });
           return {
             success: false,
@@ -243,7 +244,7 @@ export const resetPasswordFunctions = {
           'Password reset request functionality is not available. Please contact support.';
         Alert.error({
           title: 'Feature Not Available',
-          text: errorMsg
+          text: errorMsg,
         });
         return {
           success: false,
@@ -254,7 +255,7 @@ export const resetPasswordFunctions = {
       const errorMessage = handleApiError(error);
       Alert.error({
         title: 'Request Error',
-        text: errorMessage
+        text: errorMessage,
       });
       return {
         success: false,

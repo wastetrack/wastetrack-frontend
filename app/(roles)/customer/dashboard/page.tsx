@@ -1,22 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { customerProfileAPI, type CustomerProfile } from '@/services/api/customer';
+import {
+  customerProfileAPI,
+  type CustomerProfile,
+} from '@/services/api/customer';
 import { getTokenManager } from '@/lib/token-manager';
-import { 
-  HeroSection, 
-  EnvironmentalImpact, 
-  RecentPickups, 
-  EcoTip 
+import {
+  HeroSection,
+  EnvironmentalImpact,
+  RecentPickups,
+  EcoTip,
 } from '@/components/customer/dashboard';
-import type { 
-  Stats, 
-  Pickup 
-} from '@/types';
+import type { Stats, Pickup } from '@/types';
 
 export default function CustomerDashboard() {
   // State for profile data
-  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const [customerProfile, setCustomerProfile] =
+    useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,16 +27,16 @@ export default function CustomerDashboard() {
     impact: {
       carbonReduced: customerProfile?.carbon_deficit || 0,
       waterSaved: customerProfile?.water_saved || 0,
-      treesPreserved: customerProfile?.trees || 0
+      treesPreserved: customerProfile?.trees || 0,
     },
     waste: {
-      total: customerProfile?.bags_stored || 0
+      total: customerProfile?.bags_stored || 0,
     },
     pickups: {
       pending: 2,
       completed: 18,
-      cancelled: 1
-    }
+      cancelled: 1,
+    },
   };
 
   const recentPickups: Pickup[] = [
@@ -44,22 +45,22 @@ export default function CustomerDashboard() {
       status: 'completed',
       wasteQuantities: { plastic: 3, paper: 2 },
       date: '2025-07-03',
-      time: '14:30'
+      time: '14:30',
     },
     {
       id: '2',
       status: 'pending',
       quantity: 4,
       date: '2025-07-05',
-      time: '10:00'
+      time: '10:00',
     },
     {
       id: '3',
       status: 'in_progress',
       wasteQuantities: { organic: 2, plastic: 1 },
       date: '2025-07-04',
-      time: '16:15'
-    }
+      time: '16:15',
+    },
   ];
 
   const [displayedPickups] = useState<Pickup[]>(recentPickups.slice(0, 3));
@@ -70,11 +71,11 @@ export default function CustomerDashboard() {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Get user ID from token
         const tokenManager = getTokenManager();
         const token = await tokenManager.getValidAccessToken();
-        
+
         if (!token) {
           throw new Error('No valid token found');
         }
@@ -82,7 +83,7 @@ export default function CustomerDashboard() {
         // Decode token to get user ID (assuming JWT payload contains user info)
         const payload = JSON.parse(atob(token.split('.')[1]));
         const userId = payload.user_id || payload.sub || payload.id;
-        
+
         if (!userId) {
           throw new Error('User ID not found in token');
         }
@@ -109,10 +110,10 @@ export default function CustomerDashboard() {
   // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-2"></div>
-          <p className="text-gray-500">Memuat data...</p>
+      <div className='flex min-h-[400px] items-center justify-center'>
+        <div className='text-center'>
+          <div className='mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-emerald-600'></div>
+          <p className='text-gray-500'>Memuat data...</p>
         </div>
       </div>
     );
@@ -121,12 +122,12 @@ export default function CustomerDashboard() {
   // Error state
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-red-500 mb-2">Error: {error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+      <div className='flex min-h-[400px] items-center justify-center'>
+        <div className='text-center'>
+          <p className='mb-2 text-red-500'>Error: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className='rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700'
           >
             Coba Lagi
           </button>
@@ -138,30 +139,24 @@ export default function CustomerDashboard() {
   // Return early if no customer profile
   if (!customerProfile) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-gray-500">Data profile tidak tersedia</p>
+      <div className='flex min-h-[400px] items-center justify-center'>
+        <div className='text-center'>
+          <p className='text-gray-500'>Data profile tidak tersedia</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Hero Section Component */}
-      <HeroSection 
-        customerProfile={customerProfile}
-        points={stats.points}
-      />
+      <HeroSection customerProfile={customerProfile} points={stats.points} />
 
       {/* Environmental Impact Component */}
-      <EnvironmentalImpact 
-        impact={stats.impact}
-        waste={stats.waste}
-      />
+      <EnvironmentalImpact impact={stats.impact} waste={stats.waste} />
 
       {/* Recent Pickups Component */}
-      <RecentPickups 
+      <RecentPickups
         pickups={stats.pickups}
         displayedPickups={displayedPickups}
         recentPickups={recentPickups}

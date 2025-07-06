@@ -118,37 +118,46 @@ export const wasteBankProfileAPI = {
   // Get waste bank profile by user_id
   async getProfile(userId: string): Promise<WasteBankProfileResponse> {
     try {
-      const response = await apiClient.get(`/api/waste-bank/profiles/${userId}`);
+      const response = await apiClient.get(
+        `/api/waste-bank/profiles/${userId}`
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = 
+        const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
           'Failed to fetch waste bank profile';
         throw new Error(errorMessage);
       }
-      throw new Error('Network error occurred while fetching waste bank profile');
+      throw new Error(
+        'Network error occurred while fetching waste bank profile'
+      );
     }
   },
 
   // Update waste bank profile by id
   async updateProfile(
-    id: string, 
+    id: string,
     profileData: UpdateWasteBankProfileRequest
   ): Promise<UpdateWasteBankProfileResponse> {
     try {
-      const response = await apiClient.put(`/api/waste-bank/profiles/${id}`, profileData);
+      const response = await apiClient.put(
+        `/api/waste-bank/profiles/${id}`,
+        profileData
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = 
+        const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
           'Failed to update waste bank profile';
         throw new Error(errorMessage);
       }
-      throw new Error('Network error occurred while updating waste bank profile');
+      throw new Error(
+        'Network error occurred while updating waste bank profile'
+      );
     }
   },
 };

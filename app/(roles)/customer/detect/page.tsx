@@ -5,17 +5,24 @@ export default function DetectPage() {
     <div>
       <div className='mb-6'>
         <h1 className='text-2xl font-bold text-gray-800'>Deteksi Sampah</h1>
-        <p className='mt-2 text-gray-600'>Gunakan kamera untuk mendeteksi jenis sampah dan mendapatkan informasi.</p>
+        <p className='mt-2 text-gray-600'>
+          Gunakan kamera untuk mendeteksi jenis sampah dan mendapatkan
+          informasi.
+        </p>
       </div>
-      
-      <div className='bg-white rounded-lg shadow-sm border p-6'>
+
+      <div className='rounded-lg border bg-white p-6 shadow-sm'>
         <div className='text-center'>
-          <div className='mx-auto w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center mb-4'>
-            <span className='text-gray-400 text-4xl'>📷</span>
+          <div className='mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-lg bg-gray-100'>
+            <span className='text-4xl text-gray-400'>📷</span>
           </div>
-          <h3 className='text-lg font-semibold text-gray-800 mb-2'>Deteksi Sampah</h3>
-          <p className='text-gray-600 mb-4'>Ambil foto sampah untuk mengetahui jenisnya</p>
-          <button className='px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors'>
+          <h3 className='mb-2 text-lg font-semibold text-gray-800'>
+            Deteksi Sampah
+          </h3>
+          <p className='mb-4 text-gray-600'>
+            Ambil foto sampah untuk mengetahui jenisnya
+          </p>
+          <button className='rounded-lg bg-emerald-600 px-6 py-3 text-white transition-colors hover:bg-emerald-700'>
             Buka Kamera
           </button>
         </div>

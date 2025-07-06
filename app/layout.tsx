@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className={`${poppins.variable} font-poppins antialiased`}>
         {children}
         <Toaster
-          position='top-right' // Bisa diadjust sesuai kebutuhan 
+          position='top-right' // Bisa diadjust sesuai kebutuhan
           richColors
           closeButton={false} // Menonaktifkan tombol close
           expand={true}

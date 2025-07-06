@@ -103,7 +103,10 @@ const defaultConfigs = {
 
 // Main Alert class
 export class Alert {
-  private static mergeConfig(type: keyof typeof defaultConfigs, config: AlertConfig) {
+  private static mergeConfig(
+    type: keyof typeof defaultConfigs,
+    config: AlertConfig
+  ) {
     const defaultConfig = defaultConfigs[type];
     return {
       ...defaultConfig,
@@ -123,7 +126,7 @@ export class Alert {
       showConfirmButton: false,
       ...config,
     });
-    
+
     return Swal.fire(mergedConfig);
   }
 
@@ -132,7 +135,7 @@ export class Alert {
       icon: 'error',
       ...config,
     });
-    
+
     return Swal.fire(mergedConfig);
   }
 
@@ -141,7 +144,7 @@ export class Alert {
       icon: 'warning',
       ...config,
     });
-    
+
     return Swal.fire(mergedConfig);
   }
 
@@ -150,7 +153,7 @@ export class Alert {
       icon: 'info',
       ...config,
     });
-    
+
     return Swal.fire(mergedConfig);
   }
 
@@ -159,7 +162,7 @@ export class Alert {
       icon: 'warning',
       ...config,
     });
-    
+
     return Swal.fire(mergedConfig);
   }
 

@@ -110,7 +110,7 @@ export const customerProfileAPI = {
   // Get customer profile by user_id
   async getProfile(userId: string): Promise<CustomerProfileResponse> {
     try {
-        // Log the API call for debugging
+      // Log the API call for debugging
       console.log('Making API call to:', `/api/customer/profiles/${userId}`);
       const response = await apiClient.get(`/api/customer/profiles/${userId}`);
       console.log('Raw API response:', response);
@@ -123,9 +123,9 @@ export const customerProfileAPI = {
           status: error.response?.status,
           statusText: error.response?.statusText,
           data: error.response?.data,
-          headers: error.response?.headers
+          headers: error.response?.headers,
         });
-        const errorMessage = 
+        const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
           'Failed to fetch customer profile';
@@ -137,15 +137,18 @@ export const customerProfileAPI = {
 
   // Update customer profile by id
   async updateProfile(
-    id: string, 
+    id: string,
     profileData: UpdateCustomerProfileRequest
   ): Promise<UpdateCustomerProfileResponse> {
     try {
-      const response = await apiClient.put(`/api/customer/profiles/${id}`, profileData);
+      const response = await apiClient.put(
+        `/api/customer/profiles/${id}`,
+        profileData
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = 
+        const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
           'Failed to update customer profile';

@@ -41,13 +41,13 @@ export default function RegisterForm({
     const numbers = value.replace(/\D/g, '');
 
     if (numbers.length === 0) return '';
-    
+
     // Auto-correct: if starts with 8, add 0
     if (numbers.startsWith('8') && !numbers.startsWith('08')) {
       const corrected = '0' + numbers.slice(0, 12);
       return formatWithDashes(corrected);
     }
-    
+
     // Limit to 13 digits and format with dashes
     const limited = numbers.slice(0, 13);
     return formatWithDashes(limited);
@@ -56,8 +56,10 @@ export default function RegisterForm({
   const formatWithDashes = (numbers: string) => {
     // Format: 0812-3456-7890
     if (numbers.length <= 4) return numbers;
-    if (numbers.length <= 8) return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
-    if (numbers.length <= 12) return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8)}`;
+    if (numbers.length <= 8)
+      return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
+    if (numbers.length <= 12)
+      return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8)}`;
     return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8, 12)}-${numbers.slice(12)}`;
   };
 
@@ -97,14 +99,14 @@ export default function RegisterForm({
   const isValidIndonesianPhone = (phone: string) => {
     // Remove dashes and check format
     const cleanNumber = phone.replace(/\D/g, '');
-    
+
     // Must start with 08 and have 10-13 digits total
     if (!cleanNumber.startsWith('08')) return false;
     if (cleanNumber.length < 10 || cleanNumber.length > 13) return false;
-    
+
     // Third digit must be 1-9 (not 0)
     if (cleanNumber.length >= 3 && cleanNumber[2] === '0') return false;
-    
+
     return /^08[1-9][0-9]{7,10}$/.test(cleanNumber);
   };
 
@@ -206,12 +208,12 @@ export default function RegisterForm({
       if (errorMessage.includes('ditolak')) {
         await Alert.warning({
           title: 'Akses Lokasi Ditolak',
-          text: 'Untuk melanjutkan pendaftaran, kami memerlukan akses lokasi Anda. Silakan izinkan akses lokasi di browser.'
+          text: 'Untuk melanjutkan pendaftaran, kami memerlukan akses lokasi Anda. Silakan izinkan akses lokasi di browser.',
         });
       } else {
         await Alert.error({
           title: 'Gagal Mendapatkan Lokasi',
-          text: errorMessage
+          text: errorMessage,
         });
       }
     } finally {
@@ -246,9 +248,9 @@ export default function RegisterForm({
   return (
     <div className='w-full rounded-lg'>
       {/* Header Icon */}
-      <div className='hidden mb-6 text-center'>
+      <div className='mb-6 hidden text-center'>
         <div className='inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100'>
-          <UserPlus size={20} className='text-emerald-600 h-6 w-6' />
+          <UserPlus size={20} className='h-6 w-6 text-emerald-600' />
         </div>
       </div>
 
@@ -323,7 +325,7 @@ export default function RegisterForm({
                   </option>
                 ))}
               </select>
-              <p className='mt-1 text-sm text-center text-gray-400'>
+              <p className='mt-1 text-center text-sm text-gray-400'>
                 {
                   ROLE_DESCRIPTIONS[
                     formData.role as keyof typeof ROLE_DESCRIPTIONS
@@ -348,7 +350,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('email')}
                   placeholder='Masukkan email Anda'
-                  className={`w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm ${
+                  className={`shadow-xs w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('email') &&
                     !isFieldValid('email', formData.email)
                       ? 'border-red-300 bg-red-50'
@@ -395,7 +397,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('password')}
                   placeholder='Minimal 8 karakter'
-                  className={`w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 pr-10 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:pr-12 sm:text-base sm:placeholder:text-sm ${
+                  className={`shadow-xs w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 pr-10 text-sm text-gray-800 transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:pr-12 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('password') &&
                     !isFieldValid('password', formData.password)
                       ? 'border-red-300 bg-red-50'
@@ -456,7 +458,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('confirmPassword')}
                   placeholder='Konfirmasi kata sandi Anda'
-                  className={`w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 pr-10 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:pr-12 sm:text-base sm:placeholder:text-sm ${
+                  className={`shadow-xs w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 pr-10 text-sm text-gray-800 transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:pr-12 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('confirmPassword') &&
                     !isFieldValid('confirmPassword', formData.confirmPassword)
                       ? 'border-red-300 bg-red-50'
@@ -833,7 +835,7 @@ export default function RegisterForm({
                   type='button'
                   onClick={handleGetLocation}
                   disabled={locationLoading}
-                  className='flex items-center p-0 text-xs sm:text-sm text-emerald-600 hover:text-emerald-500 focus:outline-none focus:ring-0 disabled:opacity-50'
+                  className='flex items-center p-0 text-xs text-emerald-600 hover:text-emerald-500 focus:outline-none focus:ring-0 disabled:opacity-50 sm:text-sm'
                 >
                   <MapPin className='mr-2 h-4 w-4' />
                   {locationLoading
@@ -841,7 +843,7 @@ export default function RegisterForm({
                     : 'Dapatkan Lokasi Saat Ini'}
                 </button>
                 {formData.coordinates && (
-                  <div className='hidden flex items-center space-x-2'>
+                  <div className='flex hidden items-center space-x-2'>
                     <span className='text-sm font-medium text-green-600'>
                       📍 Lokasi berhasil didapat
                     </span>
@@ -863,8 +865,8 @@ export default function RegisterForm({
                         Lokasi GPS Diperlukan
                       </p>
                       <p className='mt-1 text-amber-700'>
-                        Silakan klik tombol &quot;Dapatkan Lokasi Saat Ini&quot; untuk
-                        mengisi koordinat lokasi Anda secara otomatis.
+                        Silakan klik tombol &quot;Dapatkan Lokasi Saat Ini&quot;
+                        untuk mengisi koordinat lokasi Anda secara otomatis.
                       </p>
                     </div>
                   </div>
@@ -880,7 +882,7 @@ export default function RegisterForm({
             <button
               type='button'
               onClick={() => setStep(step - 1)}
-              className='mr-auto mt-4 transform rounded-lg border border-gray-200 px-10 py-3 text-sm font-semibold text-gray-400 shadow-sm transition-all duration-200 hover:border-gray-400 hover:text-gray-500 hover:scale-[1.02] focus:outline-none sm:text-base'
+              className='mr-auto mt-4 transform rounded-lg border border-gray-200 px-10 py-3 text-sm font-semibold text-gray-400 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:border-gray-400 hover:text-gray-500 focus:outline-none sm:text-base'
             >
               Kembali
             </button>
@@ -889,7 +891,7 @@ export default function RegisterForm({
             <button
               type='button'
               onClick={handleNextStep}
-              className='ml-auto mt-4 px-12 transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
+              className='ml-auto mt-4 transform rounded-lg bg-emerald-600 p-3 px-12 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
             >
               Lanjut
             </button>
@@ -898,7 +900,7 @@ export default function RegisterForm({
             <button
               type='submit'
               disabled={loading}
-              className='ml-auto mt-4 px-10 transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
+              className='ml-auto mt-4 transform rounded-lg bg-emerald-600 p-3 px-10 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
             >
               {loading ? 'Membuat Akun...' : 'Buat Akun'}
             </button>

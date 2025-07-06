@@ -56,3 +56,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* Sticky Footer Pattern */
+#__next {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+}
+
+/* Alternative untuk layout yang menggunakan body langsung */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}

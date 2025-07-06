@@ -54,7 +54,7 @@ export const loginFunctions = {
       // Validate input
       if (!credentials.email || !credentials.password) {
         showToast.error('Input Error', {
-          description: 'Email dan password harus diisi'
+          description: 'Email dan password harus diisi',
         });
         return { success: false, message: 'Email dan password harus diisi' };
       }
@@ -145,28 +145,30 @@ export const loginFunctions = {
   async handleEmailNotVerified(email: string): Promise<LoginResponse> {
     // Show warning showToast for unverified email
     showToast.error('Email Belum Diverifikasi', {
-      description: `Email ${email} belum diverifikasi. Silakan cek email Anda untuk link verifikasi.`
+      description: `Email ${email} belum diverifikasi. Silakan cek email Anda untuk link verifikasi.`,
     });
-    
+
     // Optionally try to resend verification automatically
     try {
-      const resendResponse = await emailVerificationAPI.resendVerification(email);
+      const resendResponse =
+        await emailVerificationAPI.resendVerification(email);
       if (resendResponse.success) {
         showToast.success('Email Verifikasi Terkirim', {
-          description: 'Silakan cek email Anda untuk link verifikasi yang baru.'
+          description:
+            'Silakan cek email Anda untuk link verifikasi yang baru.',
         });
       } else {
         showToast.error('Gagal Mengirim Email', {
-          description: resendResponse.message
+          description: resendResponse.message,
         });
       }
     } catch (error) {
       console.error('Resend verification error:', error);
       showToast.error('Error', {
-        description: 'Gagal mengirim ulang email verifikasi'
+        description: 'Gagal mengirim ulang email verifikasi',
       });
     }
-    
+
     return { success: false, needsVerification: true };
   },
 
@@ -205,7 +207,8 @@ export const loginFunctions = {
       // Handle too many sessions
       if (error.response?.data?.errors === 'Too many active sessions') {
         showToast.error('Terlalu Banyak Sesi', {
-          description: 'Anda telah mencapai batas maksimal sesi aktif (5 sesi). Silakan logout dari perangkat lain.'
+          description:
+            'Anda telah mencapai batas maksimal sesi aktif (5 sesi). Silakan logout dari perangkat lain.',
         });
         return { success: false, tooManySessions: true };
       }
@@ -213,7 +216,7 @@ export const loginFunctions = {
       // Handle specific API error messages
       if (error.response?.data?.message) {
         showToast.error('Login Error', {
-          description: error.response.data.message
+          description: error.response.data.message,
         });
         return { success: false, message: error.response.data.message };
       }
@@ -262,14 +265,14 @@ export const loginFunctions = {
       normalizedError.includes('internal server error')
     ) {
       showToast.error('Koneksi Bermasalah', {
-        description: 'Periksa koneksi internet Anda dan coba lagi.'
+        description: 'Periksa koneksi internet Anda dan coba lagi.',
       });
       return { success: false, message: 'Network or server error' };
     }
 
     // Default error handling
     showToast.error('Ada Kendala', {
-      description: 'Terjadi kesalahan saat login. Silakan coba lagi.'
+      description: 'Terjadi kesalahan saat login. Silakan coba lagi.',
     });
     return { success: false, message: errorMessage };
   },
@@ -311,8 +314,8 @@ export const loginFunctions = {
       waste_collector_central: '/collector-central/dashboard',
       waste_collector_unit: '/collector-unit/dashboard',
       industry: '/offtaker/dashboard',
-      waste_bank_central: '/wastebank-central/dashboard',
-      waste_bank_unit: '/wastebank-unit/dashboard',
+      waste_bank_central: '/wastebank-central',
+      waste_bank_unit: '/wastebank-unit',
     };
 
     // Normalize and validate role

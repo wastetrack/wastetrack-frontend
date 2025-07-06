@@ -1,12 +1,12 @@
 // components/customer/BottomNavigation.tsx
 import React from 'react';
-import { 
-  Home, 
-  Camera, 
-  Calendar, 
-  ShoppingBag, 
+import {
+  Home,
+  Camera,
+  Calendar,
+  ShoppingBag,
   Wallet,
-  LucideIcon 
+  LucideIcon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -21,10 +21,10 @@ interface BottomNavigationProps {
   isVisible?: boolean;
 }
 
-const BottomNavigation: React.FC<BottomNavigationProps> = ({ 
-  activeTab, 
-  onTabChange, 
-  isVisible = true 
+const BottomNavigation: React.FC<BottomNavigationProps> = ({
+  activeTab,
+  onTabChange,
+  isVisible = true,
 }) => {
   // Navigation items configuration
   const navItems: NavItem[] = [
@@ -45,20 +45,21 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
-      <div className="flex items-center justify-around h-16">
+    <nav className='fixed bottom-0 left-0 right-0 z-40 border-t border-gray-100 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.1)]'>
+      <div className='flex h-16 items-center justify-around'>
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => handleNavigation(item.id)}
-            className={`bg-white flex flex-col items-center p-2 min-w-[64px] transition-colors
-              ${activeTab === item.id
-                ? 'text-emerald-500 bg-emerald-50 rounded-lg'
-                : 'text-gray-500 hover:text-emerald-400 hover:bg-gray-50'
+            className={`flex min-w-[64px] flex-col items-center bg-white p-2 transition-colors
+              ${
+                activeTab === item.id
+                  ? 'rounded-lg bg-emerald-50 text-emerald-500'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-emerald-400'
               }`}
           >
-            <item.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="mt-1 text-[11px]">{item.label}</span>
+            <item.icon className='h-4 w-4 sm:h-5 sm:w-5' />
+            <span className='mt-1 text-[11px]'>{item.label}</span>
           </button>
         ))}
       </div>

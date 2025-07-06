@@ -28,46 +28,50 @@ export default function VerifyEmailContent() {
   const router = useRouter();
   const checkInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const handleVerification = useCallback(async (token: string) => {
-    try {
-      setStatus('loading');
-      setMessage('Verifying your email...');
+  const handleVerification = useCallback(
+    async (token: string) => {
+      try {
+        setStatus('loading');
+        setMessage('Verifying your email...');
 
-      const result =
-        await emailVerificationFunctions.handleEmailVerification(token);
+        const result =
+          await emailVerificationFunctions.handleEmailVerification(token);
 
-      if (result.success) {
-        setStatus('success');
-        setMessage('Email verified successfully!');
+        if (result.success) {
+          setStatus('success');
+          setMessage('Email verified successfully!');
 
-        // Show success toast
-        showToast.success('Email Berhasil Diverifikasi!', {
-          description: 'Email Anda telah berhasil diverifikasi. Anda akan diarahkan ke halaman login.'
-        });
+          // Show success toast
+          showToast.success('Email Berhasil Diverifikasi!', {
+            description:
+              'Email Anda telah berhasil diverifikasi. Anda akan diarahkan ke halaman login.',
+          });
 
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
-      } else {
+          setTimeout(() => {
+            router.push('/login');
+          }, 3000);
+        } else {
+          setStatus('error');
+          setMessage(result.message);
+
+          // Show error toast with the specific message
+          showToast.error('Verifikasi Email Gagal', {
+            description: result.message,
+          });
+        }
+      } catch (error) {
+        console.error('Email verification error:', error);
         setStatus('error');
-        setMessage(result.message);
+        setMessage('Verification failed. Please try again.');
 
-        // Show error toast with the specific message
-       showToast.error('Verifikasi Email Gagal', {
-          description: result.message
+        // Show generic errorshowToast
+        showToast.error('Verifikasi Email Gagal', {
+          description: 'Verification failed. Please try again.',
         });
       }
-    } catch (error) {
-      console.error('Email verification error:', error);
-      setStatus('error');
-      setMessage('Verification failed. Please try again.');
-
-      // Show generic errorshowToast
-     showToast.error('Verifikasi Email Gagal', {
-        description: 'Verification failed. Please try again.'
-      });
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -119,7 +123,8 @@ export default function VerifyEmailContent() {
 
         // Show success message for resend
         showToast.success('Email Terkirim!', {
-          description: 'Email verifikasi telah dikirim ulang. Silakan cek inbox Anda.'
+          description:
+            'Email verifikasi telah dikirim ulang. Silakan cek inbox Anda.',
         });
 
         // Start background checking but without showing additional alerts
@@ -128,7 +133,7 @@ export default function VerifyEmailContent() {
     } catch (error) {
       console.error('Resend verification error:', error);
       showToast.error('Server Error', {
-        description: 'Terjadi kesalahan pada server. Silakan coba lagi nanti.'
+        description: 'Terjadi kesalahan pada server. Silakan coba lagi nanti.',
       });
     } finally {
       setIsLoading(false);
