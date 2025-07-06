@@ -42,10 +42,9 @@ export function useRegisterLogic() {
     const validationErrors = validateForm(formData);
     if (validationErrors.length > 0) {
       setError(validationErrors[0]);
-      showToast.warning(
-        `Data tidak valid: ${validationErrors.join(', ')}`,
-        { duration: 5000 }
-      );
+      showToast.warning(`Data tidak valid: ${validationErrors.join(', ')}`, {
+        duration: 5000,
+      });
       return;
     }
 
@@ -55,16 +54,13 @@ export function useRegisterLogic() {
     try {
       // Transform and send data
       const apiData = transformFormDataToApi(formData);
-      
+
       // Use promise toast for registration
-      await showToast.promise(
-        registerAPI.register(apiData),
-        {
-          loading: 'Membuat akun...',
-          success: `Email verifikasi telah dikirim ke ${formData.email}. Silakan cek inbox atau folder spam Anda.`,
-          error: 'Gagal membuat akun. Silakan coba lagi.'
-        }
-      );
+      await showToast.promise(registerAPI.register(apiData), {
+        loading: 'Membuat akun...',
+        success: `Email verifikasi telah dikirim ke ${formData.email}. Silakan cek inbox atau folder spam Anda.`,
+        error: 'Gagal membuat akun. Silakan coba lagi.',
+      });
 
       // Redirect based on role
       const redirectPath = getRedirectPath();
@@ -99,7 +95,9 @@ export function useRegisterLogic() {
         errorMessage.includes('500')
       ) {
         setError('Server bermasalah');
-        showToast.error('Server sedang mengalami gangguan. Silakan coba lagi nanti.');
+        showToast.error(
+          'Server sedang mengalami gangguan. Silakan coba lagi nanti.'
+        );
       } else {
         setError(errorMessage);
         showToast.error(errorMessage);

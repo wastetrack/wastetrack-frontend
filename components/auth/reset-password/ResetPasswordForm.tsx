@@ -20,12 +20,12 @@ export default function ResetPasswordForm() {
   // Validate token when component mounts
   useEffect(() => {
     const tokenParam = searchParams?.get('token');
-    
+
     if (!tokenParam) {
       setIsValidToken(false);
       Alert.error({
         title: 'Invalid Reset Token',
-        text: 'Token reset password tidak valid atau telah kedaluwarsa.'
+        text: 'Token reset password tidak valid atau telah kedaluwarsa.',
       }).then(() => {
         router.push('/forgot-password');
       });
@@ -33,17 +33,18 @@ export default function ResetPasswordForm() {
     }
 
     setToken(tokenParam);
-    
+
     // Optionally validate token with API
     const validateToken = async () => {
       try {
-        const result = await resetPasswordFunctions.validateResetToken(tokenParam);
+        const result =
+          await resetPasswordFunctions.validateResetToken(tokenParam);
         setIsValidToken(result.success);
-        
+
         if (!result.success) {
           await Alert.error({
             title: 'Invalid Reset Token',
-            text: 'Token reset password tidak valid atau telah kedaluwarsa.'
+            text: 'Token reset password tidak valid atau telah kedaluwarsa.',
           });
           router.push('/forgot-password');
         }
@@ -52,7 +53,7 @@ export default function ResetPasswordForm() {
         setIsValidToken(false);
         await Alert.error({
           title: 'Invalid Reset Token',
-          text: 'Token reset password tidak valid atau telah kedaluwarsa.'
+          text: 'Token reset password tidak valid atau telah kedaluwarsa.',
         });
         router.push('/forgot-password');
       }
@@ -67,7 +68,7 @@ export default function ResetPasswordForm() {
     if (newPassword !== confirmPassword) {
       await Alert.error({
         title: 'Password Tidak Cocok',
-        text: 'Password dan konfirmasi password tidak sama.'
+        text: 'Password dan konfirmasi password tidak sama.',
       });
       return;
     }
@@ -75,7 +76,7 @@ export default function ResetPasswordForm() {
     if (!token) {
       await Alert.error({
         title: 'Invalid Reset Token',
-        text: 'Token reset password tidak valid atau telah kedaluwarsa.'
+        text: 'Token reset password tidak valid atau telah kedaluwarsa.',
       });
       router.push('/forgot-password');
       return;
@@ -90,7 +91,7 @@ export default function ResetPasswordForm() {
       if (result.success) {
         await Alert.success({
           title: 'Password Berhasil Direset',
-          text: 'Password Anda telah berhasil direset. Silakan login dengan password baru.'
+          text: 'Password Anda telah berhasil direset. Silakan login dengan password baru.',
         });
         router.push('/login');
       }
@@ -104,8 +105,8 @@ export default function ResetPasswordForm() {
     return (
       <div style={{ margin: '-24px' }}>
         <div className='flex min-h-screen items-center justify-center bg-gray-100'>
-          <div className='w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow text-center'>
-            <RefreshCw className='h-8 w-8 animate-spin mx-auto text-emerald-600' />
+          <div className='w-full max-w-md space-y-6 rounded-lg bg-white p-8 text-center shadow'>
+            <RefreshCw className='mx-auto h-8 w-8 animate-spin text-emerald-600' />
             <p className='text-gray-600'>Validating reset token...</p>
           </div>
         </div>
@@ -118,11 +119,15 @@ export default function ResetPasswordForm() {
     return (
       <div style={{ margin: '-24px' }}>
         <div className='flex min-h-screen items-center justify-center bg-gray-100'>
-          <div className='w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow text-center'>
+          <div className='w-full max-w-md space-y-6 rounded-lg bg-white p-8 text-center shadow'>
             <div className='text-red-500'>
-              <Lock className='h-8 w-8 mx-auto mb-4' />
-              <h2 className='text-xl font-bold text-gray-800 mb-2'>Invalid Reset Link</h2>
-              <p className='text-gray-600'>This password reset link is invalid or has expired.</p>
+              <Lock className='mx-auto mb-4 h-8 w-8' />
+              <h2 className='mb-2 text-xl font-bold text-gray-800'>
+                Invalid Reset Link
+              </h2>
+              <p className='text-gray-600'>
+                This password reset link is invalid or has expired.
+              </p>
             </div>
           </div>
         </div>

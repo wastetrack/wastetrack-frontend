@@ -38,7 +38,7 @@ export const emailVerificationFunctions = {
         const errorMsg = 'Invalid verification token';
         await Alert.error({
           title: 'Verifikasi Email Gagal',
-          text: errorMsg
+          text: errorMsg,
         });
         return {
           success: false,
@@ -52,7 +52,7 @@ export const emailVerificationFunctions = {
       if (result.success) {
         await Alert.success({
           title: 'Email Berhasil Diverifikasi! ✅',
-          text: 'Selamat! Email Anda telah berhasil diverifikasi.'
+          text: 'Selamat! Email Anda telah berhasil diverifikasi.',
         });
 
         return {
@@ -63,7 +63,7 @@ export const emailVerificationFunctions = {
       } else {
         await Alert.error({
           title: 'Verifikasi Email Gagal',
-          text: result.message
+          text: result.message,
         });
 
         return {
@@ -77,7 +77,7 @@ export const emailVerificationFunctions = {
 
       await Alert.error({
         title: 'Verifikasi Email Gagal',
-        text: errorMessage
+        text: errorMessage,
       });
 
       return {
@@ -98,7 +98,7 @@ export const emailVerificationFunctions = {
         const errorMsg = 'Please provide a valid email address';
         await Alert.error({
           title: 'Invalid Email',
-          text: errorMsg
+          text: errorMsg,
         });
         return {
           success: false,
@@ -111,7 +111,7 @@ export const emailVerificationFunctions = {
       if (result.success) {
         await Alert.success({
           title: 'Email Verifikasi Terkirim! 📧',
-          text: 'Email verifikasi berhasil dikirim ke kotak masuk Anda.'
+          text: 'Email verifikasi berhasil dikirim ke kotak masuk Anda.',
         });
 
         return {
@@ -131,12 +131,12 @@ export const emailVerificationFunctions = {
           const remainingTime = timeMatch ? parseInt(timeMatch[1]) : 60;
           await Alert.info({
             title: 'Tunggu Sebentar ⏰',
-            text: `Anda baru saja meminta email verifikasi. Silakan tunggu ${remainingTime} detik sebelum meminta lagi.`
+            text: `Anda baru saja meminta email verifikasi. Silakan tunggu ${remainingTime} detik sebelum meminta lagi.`,
           });
         } else {
           await Alert.error({
             title: 'Failed to Send',
-            text: result.message
+            text: result.message,
           });
         }
 
@@ -155,12 +155,12 @@ export const emailVerificationFunctions = {
       ) {
         await Alert.info({
           title: 'Tunggu Sebentar ⏰',
-          text: 'Anda baru saja meminta email verifikasi. Silakan tunggu 60 detik sebelum meminta lagi.'
+          text: 'Anda baru saja meminta email verifikasi. Silakan tunggu 60 detik sebelum meminta lagi.',
         });
       } else {
         await Alert.error({
           title: 'Error',
-          text: errorMessage
+          text: errorMessage,
         });
       }
 
@@ -188,19 +188,26 @@ export const emailVerificationFunctions = {
       const result = await emailVerificationAPI.checkVerificationStatus(email);
 
       // Type guard to safely access the data
-      const isVerified = result.data && 
-        typeof result.data === 'object' && 
-        'is_email_verified' in result.data 
-          ? Boolean((result.data as { is_email_verified?: boolean }).is_email_verified)
+      const isVerified =
+        result.data &&
+        typeof result.data === 'object' &&
+        'is_email_verified' in result.data
+          ? Boolean(
+              (result.data as { is_email_verified?: boolean }).is_email_verified
+            )
           : false;
 
       return {
         success: result.success,
         message: result.message,
         isVerified,
-        data: result.data && typeof result.data === 'object' 
-          ? result.data as { [key: string]: unknown; is_email_verified?: boolean }
-          : undefined,
+        data:
+          result.data && typeof result.data === 'object'
+            ? (result.data as {
+                [key: string]: unknown;
+                is_email_verified?: boolean;
+              })
+            : undefined,
       };
     } catch (error) {
       const errorMessage = handleApiError(error);
@@ -220,7 +227,7 @@ export const emailVerificationFunctions = {
       if (!email || !email.includes('@')) {
         Alert.error({
           title: 'Invalid Email',
-          text: 'Please provide a valid email address'
+          text: 'Please provide a valid email address',
         });
         return false;
       }
@@ -231,7 +238,7 @@ export const emailVerificationFunctions = {
         showConfirmButton: true,
         showCancelButton: true,
         confirmButtonText: 'Resend Email',
-        cancelButtonText: 'Cancel'
+        cancelButtonText: 'Cancel',
       });
 
       if (result.isConfirmed) {
@@ -245,7 +252,7 @@ export const emailVerificationFunctions = {
       const errorMessage = handleApiError(error);
       Alert.error({
         title: 'Error',
-        text: errorMessage
+        text: errorMessage,
       });
       return false;
     }

@@ -21,8 +21,8 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [activeTab, setActiveTab] = useState<string>('home');
-  const [userData, setUserData] = useState<UserData>({ 
-    profile: { fullName: 'Loading...' } 
+  const [userData, setUserData] = useState<UserData>({
+    profile: { fullName: 'Loading...' },
   });
 
   // Get user ID from localStorage
@@ -53,8 +53,8 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
           const profileData = response.data;
           setUserData({
             profile: {
-              fullName: profileData.user?.username || 'User'
-            }
+              fullName: profileData.user?.username || 'User',
+            },
           });
         }
       }
@@ -97,7 +97,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
   // Handle tab navigation
   const handleTabChange = (tabId: string): void => {
     setActiveTab(tabId);
-    
+
     switch (tabId) {
       case 'home':
         router.push('/customer/dashboard');
@@ -120,7 +120,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className='min-h-screen bg-gray-50'>
       {/* Header */}
       <Header
         userData={userData}
@@ -129,10 +129,8 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
       />
 
       {/* Main Content */}
-      <main className="py-20 p-6 min-h-screen">
-        <div className="mx-auto max-w-7xl">
-          {children}
-        </div>
+      <main className='min-h-screen p-6 py-20'>
+        <div className='mx-auto max-w-7xl'>{children}</div>
       </main>
 
       {/* Bottom Navigation */}

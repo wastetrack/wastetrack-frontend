@@ -5,7 +5,7 @@ export {
   TIER_COLORS,
   getCurrentTier,
   calculateNextTierProgress,
-  type TierName
+  type TierName,
 } from './tiers';
 
 export { ROLES, ROLE_DESCRIPTIONS } from './roles';

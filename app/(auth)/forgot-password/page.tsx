@@ -23,7 +23,7 @@ export default function ForgotPassword() {
   return (
     <div>
       <div className='flex min-h-screen items-center justify-center bg-gray-100 sm:px-6 lg:px-8'>
-        <div className='w-full max-w-md space-y-6 rounded-lg sm:bg-white p-6 sm:shadow-lg sm:p-8'>
+        <div className='w-full max-w-md space-y-6 rounded-lg p-6 sm:bg-white sm:p-8 sm:shadow-lg'>
           <div>
             <h2 className='text-center text-xl font-bold text-gray-800 sm:text-2xl'>
               Lupa Password
@@ -32,7 +32,10 @@ export default function ForgotPassword() {
               Masukkan email Anda untuk mereset password
             </p>
           </div>
-          <form className='mt-6 space-y-4 sm:mt-8 sm:space-y-6' onSubmit={handleSubmit}>
+          <form
+            className='mt-6 space-y-4 sm:mt-8 sm:space-y-6'
+            onSubmit={handleSubmit}
+          >
             <div>
               <label
                 htmlFor='email'
@@ -51,7 +54,7 @@ export default function ForgotPassword() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className='w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm'
+                  className='shadow-xs w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm'
                   placeholder='Masukkan email Anda'
                 />
               </div>

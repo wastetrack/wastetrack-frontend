@@ -11,7 +11,7 @@ import { LoginRequest } from '@/types';
 // Loading component untuk Suspense fallback
 function LoginFormLoading() {
   return (
-    <div className='w-full space-y-4 rounded-lg sm:p-4 max-w-2xl md:p-6'>
+    <div className='w-full max-w-2xl space-y-4 rounded-lg sm:p-4 md:p-6'>
       <div className='flex flex-col items-center'>
         <h1 className='text-center text-base font-bold text-gray-800 sm:text-lg md:text-xl lg:text-2xl'>
           Loading...
@@ -22,14 +22,14 @@ function LoginFormLoading() {
       </div>
       <div className='space-y-4 sm:space-y-5'>
         <div className='animate-pulse'>
-          <div className='h-4 bg-gray-200 rounded mb-2'></div>
-          <div className='h-12 bg-gray-200 rounded'></div>
+          <div className='mb-2 h-4 rounded bg-gray-200'></div>
+          <div className='h-12 rounded bg-gray-200'></div>
         </div>
         <div className='animate-pulse'>
-          <div className='h-4 bg-gray-200 rounded mb-2'></div>
-          <div className='h-12 bg-gray-200 rounded'></div>
+          <div className='mb-2 h-4 rounded bg-gray-200'></div>
+          <div className='h-12 rounded bg-gray-200'></div>
         </div>
-        <div className='h-12 bg-gray-200 rounded animate-pulse'></div>
+        <div className='h-12 animate-pulse rounded bg-gray-200'></div>
       </div>
     </div>
   );
@@ -54,7 +54,7 @@ function LoginFormContent() {
 
   useEffect(() => {
     if (!mounted) return;
-    
+
     // Clean URL on component mount if it contains sensitive data
     const email = searchParams.get('email');
     const password = searchParams.get('password');
@@ -65,7 +65,7 @@ function LoginFormContent() {
         router.replace('/login');
         Alert.error({
           title: 'Peringatan Keamanan! 🚨',
-          text: 'Kredensial login tidak boleh muncul di URL. Halaman telah dibersihkan untuk keamanan Anda.'
+          text: 'Kredensial login tidak boleh muncul di URL. Halaman telah dibersihkan untuk keamanan Anda.',
         });
       }
     }
@@ -91,7 +91,7 @@ function LoginFormContent() {
     if (!formData.email || !formData.password) {
       Alert.error({
         title: 'Validation Error',
-        text: 'Email dan password harus diisi'
+        text: 'Email dan password harus diisi',
       });
       setLoading(false);
       return;
@@ -101,8 +101,8 @@ function LoginFormContent() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       Alert.error({
-        title: 'Validation Error', 
-        text: 'Format email tidak valid'
+        title: 'Validation Error',
+        text: 'Format email tidak valid',
       });
       setLoading(false);
       return;
@@ -135,7 +135,7 @@ function LoginFormContent() {
       console.error('Login error:', error);
       Alert.error({
         title: 'Error',
-        text: 'Terjadi kesalahan yang tidak terduga saat login'
+        text: 'Terjadi kesalahan yang tidak terduga saat login',
       });
       setFormData((prev) => ({ ...prev, password: '' }));
     } finally {
@@ -146,7 +146,7 @@ function LoginFormContent() {
   // Jangan render apa-apa sampai komponen ter-mount di client
   if (!mounted) {
     return (
-      <div className='w-full space-y-4 rounded-lg sm:p-4 max-w-2xl md:p-6'>
+      <div className='w-full max-w-2xl space-y-4 rounded-lg sm:p-4 md:p-6'>
         <div className='flex flex-col items-center'>
           <h1 className='text-center text-base font-bold text-gray-800 sm:text-lg md:text-xl lg:text-2xl'>
             Selamat Datang Kembali!
@@ -157,21 +157,21 @@ function LoginFormContent() {
         </div>
         <div className='space-y-4 sm:space-y-5'>
           <div className='animate-pulse'>
-            <div className='h-4 bg-gray-200 rounded mb-2'></div>
-            <div className='h-12 bg-gray-200 rounded'></div>
+            <div className='mb-2 h-4 rounded bg-gray-200'></div>
+            <div className='h-12 rounded bg-gray-200'></div>
           </div>
           <div className='animate-pulse'>
-            <div className='h-4 bg-gray-200 rounded mb-2'></div>
-            <div className='h-12 bg-gray-200 rounded'></div>
+            <div className='mb-2 h-4 rounded bg-gray-200'></div>
+            <div className='h-12 rounded bg-gray-200'></div>
           </div>
-          <div className='h-12 bg-gray-200 rounded animate-pulse'></div>
+          <div className='h-12 animate-pulse rounded bg-gray-200'></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='w-full space-y-4 rounded-lg sm:p-4 max-w-2xl md:p-6'>
+    <div className='w-full max-w-2xl space-y-4 rounded-lg sm:p-4 md:p-6'>
       <div className='flex flex-col items-center'>
         <h1 className='text-center text-base font-bold text-gray-800 sm:text-lg md:text-xl lg:text-2xl'>
           Selamat Datang Kembali!
@@ -208,7 +208,7 @@ function LoginFormContent() {
               value={formData.email}
               onChange={handleChange}
               placeholder='Masukkan email Anda'
-              className='w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm'
+              className='shadow-xs w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm'
             />
           </div>
         </div>
@@ -233,7 +233,7 @@ function LoginFormContent() {
               value={formData.password}
               onChange={handleChange}
               placeholder='Masukkan kata sandi Anda'
-              className='w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 pr-10 text-sm text-gray-800 shadow-xs transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:pr-12 sm:text-base sm:placeholder:text-sm'
+              className='shadow-xs w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 pr-10 text-sm text-gray-800 transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:pr-12 sm:text-base sm:placeholder:text-sm'
             />
             <span
               onClick={() => setShowPassword((prev) => !prev)}

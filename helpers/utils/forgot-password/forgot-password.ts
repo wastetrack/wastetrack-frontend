@@ -77,7 +77,7 @@ export const forgotPasswordFunctions = {
         confirmButtonText: 'Ya, Kirim',
         cancelButtonText: 'Batal',
         confirmButtonColor: '#10b981',
-        cancelButtonColor: '#6b7280'
+        cancelButtonColor: '#6b7280',
       });
 
       // If user cancels, return early
@@ -95,9 +95,13 @@ export const forgotPasswordFunctions = {
         if (!result.success) {
           // Check for specific error messages from backend
           if (result.message === 'Email not found') {
-            throw new Error('Email tidak ditemukan dalam sistem. Pastikan email yang Anda masukkan sudah terdaftar.');
+            throw new Error(
+              'Email tidak ditemukan dalam sistem. Pastikan email yang Anda masukkan sudah terdaftar.'
+            );
           }
-          throw new Error(result.message || 'Gagal mengirim email reset password');
+          throw new Error(
+            result.message || 'Gagal mengirim email reset password'
+          );
         }
 
         return result;
@@ -105,25 +109,25 @@ export const forgotPasswordFunctions = {
 
       // Execute with toast promise and handle result properly
       try {
-        await showToast.promise(
-          forgotPasswordPromise(),
-          {
-            loading: 'Mengirim link reset password...',
-            success: () => {
-              return `Link reset password telah dikirim ke ${email}! Silakan cek email Anda dan ikuti petunjuknya.`;
-            },
-            error: (error) => {
-              const errorMessage = error instanceof Error ? error.message : 'Gagal mengirim email reset password';
-              
-              // Return user-friendly message for "Email not found"
-              if (errorMessage.includes('Email tidak ditemukan')) {
-                return errorMessage; // Already in Indonesian
-              }
-              
-              return errorMessage;
+        await showToast.promise(forgotPasswordPromise(), {
+          loading: 'Mengirim link reset password...',
+          success: () => {
+            return `Link reset password telah dikirim ke ${email}! Silakan cek email Anda dan ikuti petunjuknya.`;
+          },
+          error: (error) => {
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : 'Gagal mengirim email reset password';
+
+            // Return user-friendly message for "Email not found"
+            if (errorMessage.includes('Email tidak ditemukan')) {
+              return errorMessage; // Already in Indonesian
             }
-          }
-        );
+
+            return errorMessage;
+          },
+        });
 
         return {
           success: true,
@@ -131,28 +135,36 @@ export const forgotPasswordFunctions = {
         };
       } catch (error) {
         // The toast already showed the error, just return the result
-        const errorMessage = error instanceof Error ? error.message : 'Gagal mengirim email reset password';
-        
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Gagal mengirim email reset password';
+
         // Check for specific backend error messages
-        if (errorMessage.includes('Email not found') || errorMessage.includes('Email tidak ditemukan')) {
+        if (
+          errorMessage.includes('Email not found') ||
+          errorMessage.includes('Email tidak ditemukan')
+        ) {
           return {
             success: false,
             message: 'Email not found',
           };
         }
-        
+
         return {
           success: false,
           message: errorMessage,
         };
       }
-
     } catch (error) {
       const errorMessage = handleApiError(error);
       console.error('Forgot password error:', error);
 
       // Handle specific error cases
-      if (errorMessage.includes('Email not found') || errorMessage.includes('Email tidak ditemukan')) {
+      if (
+        errorMessage.includes('Email not found') ||
+        errorMessage.includes('Email tidak ditemukan')
+      ) {
         // This case is already handled by the toast.promise error handler
         return {
           success: false,
@@ -244,7 +256,7 @@ export const forgotPasswordFunctions = {
   showForgotPasswordHelp: async (): Promise<void> => {
     try {
       showToast.info(
-        "Masukkan alamat email Anda dan kami akan mengirimkan link untuk mereset password. Link akan kedaluwarsa dalam 24 jam untuk keamanan.",
+        'Masukkan alamat email Anda dan kami akan mengirimkan link untuk mereset password. Link akan kedaluwarsa dalam 24 jam untuk keamanan.',
         { duration: 6000 }
       );
     } catch (error) {

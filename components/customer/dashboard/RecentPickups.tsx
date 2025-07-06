@@ -9,17 +9,17 @@ interface RecentPickupsProps {
   onViewAllPickups: () => void;
 }
 
-export default function RecentPickups({ 
-  pickups, 
-  displayedPickups, 
-  recentPickups, 
-  onViewAllPickups 
+export default function RecentPickups({
+  pickups,
+  displayedPickups,
+  recentPickups,
+  onViewAllPickups,
 }: RecentPickupsProps) {
   const formatDate = (pickup: Pickup): string => {
     const date = new Date(pickup.date);
-    return date.toLocaleDateString('id-ID', { 
-      day: '2-digit', 
-      month: 'short' 
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
     });
   };
 
@@ -29,38 +29,46 @@ export default function RecentPickups({
 
   const getStatusStyle = (status: PickupStatus): string => {
     const baseStyle = 'px-2 rounded-full text-[8px] capitalize';
-    const statusStyle = PICKUP_STATUS_STYLES[status] || 'bg-gray-100 text-gray-800 border border-gray-200';
+    const statusStyle =
+      PICKUP_STATUS_STYLES[status] ||
+      'bg-gray-100 text-gray-800 border border-gray-200';
     return `${baseStyle} ${statusStyle}`;
   };
 
   return (
-    <div className="pt-4 sm:p-4 sm:bg-white sm:shadow-sm sm:rounded-xl">
-      <h2 className="mb-2 text-lg font-semibold text-gray-800">Pengambilan Terbaru</h2>
-      
+    <div className='pt-4 sm:rounded-xl sm:bg-white sm:p-4 sm:shadow-sm'>
+      <h2 className='mb-2 text-lg font-semibold text-gray-800'>
+        Pengambilan Terbaru
+      </h2>
+
       {pickups.pending > 0 && (
-        <span className="px-2 py-1 text-xs text-yellow-600 rounded-full bg-yellow-50">
+        <span className='rounded-full bg-yellow-50 px-2 py-1 text-xs text-yellow-600'>
           {pickups.pending} menunggu
         </span>
       )}
-      
+
       {displayedPickups.length > 0 ? (
-        <div className="space-y-2">
+        <div className='space-y-2'>
           {displayedPickups.map((pickup) => (
             <div
               key={pickup.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-white shadow-xs sm:shadow-sm border border-gray-50 hover:border-emerald-100 transition-colors"
+              className='shadow-xs flex items-center justify-between rounded-lg border border-gray-50 bg-white p-3 transition-colors hover:border-emerald-100 sm:shadow-sm'
             >
-              <div className="flex gap-3">
-                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50">
-                  <Package className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+              <div className='flex gap-3'>
+                <div className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50'>
+                  <Package className='h-4 w-4 text-emerald-600 sm:h-5 sm:w-5' />
                 </div>
                 <div>
-                  <p className="text-sm text-left font-medium text-gray-800">
-                    {pickup.wasteQuantities ?
-                      Object.values(pickup.wasteQuantities).reduce((total, qty) => total + qty, 0)
-                      : pickup.quantity || 0} kantong
+                  <p className='text-left text-sm font-medium text-gray-800'>
+                    {pickup.wasteQuantities
+                      ? Object.values(pickup.wasteQuantities).reduce(
+                          (total, qty) => total + qty,
+                          0
+                        )
+                      : pickup.quantity || 0}{' '}
+                    kantong
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className='text-xs text-gray-500'>
                     {formatDate(pickup)} • {pickup.time}
                   </p>
                 </div>
@@ -72,16 +80,18 @@ export default function RecentPickups({
           ))}
         </div>
       ) : (
-        <div className="py-6 text-center bg-white rounded-lg shadow-sm border border-gray-50">
-          <p className="text-sm text-gray-500">Belum ada pengambilan yang dijadwalkan</p>
+        <div className='rounded-lg border border-gray-50 bg-white py-6 text-center shadow-sm'>
+          <p className='text-sm text-gray-500'>
+            Belum ada pengambilan yang dijadwalkan
+          </p>
         </div>
       )}
 
       {recentPickups.length > 3 && (
-        <div className="text-center p-2">
+        <div className='p-2 text-center'>
           <button
             onClick={onViewAllPickups}
-            className="bg-transparent text-xs text-emerald-600 hover:text-emerald-700 inline-flex items-center"
+            className='inline-flex items-center bg-transparent text-xs text-emerald-600 hover:text-emerald-700'
           >
             Lihat selengkapnya
           </button>

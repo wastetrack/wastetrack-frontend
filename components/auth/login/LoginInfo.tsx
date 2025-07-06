@@ -6,7 +6,7 @@ import { Check, Bell, Zap } from 'lucide-react';
 export default function LoginInfo() {
   return (
     <section className='hidden flex-col justify-center bg-gradient-to-br from-emerald-600 to-emerald-800 text-white lg:flex lg:w-1/2'>
-      <div className='mx-auto w-full px-6 lg:px-8 sm:max-w-2xl xl:px-12'>
+      <div className='mx-auto w-full px-6 sm:max-w-2xl lg:px-8 xl:px-12'>
         <h2 className='mb-4 text-center text-2xl font-bold leading-tight text-white lg:mb-6 lg:text-3xl xl:text-4xl'>
           Selamat Datang di WasteTrack
         </h2>

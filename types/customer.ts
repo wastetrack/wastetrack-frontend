@@ -29,7 +29,12 @@ export interface Stats {
 // ============================================================================
 // PICKUP TYPES
 // ============================================================================
-export type PickupStatus = 'pending' | 'completed' | 'in_progress' | 'assigned' | 'cancelled';
+export type PickupStatus =
+  | 'pending'
+  | 'completed'
+  | 'in_progress'
+  | 'assigned'
+  | 'cancelled';
 
 export interface Pickup {
   id: string;
@@ -43,10 +48,10 @@ export interface Pickup {
 // Status display mappings
 export const PICKUP_STATUS_TEXT: Record<PickupStatus, string> = {
   pending: 'Menunggu',
-  completed: 'Selesai', 
+  completed: 'Selesai',
   cancelled: 'Dibatalkan',
   in_progress: 'Proses',
-  assigned: 'Ditugaskan'
+  assigned: 'Ditugaskan',
 };
 
 export const PICKUP_STATUS_STYLES: Record<PickupStatus, string> = {
@@ -54,7 +59,7 @@ export const PICKUP_STATUS_STYLES: Record<PickupStatus, string> = {
   completed: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
   in_progress: 'bg-orange-100 text-orange-800 border border-orange-200',
   assigned: 'bg-blue-100 text-blue-800 border border-blue-200',
-  cancelled: 'bg-red-100 text-red-800 border border-red-200'
+  cancelled: 'bg-red-100 text-red-800 border border-red-200',
 };
 
 // ============================================================================

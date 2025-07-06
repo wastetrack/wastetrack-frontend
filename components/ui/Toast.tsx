@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { toast, ExternalToast } from 'sonner';
 
@@ -10,32 +10,32 @@ export const showToast = {
       ...options,
     });
   },
-  
+
   error: (message: string, options?: ExternalToast) => {
     return toast.error(message, {
       duration: 6000,
       ...options,
     });
   },
-  
+
   warning: (message: string, options?: ExternalToast) => {
     return toast.warning(message, {
       duration: 5000,
       ...options,
     });
   },
-  
+
   info: (message: string, options?: ExternalToast) => {
     return toast.info(message, {
       duration: 5000,
       ...options,
     });
   },
-  
+
   loading: (message: string, options?: ExternalToast) => {
     return toast.loading(message, options);
   },
-  
+
   promise: <T,>(
     promise: Promise<T>,
     messages: {
@@ -52,29 +52,38 @@ export const showToast = {
   },
 
   // Helper untuk custom actions
-  withAction: (message: string, type: 'success' | 'error' | 'warning' | 'info', actionLabel: string, actionFn: () => void) => {
+  withAction: (
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info',
+    actionLabel: string,
+    actionFn: () => void
+  ) => {
     const options: ExternalToast = {
       action: {
         label: actionLabel,
         onClick: actionFn,
       },
     };
-    
+
     return showToast[type](message, options);
   },
 
   // Helper untuk toast dengan deskripsi
-  withDescription: (message: string, description: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+  withDescription: (
+    message: string,
+    description: string,
+    type: 'success' | 'error' | 'warning' | 'info' = 'info'
+  ) => {
     const options: ExternalToast = {
       description,
     };
-    
+
     return showToast[type](message, options);
   },
 
   // Helper untuk custom styling dengan Tailwind classes
   custom: (
-    message: string, 
+    message: string,
     type: 'success' | 'error' | 'warning' | 'info',
     className?: string,
     options?: ExternalToast

@@ -23,10 +23,15 @@ export const forgotPasswordAPI = {
 
       if (!response.ok) {
         // Handle specific error cases from backend
-        if (data.errors === "Email not found" || data.message === "Email not found") {
+        if (
+          data.errors === 'Email not found' ||
+          data.message === 'Email not found'
+        ) {
           throw new Error('Email not found');
         }
-        throw new Error(data.message || data.errors || 'Failed to request password reset');
+        throw new Error(
+          data.message || data.errors || 'Failed to request password reset'
+        );
       }
 
       return {

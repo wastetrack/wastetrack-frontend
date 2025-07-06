@@ -1,4 +1,4 @@
-import { Alert } from "@/components/ui";
+import { Alert } from '@/components/ui';
 
 export interface FormData {
   email: string;
@@ -108,8 +108,9 @@ export const validateForm = (formData: FormData) => {
 
 export const transformFormDataToApi = (formData: FormData) => {
   // Ensure we always have clean phone number
-  const cleanPhoneNumber = formData.phoneClean || formData.phone.replace(/\D/g, '');
-  
+  const cleanPhoneNumber =
+    formData.phoneClean || formData.phone.replace(/\D/g, '');
+
   return {
     username: formData.fullName,
     email: formData.email,
@@ -253,7 +254,7 @@ export const safeAlert = {
     try {
       return Alert.success({
         title,
-        text
+        text,
       });
     } catch (error) {
       console.error('Failed to show success alert:', error);
@@ -264,7 +265,7 @@ export const safeAlert = {
     try {
       return Alert.error({
         title,
-        text
+        text,
       });
     } catch (error) {
       console.error('Failed to show error alert:', error);
@@ -276,7 +277,7 @@ export const safeAlert = {
     try {
       return Alert.warning({
         title: 'Data Tidak Valid',
-        text: message
+        text: message,
       });
     } catch (error) {
       console.error('Failed to show validation error:', error);
