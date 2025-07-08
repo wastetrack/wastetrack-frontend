@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Eye,
@@ -13,10 +13,11 @@ import {
   MapPin,
   UserPlus,
 } from 'lucide-react';
-import { RegisterFormProps } from '@/types';
+import { RegisterFormProps, InstitutionSuggestion } from '@/types';
 import { getCurrentLocation } from '@/helpers/utils/register/register';
 import { ROLES, ROLE_DESCRIPTIONS } from '@/constants';
 import { Alert } from '@/components/ui';
+import { userListAPI } from '@/services/api/user';
 
 export default function RegisterForm({
   formData,
@@ -30,6 +31,24 @@ export default function RegisterForm({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+
+  // Institution autocomplete state
+  const [institutionSuggestions, setInstitutionSuggestions] = useState<
+    InstitutionSuggestion[]
+  >([]);
+  const [showInstitutionSuggestions, setShowInstitutionSuggestions] =
+    useState(false);
+  const [institutionLoading, setInstitutionLoading] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleBlur = (fieldName: string) => {
     setTouchedFields((prev) => new Set([...prev, fieldName]));
@@ -84,10 +103,131 @@ export default function RegisterForm({
       return;
     }
 
+    // Handle institution autocomplete for collector roles
+    if (
+      name === 'institution' &&
+      (formData.role === 'waste_collector_unit' ||
+        formData.role === 'waste_collector_central')
+    ) {
+      // Clear previous search timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      // Show/hide suggestions based on input
+      if (value.length > 0) {
+        setShowInstitutionSuggestions(true);
+        // Debounce the search to avoid too many API calls
+        searchTimeoutRef.current = setTimeout(() => {
+          searchInstitutions(value);
+        }, 300);
+      } else {
+        setShowInstitutionSuggestions(false);
+        setInstitutionSuggestions([]);
+        setInstitutionLoading(false);
+      }
+    }
+
     onFormDataChange({
       ...formData,
       [name]: value,
     });
+  };
+
+  // Search institutions based on role and query
+  const searchInstitutions = useCallback(
+    async (query: string) => {
+      // Double check role before proceeding
+      if (
+        !formData.role ||
+        (formData.role !== 'waste_collector_unit' &&
+          formData.role !== 'waste_collector_central')
+      ) {
+        return;
+      }
+
+      // Don't search if query is too short
+      if (query.trim().length < 1) {
+        setInstitutionSuggestions([]);
+        setShowInstitutionSuggestions(false);
+        return;
+      }
+
+      setInstitutionLoading(true);
+      try {
+        console.log(
+          'Searching institutions with query:',
+          query,
+          'role:',
+          formData.role
+        );
+
+        // Use public API for institution suggestions (no authentication required)
+        const response = await userListAPI.getPublicInstitutionSuggestions({
+          role: formData.role,
+          query: query.trim(),
+          limit: 10,
+        });
+
+        console.log('Institution search response:', response);
+
+        if (response && response.data && response.data.institutions) {
+          setInstitutionSuggestions(response.data.institutions);
+        } else {
+          setInstitutionSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error searching institutions:', error);
+        setInstitutionSuggestions([]);
+
+        // Don't show error to user, just silently fail
+        // The autocomplete will show "Tidak ada hasil ditemukan"
+      } finally {
+        setInstitutionLoading(false);
+      }
+    },
+    [formData.role]
+  );
+
+  // Handle institution selection from suggestions
+  const handleInstitutionSelect = (institution: string) => {
+    try {
+      onFormDataChange({
+        ...formData,
+        institution: institution,
+      });
+      setShowInstitutionSuggestions(false);
+      setInstitutionSuggestions([]);
+
+      // Clear any pending searches
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+    } catch (error) {
+      console.error('Error selecting institution:', error);
+    }
+  };
+
+  // Close suggestions when clicking outside
+  const handleInstitutionBlur = () => {
+    try {
+      // Clear any pending searches
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+
+      // Add a small delay to allow clicking on suggestions
+      setTimeout(() => {
+        setShowInstitutionSuggestions(false);
+      }, 200);
+
+      handleBlur('institution');
+    } catch (error) {
+      console.error('Error in institution blur:', error);
+      setShowInstitutionSuggestions(false);
+    }
   };
 
   const isValidEmail = (email: string) => {
@@ -221,7 +361,11 @@ export default function RegisterForm({
     }
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+
     setTouchedFields(
       (prev) => new Set([...prev, 'email', 'password', 'confirmPassword'])
     );
@@ -243,6 +387,23 @@ export default function RegisterForm({
     }
 
     setStep(step + 1);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (step === 1) {
+      handleNextStep();
+    } else {
+      onSubmit(e);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && step === 2) {
+      e.preventDefault();
+      return false;
+    }
   };
 
   return (
@@ -305,7 +466,7 @@ export default function RegisterForm({
       )}
 
       {/* Form */}
-      <form onSubmit={onSubmit} className='space-y-5'>
+      <form onSubmit={handleFormSubmit} className='space-y-5'>
         {step === 1 ? (
           <>
             {/* Role Selection */}
@@ -523,6 +684,7 @@ export default function RegisterForm({
                   value={formData.fullName}
                   onChange={handleChange}
                   onBlur={() => handleBlur('fullName')}
+                  onKeyDown={handleKeyDown}
                   placeholder='Masukkan nama lengkap Anda'
                   className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('fullName') &&
@@ -583,6 +745,12 @@ export default function RegisterForm({
                   required
                   maxLength={16} // 13 digits + 3 dashes
                   onKeyDown={(e) => {
+                    // Prevent form submission on Enter key
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      return;
+                    }
+
                     // Allow: backspace, delete, tab, escape, enter
                     if (
                       [8, 9, 13, 27, 46].includes(e.keyCode) ||
@@ -654,8 +822,36 @@ export default function RegisterForm({
                     name='institution'
                     value={formData.institution}
                     onChange={handleChange}
-                    onBlur={() => handleBlur('institution')}
-                    placeholder='Masukkan nama institusi Anda'
+                    onBlur={handleInstitutionBlur}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => {
+                      if (
+                        formData.role === 'waste_collector_unit' ||
+                        formData.role === 'waste_collector_central'
+                      ) {
+                        if (
+                          formData.institution &&
+                          formData.institution.length > 0
+                        ) {
+                          setShowInstitutionSuggestions(true);
+                          // Clear previous timeout
+                          if (searchTimeoutRef.current) {
+                            clearTimeout(searchTimeoutRef.current);
+                          }
+                          // Add delay to avoid immediate search on focus
+                          searchTimeoutRef.current = setTimeout(() => {
+                            searchInstitutions(formData.institution);
+                          }, 100);
+                        }
+                      }
+                    }}
+                    placeholder={
+                      formData.role === 'waste_collector_unit'
+                        ? 'Ketik nama bank sampah unit...'
+                        : formData.role === 'waste_collector_central'
+                          ? 'Ketik nama bank sampah induk...'
+                          : 'Masukkan nama institusi Anda'
+                    }
                     className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                       touchedFields.has('institution') &&
                       !isFieldValid(
@@ -674,8 +870,15 @@ export default function RegisterForm({
                           : 'border-gray-200'
                     }`}
                     required
+                    autoComplete='off'
                   />
-                  {touchedFields.has('institution') &&
+                  {institutionLoading && (
+                    <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
+                      <div className='h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600'></div>
+                    </div>
+                  )}
+                  {!institutionLoading &&
+                    touchedFields.has('institution') &&
                     isFieldValid(
                       'institution',
                       formData.institution,
@@ -683,6 +886,62 @@ export default function RegisterForm({
                     ) && (
                       <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
                         <span className='hidden text-green-500'>✓</span>
+                      </div>
+                    )}
+
+                  {/* Institution Suggestions Dropdown */}
+                  {showInstitutionSuggestions &&
+                    (formData.role === 'waste_collector_unit' ||
+                      formData.role === 'waste_collector_central') &&
+                    formData.institution &&
+                    formData.institution.length > 0 && (
+                      <div className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5'>
+                        {institutionLoading ? (
+                          <div className='px-4 py-2 text-sm text-gray-500'>
+                            <div className='flex items-center space-x-2'>
+                              <div className='h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600'></div>
+                              <span>Mencari...</span>
+                            </div>
+                          </div>
+                        ) : institutionSuggestions &&
+                          institutionSuggestions.length > 0 ? (
+                          institutionSuggestions.map((suggestion, index) => (
+                            <div
+                              key={`${suggestion.id}-${index}`}
+                              className='cursor-pointer px-4 py-2 text-sm hover:bg-gray-100'
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleInstitutionSelect(suggestion.institution);
+                              }}
+                              onMouseDown={(e) => {
+                                // Prevent blur from firing before click
+                                e.preventDefault();
+                              }}
+                            >
+                              <div className='font-medium'>
+                                {suggestion.institution}
+                              </div>
+                              {(suggestion.address ||
+                                suggestion.city ||
+                                suggestion.province) && (
+                                <div className='text-xs text-gray-500'>
+                                  {[
+                                    suggestion.address,
+                                    suggestion.city,
+                                    suggestion.province,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className='px-4 py-2 text-sm text-gray-500'>
+                            Tidak ada hasil ditemukan
+                          </div>
+                        )}
                       </div>
                     )}
                 </div>
@@ -705,6 +964,12 @@ export default function RegisterForm({
                     ) || 'Institusi valid'}
                   </p>
                 )}
+                {(formData.role === 'waste_collector_unit' ||
+                  formData.role === 'waste_collector_central') && (
+                  <p className='mt-1 text-xs text-gray-500'>
+                    Ketik nama institusi untuk melihat saran
+                  </p>
+                )}
               </div>
             )}
 
@@ -723,6 +988,7 @@ export default function RegisterForm({
                   value={formData.address}
                   onChange={handleChange}
                   onBlur={() => handleBlur('address')}
+                  onKeyDown={handleKeyDown}
                   placeholder='Masukkan alamat Anda'
                   className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('address') &&
@@ -767,6 +1033,7 @@ export default function RegisterForm({
                   value={formData.city}
                   onChange={handleChange}
                   onBlur={() => handleBlur('city')}
+                  onKeyDown={handleKeyDown}
                   placeholder='Masukkan kota Anda'
                   className={`w-full rounded-lg border bg-white p-3 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('city') &&
@@ -801,6 +1068,7 @@ export default function RegisterForm({
                   value={formData.province}
                   onChange={handleChange}
                   onBlur={() => handleBlur('province')}
+                  onKeyDown={handleKeyDown}
                   placeholder='Masukkan provinsi Anda'
                   className={`w-full rounded-lg border bg-white p-3 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('province') &&

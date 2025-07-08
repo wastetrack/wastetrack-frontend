@@ -5,12 +5,12 @@ import { jwtDecode } from 'jwt-decode';
 
 // Define protected routes outside the middleware function
 const PROTECTED_ROUTES = {
-  '/customer/dashboard': ['customer'],
-  '/collector-central/dashboard': ['waste_collector_central'],
-  '/collector-unit/dashboard': ['waste_collector_unit'],
-  '/offtaker/dashboard': ['industry'],
-  '/wastebank-central/dashboard': ['waste_bank_central'],
-  '/wastebank-unit/dashboard': ['waste_bank_unit'],
+  '/customer': ['customer'],
+  '/collector-central': ['waste_collector_central'],
+  '/collector-unit': ['waste_collector_unit'],
+  '/offtaker': ['industry'],
+  '/wastebank-central': ['waste_bank_central'],
+  '/wastebank-unit': ['waste_bank_unit'],
 } as const;
 
 export function middleware(request: NextRequest) {
@@ -52,12 +52,12 @@ export function middleware(request: NextRequest) {
         refreshToken
       ) {
         const roleBasedRedirect: Record<string, string> = {
-          customer: '/customer/dashboard',
-          waste_collector_central: '/collector-central/dashboard',
-          waste_collector_unit: '/collector-unit/dashboard',
-          industry: '/offtaker/dashboard',
-          waste_bank_central: '/wastebank-central/dashboard',
-          waste_bank_unit: '/wastebank-unit/dashboard',
+          customer: '/customer',
+          waste_collector_central: '/collector-central',
+          waste_collector_unit: '/collector-unit',
+          industry: '/offtaker',
+          waste_bank_central: '/wastebank-central',
+          waste_bank_unit: '/wastebank-unit',
         };
         const redirectPath = roleBasedRedirect[userRole] || '/dashboard';
         return NextResponse.redirect(new URL(redirectPath, request.url));

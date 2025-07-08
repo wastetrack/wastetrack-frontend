@@ -18,12 +18,8 @@ import {
   Truck,
   ShoppingCart,
   Package,
-  MapPin,
   ClipboardCheck,
   Route,
-  Building2,
-  Handshake,
-  Eye,
 } from 'lucide-react';
 import { SidebarProps, UserRole } from '@/types';
 import { handleLogout } from '@/helpers/utils/logout/logout';
@@ -91,8 +87,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           icon: <LayoutDashboard size={20} />,
         },
         {
-          label: 'Tugas Lokal',
-          path: '/collector-unit/assignments',
+          label: 'Tugas',
+          path: '/collector-unit/tasks',
           icon: <ClipboardCheck size={20} />,
         },
         {
@@ -102,13 +98,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         },
         {
           label: 'Rute Unit',
-          path: '/collector-unit/routes',
+          path: '/collector-unit/trips',
           icon: <Route size={20} />,
-        },
-        {
-          label: 'Laporan Pickup',
-          path: '/collector-unit/reports',
-          icon: <FileText size={20} />,
         },
       ],
       waste_bank_central: [
@@ -156,50 +147,35 @@ const Sidebar: React.FC<SidebarProps> = ({
       waste_collector_central: [
         {
           label: 'Dashboard',
-          path: '/collector-central/dashboard',
+          path: '/collector-central',
           icon: <LayoutDashboard size={20} />,
         },
         {
-          label: 'Koordinasi Unit',
-          path: '/collector-central/coordination',
-          icon: <Building2 size={20} />,
+          label: 'Tugas',
+          path: '/collector-central/tasks',
+          icon: <ClipboardCheck size={20} />,
         },
         {
-          label: 'Optimasi Rute',
-          path: '/collector-central/route-optimization',
-          icon: <MapPin size={20} />,
+          label: 'Koleksi Harian',
+          path: '/collector-central/collections',
+          icon: <Package size={20} />,
         },
         {
-          label: 'Manajemen Armada',
-          path: '/collector-central/fleet',
-          icon: <Truck size={20} />,
-        },
-        {
-          label: 'Laporan Operasional',
-          path: '/collector-central/reports',
-          icon: <FileText size={20} />,
+          label: 'Rute Unit',
+          path: '/collector-central/trips',
+          icon: <Route size={20} />,
         },
       ],
       industry: [
         {
           label: 'Dashboard',
-          path: '/offtaker/dashboard',
+          path: '/offtaker',
           icon: <LayoutDashboard size={20} />,
         },
         {
-          label: 'Pembelian Material',
-          path: '/offtaker/purchase',
+          label: 'Transaksi',
+          path: '/offtaker/transactions',
           icon: <ShoppingCart size={20} />,
-        },
-        {
-          label: 'Manajemen Kontrak',
-          path: '/offtaker/contracts',
-          icon: <Handshake size={20} />,
-        },
-        {
-          label: 'Kualitas & Inspeksi',
-          path: '/offtaker/quality',
-          icon: <Eye size={20} />,
         },
         {
           label: 'Pembayaran',
@@ -207,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           icon: <CreditCard size={20} />,
         },
         {
-          label: 'Laporan Pengadaan',
+          label: 'Laporan',
           path: '/offtaker/reports',
           icon: <FileText size={20} />,
         },

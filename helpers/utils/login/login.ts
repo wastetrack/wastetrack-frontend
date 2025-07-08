@@ -310,10 +310,10 @@ export const loginFunctions = {
   getRoleBasedRedirect(role: string): string {
     // Define role routes with validation
     const routes: Record<string, string> = {
-      customer: '/customer/dashboard',
-      waste_collector_central: '/collector-central/dashboard',
-      waste_collector_unit: '/collector-unit/dashboard',
-      industry: '/offtaker/dashboard',
+      customer: '/customer',
+      waste_collector_central: '/collector-central',
+      waste_collector_unit: '/collector-unit',
+      industry: '/offtaker',
       waste_bank_central: '/wastebank-central',
       waste_bank_unit: '/wastebank-unit',
     };
@@ -321,7 +321,7 @@ export const loginFunctions = {
     // Normalize and validate role
     if (!role || typeof role !== 'string') {
       console.error('Invalid role provided:', role);
-      return '/dashboard'; // fallback
+      return '/'; // fallback
     }
 
     const normalizedRole = role.toLowerCase().trim();
@@ -329,7 +329,7 @@ export const loginFunctions = {
 
     if (!path) {
       console.error('Invalid role for redirect:', role);
-      return '/dashboard'; // fallback
+      return '/'; // fallback
     }
 
     // Ensure path starts with forward slash
