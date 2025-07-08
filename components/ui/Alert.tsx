@@ -8,7 +8,6 @@ export interface AlertConfig {
   title: string;
   text?: string;
   html?: string;
-  background?: string;
   iconColor?: string;
   confirmButtonText?: string;
   confirmButtonColor?: string;
@@ -30,7 +29,6 @@ export interface AlertConfig {
 // Default configurations untuk berbagai tipe alert
 const defaultConfigs = {
   success: {
-    background: '#f0fff4',
     iconColor: '#10b981',
     confirmButtonColor: '#10b981',
     customClass: {
@@ -41,7 +39,6 @@ const defaultConfigs = {
     },
   },
   error: {
-    background: '#fff5f5',
     iconColor: '#ef4444',
     confirmButtonColor: '#ef4444',
     confirmButtonText: 'Mengerti',
@@ -53,7 +50,6 @@ const defaultConfigs = {
     },
   },
   warning: {
-    background: '#fffbeb',
     iconColor: '#f59e0b',
     confirmButtonColor: '#f59e0b',
     customClass: {
@@ -64,7 +60,6 @@ const defaultConfigs = {
     },
   },
   info: {
-    background: '#f0f9ff',
     iconColor: '#3b82f6',
     confirmButtonColor: '#3b82f6',
     customClass: {
@@ -75,7 +70,6 @@ const defaultConfigs = {
     },
   },
   confirm: {
-    background: '#fff9e8',
     iconColor: '#f59e0b',
     showCancelButton: true,
     confirmButtonText: 'Ya, Lanjutkan',
