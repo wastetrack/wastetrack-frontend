@@ -311,6 +311,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <nav className='space-y-2 p-4'>
         {menuItems.map((item, index) => {
           const isActive = pathname === item.path;
+          // const isActive = item.exact ? pathname === item.path : pathname === item.path || pathname.startsWith(`${item.path}/`);
           return (
             <Link
               key={index}
