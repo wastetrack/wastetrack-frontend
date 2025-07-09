@@ -9,6 +9,7 @@ export interface WasteType {
 export interface WasteTypesListParams {
   page?: number;
   size?: number;
+  category_id?: string;
   subcategory_id?: string;
 }
 

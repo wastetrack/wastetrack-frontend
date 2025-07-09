@@ -74,6 +74,9 @@ export const wasteTypeAPI = {
       if (params?.size) {
         queryParams.append('size', params.size.toString());
       }
+      if (params?.category_id) {
+        queryParams.append('category_id', params.category_id);
+      }
       if (params?.subcategory_id) {
         queryParams.append('subcategory_id', params.subcategory_id);
       }
@@ -82,11 +85,10 @@ export const wasteTypeAPI = {
       const url = `/api/waste-types${queryString ? `?${queryString}` : ''}`;
 
       const response = await authenticatedApiClient.get(url);
+
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log('Get Waste Types Error:', error.response?.data);
-
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
@@ -94,7 +96,6 @@ export const wasteTypeAPI = {
 
         throw new Error(errorMessage);
       }
-      console.log('Network Error:', error);
       throw new Error('Network error occurred. Please try again.');
     }
   },
@@ -110,8 +111,6 @@ export const wasteTypeAPI = {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log('Get Waste Type Detail Error:', error.response?.data);
-
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
@@ -119,7 +118,6 @@ export const wasteTypeAPI = {
 
         throw new Error(errorMessage);
       }
-      console.log('Network Error:', error);
       throw new Error('Network error occurred. Please try again.');
     }
   },
