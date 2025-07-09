@@ -61,8 +61,7 @@ authenticatedApiClient.interceptors.response.use(
 export const wasteCategoryAPI = {
   /**
    * Get list of waste categories with optional filtering and pagination
-   */
-  async getWasteCategories(
+   */ async getWasteCategories(
     params?: WasteCategoriesListParams
   ): Promise<WasteCategoriesListResponse> {
     try {
@@ -82,11 +81,10 @@ export const wasteCategoryAPI = {
       const url = `/api/waste-categories${queryString ? `?${queryString}` : ''}`;
 
       const response = await authenticatedApiClient.get(url);
+
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log('Get Waste Categories Error:', error.response?.data);
-
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
@@ -94,7 +92,6 @@ export const wasteCategoryAPI = {
 
         throw new Error(errorMessage);
       }
-      console.log('Network Error:', error);
       throw new Error('Network error occurred. Please try again.');
     }
   },
@@ -110,8 +107,6 @@ export const wasteCategoryAPI = {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log('Get Waste Category Detail Error:', error.response?.data);
-
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
@@ -119,7 +114,6 @@ export const wasteCategoryAPI = {
 
         throw new Error(errorMessage);
       }
-      console.log('Network Error:', error);
       throw new Error('Network error occurred. Please try again.');
     }
   },
