@@ -61,9 +61,9 @@ authenticatedApiClient.interceptors.response.use(
 export const wasteCategoryAPI = {
   /**
    * Get list of waste categories with optional filtering and pagination
-   */ async getWasteCategories(
-    params?: WasteCategoriesListParams
-  ): Promise<WasteCategoriesListResponse> {
+   */  async getWasteCategories(
+  params?: WasteCategoriesListParams
+): Promise<WasteCategoriesListResponse> {
     try {
       const queryParams = new URLSearchParams();
 

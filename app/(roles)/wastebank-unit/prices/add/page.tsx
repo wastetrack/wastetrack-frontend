@@ -428,7 +428,7 @@ export default function AddPricesPage() {
             >
               <div className='mb-4 flex items-center justify-between'>
                 <h3 className='text-lg font-medium text-gray-900'>
-                  Sampah #{index + 1}
+                  Harga Sampah #{index + 1}
                 </h3>
                 {wastePriceForms.length > 1 && (
                   <button

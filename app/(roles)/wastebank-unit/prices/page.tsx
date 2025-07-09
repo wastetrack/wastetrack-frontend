@@ -23,7 +23,6 @@ import { wasteBankPriceAPI } from '@/services/api/wastebank/waste-price';
 import { getTokenManager } from '@/lib/token-manager';
 import { WasteCategory } from '@/types';
 import { showToast } from '@/components/ui/Toast';
-import { Alert } from '@/components/ui/Alert';
 
 interface CombinedWasteData {
   id: string;
@@ -55,7 +54,10 @@ export default function PricesPage() {
 
   // Delete state management
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0); // Force re-render when needed
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<CombinedWasteData | null>(
+    null
+  );
 
   const getUserId = (): string | null => {
     if (typeof window !== 'undefined') {
@@ -319,71 +321,62 @@ export default function PricesPage() {
     }
   };
 
-  const handleDeletePrice = async (item: CombinedWasteData) => {
-    if (!item.price_id) {
+  const handleDeletePrice = (item: CombinedWasteData) => {
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete?.price_id) {
       showToast.error('Error', {
         description: 'ID harga tidak ditemukan',
       });
       return;
     }
 
-    const result = await Alert.confirm({
-      title: 'Konfirmasi Hapus Harga',
-      html: `
-        <div>
-          <p>Apakah Anda yakin ingin menghapus harga untuk <strong>${item.type}</strong> dalam kategori <strong>${item.category}</strong>?</p>
-        </div>
-      `,
-      confirmButtonText: 'Ya, Hapus',
-      confirmButtonColor: '#ef4444',
-      cancelButtonText: 'Batal',
-    });
+    setDeletingId(itemToDelete.id);
 
-    if (result.isConfirmed) {
-      setDeletingId(item.id);
+    try {
+      await wasteBankPriceAPI.deleteWasteBankPrice(itemToDelete.price_id);
 
-      try {
-        await wasteBankPriceAPI.deleteWasteBankPrice(item.price_id);
+      // Update the local state - set price to null instead of removing the item
+      setWastePrices((prevPrices) =>
+        prevPrices.map((price) =>
+          price.id === itemToDelete.id
+            ? {
+                ...price,
+                price: null,
+                lastUpdated: null,
+                price_id: undefined,
+              }
+            : price
+        )
+      );
 
-        // Update the local state immediately - set price to null and remove price_id
-        setWastePrices((prevPrices) => {
-          const updatedPrices = prevPrices.map((price) =>
-            price.id === item.id
-              ? {
-                  ...price,
-                  price: null,
-                  lastUpdated: null,
-                  price_id: undefined,
-                }
-              : price
-          );
-          console.log(
-            'Updated prices after delete:',
-            updatedPrices.find((p) => p.id === item.id)
-          );
-          return updatedPrices;
+      showToast.success('Harga berhasil dihapus!', {
+        description: 'Harga untuk jenis sampah ini telah dihapus dari sistem',
+      });
+
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    } catch (err) {
+      if (err instanceof Error) {
+        showToast.error('Gagal menghapus harga', {
+          description: err.message,
         });
-
-        // Force a re-render to ensure UI updates
-        setRefreshKey((prev) => prev + 1);
-
-        showToast.success('Harga berhasil dihapus!', {
-          description: 'Harga untuk jenis sampah ini telah dihapus dari sistem',
+      } else {
+        showToast.error('Gagal menghapus harga', {
+          description: 'Terjadi kesalahan yang tidak diketahui',
         });
-      } catch (err) {
-        if (err instanceof Error) {
-          showToast.error('Gagal menghapus harga', {
-            description: err.message,
-          });
-        } else {
-          showToast.error('Gagal menghapus harga', {
-            description: 'Terjadi kesalahan yang tidak diketahui',
-          });
-        }
-      } finally {
-        setDeletingId(null);
       }
+    } finally {
+      setDeletingId(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setItemToDelete(null);
   };
 
   if (loading) {
@@ -453,7 +446,7 @@ export default function PricesPage() {
               Manajemen Harga Sampah
             </h1>
             <p className='mt-1 text-gray-600'>
-              Kelola harga sampah per jenis dan kategori
+              Kelola harga pembelian sampah per jenis dan kategori
             </p>
           </div>
         </div>
@@ -578,10 +571,7 @@ export default function PricesPage() {
       </div>
 
       {/* Prices Table */}
-      <div
-        key={refreshKey}
-        className='shadow-xs overflow-hidden rounded-lg border border-gray-200 bg-white'
-      >
+      <div className='shadow-xs overflow-hidden rounded-lg border border-gray-200 bg-white'>
         <div className='overflow-x-auto'>
           <table className='min-w-full divide-y divide-gray-200'>
             <thead>
@@ -728,6 +718,66 @@ export default function PricesPage() {
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && itemToDelete && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
+          <div className='w-full max-w-md rounded-lg bg-white p-6 shadow-lg'>
+            <div className='mb-4'>
+              <h3 className='text-lg font-semibold text-gray-900'>
+                Konfirmasi Hapus Harga
+              </h3>
+              <p className='mt-2 text-sm text-gray-600'>
+                Apakah Anda yakin ingin menghapus harga untuk{' '}
+                <span className='font-medium'>{itemToDelete.type}</span> dalam
+                kategori{' '}
+                <span className='font-medium'>{itemToDelete.category}</span>?
+              </p>
+              <div className='mt-3 rounded-md bg-yellow-50 p-3'>
+                <div className='flex'>
+                  <div className='flex-shrink-0'>
+                    <svg
+                      className='h-5 w-5 text-yellow-400'
+                      viewBox='0 0 20 20'
+                      fill='currentColor'
+                    >
+                      <path
+                        fillRule='evenodd'
+                        d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+                        clipRule='evenodd'
+                      />
+                    </svg>
+                  </div>
+                  <div className='ml-3'>
+                    <p className='text-sm text-yellow-700'>
+                      Tindakan ini akan menghapus harga permanen. Jenis sampah
+                      akan tetap tersedia untuk penambahan harga di kemudian
+                      hari.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className='flex justify-end space-x-3'>
+              <button
+                onClick={handleCancelDelete}
+                disabled={deletingId === itemToDelete.id}
+                className='rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-400 disabled:opacity-50'
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deletingId === itemToDelete.id}
+                className='rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50'
+              >
+                {deletingId === itemToDelete.id ? 'Menghapus...' : 'Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
