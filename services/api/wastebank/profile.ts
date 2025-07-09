@@ -54,51 +54,45 @@ apiClient.interceptors.response.use(
 );
 
 // Types & Interfaces
-export interface WasteBankProfile {
+export interface UserResponse {
   id: string;
-  user_id: string;
   username: string;
   email: string;
-  phone_number: string;
-  institution: string;
-  address: string;
-  city: string;
-  province: string;
-  points: number;
-  balance: number;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  is_email_verified: boolean;
-  business_license: string;
-  operating_hours: {
-    open: string;
-    close: string;
-  };
-  waste_types_accepted: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface UpdateWasteBankProfileRequest {
-  username?: string;
-  email?: string;
+  role: string;
+  avatar_url?: string;
   phone_number?: string;
   institution?: string;
   address?: string;
   city?: string;
   province?: string;
+  points: number;
+  balance: number;
   location?: {
     latitude: number;
     longitude: number;
   };
-  business_license?: string;
-  operating_hours?: {
-    open: string;
-    close: string;
-  };
-  waste_types_accepted?: string[];
+  is_email_verified: boolean;
+  access_token?: string;
+  refresh_token?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface WasteBankProfile {
+  id: string;
+  user_id: string;
+  total_waste_weight: number;
+  total_workers: number;
+  open_time: string;
+  close_time: string;
+  user?: UserResponse;
+}
+
+export interface UpdateWasteBankProfileRequest {
+  total_waste_weight?: number;
+  total_workers?: number;
+  open_time?: string;
+  close_time?: string;
 }
 
 export interface WasteBankProfileResponse {
@@ -121,6 +115,7 @@ export const wasteBankProfileAPI = {
       const response = await apiClient.get(
         `/api/waste-bank/profiles/${userId}`
       );
+
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
