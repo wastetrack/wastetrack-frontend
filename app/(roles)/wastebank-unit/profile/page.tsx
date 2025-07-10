@@ -444,12 +444,17 @@ export default function ProfilePage() {
               <h4 className='font-medium text-gray-900'>Password</h4>
               <p className='text-sm text-gray-600'>
                 {profile.user?.updated_at
-                  ? `Terakhir diubah ${Math.floor(
-                      (new Date().getTime() -
-                        new Date(profile.user.updated_at).getTime()) /
-                        (1000 * 60 * 60 * 24)
-                    )} hari yang lalu`
-                  : 'Belum pernah diubah'}
+                  ? new Date(profile.user.updated_at).toLocaleDateString(
+                      'id-ID',
+                      {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }
+                    )
+                  : 'Belum pernah diperbarui'}
               </p>
             </div>
             <button className='hidden text-sm font-medium text-emerald-600 hover:text-emerald-700'>
