@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Header, BottomNavigation } from '@/components/customer';
+import { showDevModal } from '@/components/ui';
 import { customerProfileAPI } from '@/services/api/customer/profile';
 
 interface UserProfile {
@@ -74,13 +75,39 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
     if (pathname?.includes('/dashboard')) {
       setActiveTab('home');
     } else if (pathname?.includes('/detect')) {
-      setActiveTab('detect');
+      showDevModal({
+        title: 'Deteksi Sampah',
+        message:
+          'Fitur deteksi sampah sedang dalam pengembangan dan belum dapat diakses saat ini.',
+        buttonText: 'Mengerti',
+      });
+      setActiveTab('home');
     } else if (pathname?.includes('/schedule')) {
-      setActiveTab('schedule');
+      showDevModal({
+        title: 'Schedule Pickup',
+        message:
+          'Fitur schedule pickup sedang dalam pengembangan dan belum dapat diakses saat ini.',
+        buttonText: 'Mengerti',
+      });
+      setActiveTab('home');
     } else if (pathname?.includes('/marketplace')) {
-      setActiveTab('marketplace');
+      // Show dev modal for marketplace and redirect to home
+      showDevModal({
+        title: 'Marketplace',
+        message:
+          'Fitur marketplace sedang dalam pengembangan dan belum dapat diakses saat ini.',
+        buttonText: 'Mengerti',
+      });
+      setActiveTab('home');
     } else if (pathname?.includes('/history')) {
-      setActiveTab('history');
+      // Show dev modal for history
+      showDevModal({
+        title: 'Riwayat Transaksi',
+        message:
+          'Fitur riwayat transaksi sedang dalam pengembangan dan belum dapat diakses saat ini.',
+        buttonText: 'OK',
+      });
+      setActiveTab('home');
     }
   }, [pathname]);
 
@@ -100,22 +127,42 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
 
     switch (tabId) {
       case 'home':
-        router.push('/customer/dashboard');
+        router.push('/customer');
         break;
       case 'detect':
-        router.push('/customer/detect');
+        showDevModal({
+          title: 'Deteksi Sampah',
+          message:
+            'Fitur deteksi sampah sedang dalam pengembangan dan belum dapat diakses saat ini.',
+          buttonText: 'Mengerti',
+        });
         break;
       case 'schedule':
-        router.push('/customer/schedule');
+        showDevModal({
+          title: 'Schedule Pickup',
+          message:
+            'Fitur schedule pickup sedang dalam pengembangan dan belum dapat diakses saat ini.',
+          buttonText: 'Mengerti',
+        });
         break;
       case 'marketplace':
-        router.push('/customer/marketplace');
+        showDevModal({
+          title: 'Marketplace',
+          message:
+            'Fitur marketplace sedang dalam pengembangan dan belum dapat diakses saat ini.',
+          buttonText: 'Mengerti',
+        });
         break;
       case 'history':
-        router.push('/customer/history');
+        showDevModal({
+          title: 'Riwayat Transaksi',
+          message:
+            'Fitur riwayat transaksi sedang dalam pengembangan dan belum dapat diakses saat ini.',
+          buttonText: 'OK',
+        });
         break;
       default:
-        router.push('/customer/dashboard');
+        router.push('/customer');
     }
   };
 

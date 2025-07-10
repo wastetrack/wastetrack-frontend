@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getTokenManager } from '@/lib/token-manager';
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:8000';
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Configure axios instance
 const apiClient = axios.create({
@@ -111,10 +111,10 @@ export const customerProfileAPI = {
   async getProfile(userId: string): Promise<CustomerProfileResponse> {
     try {
       // Log the API call for debugging
-      console.log('Making API call to:', `/api/customer/profiles/${userId}`);
+      // console.log('Making API call to:', `/api/customer/profiles/${userId}`);
       const response = await apiClient.get(`/api/customer/profiles/${userId}`);
-      console.log('Raw API response:', response);
-      console.log('Response data:', response.data);
+      // console.log('Raw API response:', response);
+      // console.log('Response data:', response.data);
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
