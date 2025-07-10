@@ -8,8 +8,7 @@ import {
 } from '@/types';
 import { getTokenManager } from '@/lib/token-manager';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Configure axios instance for authenticated requests
 const authenticatedApiClient = axios.create({

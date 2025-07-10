@@ -6,8 +6,7 @@ import {
   WasteCategoryDetailResponse,
 } from '@/types';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Configure axios instance for authenticated requests
 const authenticatedApiClient = axios.create({
@@ -61,9 +60,9 @@ authenticatedApiClient.interceptors.response.use(
 export const wasteCategoryAPI = {
   /**
    * Get list of waste categories with optional filtering and pagination
-   */  async getWasteCategories(
-  params?: WasteCategoriesListParams
-): Promise<WasteCategoriesListResponse> {
+   */ async getWasteCategories(
+    params?: WasteCategoriesListParams
+  ): Promise<WasteCategoriesListResponse> {
     try {
       const queryParams = new URLSearchParams();
 

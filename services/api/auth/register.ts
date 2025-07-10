@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { getTokenManager } from '@/lib/token-manager';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Configure axios instance
 const apiClient = axios.create({
