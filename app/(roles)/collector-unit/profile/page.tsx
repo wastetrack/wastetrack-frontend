@@ -251,32 +251,6 @@ export default function ProfilePage() {
                     Rp {profile.user?.balance?.toLocaleString('id-ID') || 0}
                   </p>
                 </div>
-                <div>
-                  <label className='text-sm font-medium text-gray-500'>
-                    Lokasi
-                  </label>
-                  <p className='text-gray-900'>
-                    {profile.user?.location
-                      ? `${profile.user.location.latitude.toFixed(6)}, ${profile.user.location.longitude.toFixed(6)}`
-                      : 'Tidak tersedia'}
-                  </p>
-                </div>
-                <div>
-                  <label className='text-sm font-medium text-gray-500'>
-                    Status Email
-                  </label>
-                  <p className='text-gray-900'>
-                    {profile.user?.is_email_verified ? (
-                      <span className='inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800'>
-                        Terverifikasi
-                      </span>
-                    ) : (
-                      <span className='inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800'>
-                        Belum Terverifikasi
-                      </span>
-                    )}
-                  </p>
-                </div>
               </div>
             </div>
           </div>

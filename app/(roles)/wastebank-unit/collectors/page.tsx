@@ -2,23 +2,41 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserCheck, Plus, Search, Loader } from 'lucide-react';
+import {
+  UserCheck,
+  Plus,
+  Search,
+  Loader,
+  Eye,
+  Lock,
+  Unlock,
+  Trash2,
+} from 'lucide-react';
 import {
   getCollectorManagements,
   updateCollectorManagement,
   deleteCollectorManagement,
 } from '@/services/api/wastebank';
+import { collectorProfileAPI } from '@/services/api/collector';
 import { getTokenManager } from '@/lib/token-manager';
+import { encodeId } from '@/lib/id-utils';
 import {
   CollectorManagement,
   CollectorManagementParams,
   UpdateCollectorManagementRequest,
   CollectorStatus,
 } from '@/types';
+import { Alert } from '@/components/ui/Alert';
+import { showToast } from '@/components/ui/Toast';
+
+interface CollectorWithUserInfo extends CollectorManagement {
+  username?: string;
+  phone_number?: string;
+}
 
 export default function CollectorsPage() {
   const router = useRouter();
-  const [collectors, setCollectors] = useState<CollectorManagement[]>([]);
+  const [collectors, setCollectors] = useState<CollectorWithUserInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,8 +105,36 @@ export default function CollectorsPage() {
           collectorsData = response.data.collector_managements;
         }
 
+        // Fetch user details for each collector
+        const collectorsWithUserInfo: CollectorWithUserInfo[] =
+          await Promise.all(
+            collectorsData.map(async (collector) => {
+              try {
+                const profileResponse = await collectorProfileAPI.getProfile(
+                  collector.collector_id
+                );
+                const userInfo = profileResponse.data.user;
+                return {
+                  ...collector,
+                  username: userInfo.username,
+                  phone_number: userInfo.phone_number,
+                };
+              } catch (error) {
+                console.error(
+                  `Failed to fetch profile for collector ${collector.collector_id}:`,
+                  error
+                );
+                return {
+                  ...collector,
+                  username: 'Tidak tersedia',
+                  phone_number: 'Tidak tersedia',
+                };
+              }
+            })
+          );
+
         // Set collectors data
-        setCollectors(collectorsData);
+        setCollectors(collectorsWithUserInfo);
       } catch (err) {
         console.error('Failed to fetch collectors:', err);
         setError('Gagal memuat data kolektor. Silakan coba lagi.');
@@ -125,7 +171,36 @@ export default function CollectorsPage() {
               collectorsData = response.data.collector_managements;
             }
 
-            setCollectors(collectorsData);
+            // Fetch user details for each collector
+            const collectorsWithUserInfo: CollectorWithUserInfo[] =
+              await Promise.all(
+                collectorsData.map(async (collector) => {
+                  try {
+                    const profileResponse =
+                      await collectorProfileAPI.getProfile(
+                        collector.collector_id
+                      );
+                    const userInfo = profileResponse.data.user;
+                    return {
+                      ...collector,
+                      username: userInfo.username,
+                      phone_number: userInfo.phone_number,
+                    };
+                  } catch (error) {
+                    console.error(
+                      `Failed to fetch profile for collector ${collector.collector_id}:`,
+                      error
+                    );
+                    return {
+                      ...collector,
+                      username: 'Tidak tersedia',
+                      phone_number: 'Tidak tersedia',
+                    };
+                  }
+                })
+              );
+
+            setCollectors(collectorsWithUserInfo);
           } catch (err) {
             console.error('Failed to refresh collectors:', err);
           }
@@ -162,33 +237,44 @@ export default function CollectorsPage() {
     }
   };
 
-  // Delete collector
+  // Navigate to collector detail
+  const handleViewDetail = (collectorId: string) => {
+    const encodedId = encodeId(collectorId);
+    router.push(`/wastebank-unit/collectors/${encodedId}`);
+  };
   const handleDeleteCollector = async (id: string) => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus kolektor ini?')) {
-      return;
-    }
-
+    const alert = await Alert.confirm({
+      title: 'Konfirmasi Hapus Kolektor',
+      text: 'Apakah Anda yakin ingin menghapus kolektor ini? Tindakan ini tidak dapat dibatalkan.',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+    });
+    if (!alert.isConfirmed) return;
     try {
       setError(null);
       await deleteCollectorManagement(id);
-
-      // Remove from local state
       setCollectors(
         (collectors || []).filter((collector) => collector.id !== id)
       );
+      showToast.success('Kolektor berhasil dihapus!');
     } catch (err) {
       console.error('Failed to delete collector:', err);
       setError('Gagal menghapus kolektor. Silakan coba lagi.');
+      showToast.error('Gagal menghapus kolektor. Silakan coba lagi.');
     }
   };
 
   // Filter collectors by search query and status
   const filteredCollectors = (collectors || []).filter((collector) => {
     const matchesSearch =
-      collector.collector_id
+      collector.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      collector.phone_number
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      collector.id?.toLowerCase().includes(searchQuery.toLowerCase());
+      collector.collector_id?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus =
       statusFilter === 'all' || collector.status === statusFilter;
@@ -254,7 +340,7 @@ export default function CollectorsPage() {
             />
             <input
               type='text'
-              placeholder='Cari ID kolektor...'
+              placeholder='Cari nama atau nomor telepon...'
               className='w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -323,11 +409,14 @@ export default function CollectorsPage() {
               )}
             </div>
           ) : (
-            <table className='w-full'>
-              <thead className='bg-gray-50'>
+            <table className='min-w-full divide-y divide-gray-200'>
+              <thead>
                 <tr>
                   <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
-                    ID Kolektor
+                    Nama
+                  </th>
+                  <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
+                    No. Telepon
                   </th>
                   <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
                     Status
@@ -342,7 +431,12 @@ export default function CollectorsPage() {
                   <tr key={collector.id} className='hover:bg-gray-50'>
                     <td className='whitespace-nowrap px-6 py-4'>
                       <div className='text-sm font-medium text-gray-900'>
-                        {collector.collector_id}
+                        {collector.username || 'Tidak tersedia'}
+                      </div>
+                    </td>
+                    <td className='whitespace-nowrap px-6 py-4'>
+                      <div className='text-sm text-gray-900'>
+                        {collector.phone_number || 'Tidak tersedia'}
                       </div>
                     </td>
                     <td className='whitespace-nowrap px-6 py-4'>
@@ -358,9 +452,16 @@ export default function CollectorsPage() {
                           : 'Tidak Aktif'}
                       </span>
                     </td>
-                    <td className='space-x-2 whitespace-nowrap px-6 py-4 text-sm font-medium'>
+                    <td className='space-x-3 whitespace-nowrap px-6 py-4 text-sm font-medium'>
                       <button
-                        className='text-emerald-600 hover:text-emerald-900'
+                        className='text-blue-600 transition-colors hover:text-blue-900'
+                        onClick={() => handleViewDetail(collector.collector_id)}
+                        title='Lihat Detail'
+                      >
+                        <Eye className='h-4 w-4' />
+                      </button>
+                      <button
+                        className='text-emerald-600 transition-colors hover:text-emerald-900'
                         onClick={() =>
                           handleUpdateStatus(
                             collector.id,
@@ -369,16 +470,24 @@ export default function CollectorsPage() {
                               : 'active'
                           )
                         }
+                        title={
+                          collector.status === 'active'
+                            ? 'Nonaktifkan'
+                            : 'Aktifkan'
+                        }
                       >
-                        {collector.status === 'active'
-                          ? 'Nonaktifkan'
-                          : 'Aktifkan'}
+                        {collector.status === 'active' ? (
+                          <Lock className='h-4 w-4' />
+                        ) : (
+                          <Unlock className='h-4 w-4' />
+                        )}
                       </button>
                       <button
-                        className='text-red-600 hover:text-red-900'
+                        className='text-red-600 transition-colors hover:text-red-900'
                         onClick={() => handleDeleteCollector(collector.id)}
+                        title='Hapus'
                       >
-                        Hapus
+                        <Trash2 className='h-4 w-4' />
                       </button>
                     </td>
                   </tr>

@@ -41,51 +41,34 @@ export default function AddCollectorPage() {
     const getUserProfile = async () => {
       try {
         const tokenManager = getTokenManager();
-
-        // Check if user is authenticated
         if (!tokenManager.isAuthenticated()) {
           setError('Anda belum login. Silakan login terlebih dahulu.');
           setLoading(false);
           return;
         }
-
-        // Get user data from token manager
         const userData = tokenManager.getCurrentUser();
-        console.log('Current user data:', userData);
-
         if (!userData) {
           setError('Data pengguna tidak ditemukan. Silakan login kembali.');
           setLoading(false);
           return;
         }
-
-        // For waste bank users, the user ID should be the waste bank ID
-        if (userData.role === 'waste_bank_unit') {
+        if (userData.role === 'waste_bank_central') {
           setWasteBankId(userData.id);
-          console.log(
-            'Waste bank user detected. Institution:',
-            userData.institution
-          );
-
-          // Fetch available collectors after getting user profile
           await fetchAvailableCollectors(userData.institution);
         } else {
-          setError('Akses ditolak. Anda bukan pengguna bank sampah.');
+          setError('Akses ditolak. Anda bukan pengguna bank sampah pusat.');
           setLoading(false);
           return;
         }
-      } catch (err) {
-        console.error('Failed to get user profile:', err);
+      } catch {
         setError('Gagal mendapatkan profil pengguna. Silakan coba lagi.');
       } finally {
         setLoading(false);
       }
     };
-
     getUserProfile();
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -95,7 +78,6 @@ export default function AddCollectorPage() {
         setShowDropdown(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -133,7 +115,7 @@ export default function AddCollectorPage() {
               role: u.role || '',
             };
           })
-          .filter((u) => u.role === 'waste_collector_unit');
+          .filter((u) => u.role === 'waste_collector_central');
       }
       setAvailableCollectors(users);
     } catch {
@@ -143,24 +125,19 @@ export default function AddCollectorPage() {
     }
   };
 
-  // Handle search input change
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setShowDropdown(true); // Always show dropdown when typing
-
-    // Clear selection if search is cleared
+    setShowDropdown(true);
     if (value === '') {
       setSelectedCollector(null);
       setCollectorId('');
     }
   };
 
-  // Handle input focus - show dropdown with all available collectors
   const handleInputFocus = () => {
-    setShowDropdown(true); // SELALU tampilkan dropdown saat focus
+    setShowDropdown(true);
   };
 
-  // Enhanced collector filtering - show all if search is empty
   const getFilteredCollectors = () => {
     if (searchQuery.trim() === '') {
       return availableCollectors;
@@ -180,7 +157,6 @@ export default function AddCollectorPage() {
 
   const filteredCollectors = getFilteredCollectors();
 
-  // Handle collector selection
   const handleCollectorSelect = (collector: CollectorOption) => {
     setSelectedCollector(collector);
     setSearchQuery(collector.username);
@@ -188,36 +164,26 @@ export default function AddCollectorPage() {
     setShowDropdown(false);
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!wasteBankId || !collectorId.trim()) {
-      setError('Pilih kolektor unit yang ingin ditambahkan.');
+      setError('Pilih kolektor pusat yang ingin ditambahkan.');
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     try {
       const data: CreateCollectorManagementRequest = {
         waste_bank_id: wasteBankId,
         collector_id: collectorId.trim(),
         status: status,
       };
-
       await createCollectorManagement(data);
-
-      // Show success message
-      showToast.success('Kolektor unit berhasil ditambahkan!');
-
-      // Redirect back to collectors list
-      router.push('/wastebank-unit/collectors');
-    } catch (err) {
-      console.error('Failed to add collector:', err);
+      showToast.success('Kolektor pusat berhasil ditambahkan!');
+      router.push('/wastebank-central/collectors');
+    } catch {
       setError(
-        'Gagal menambahkan kolektor unit. Pastikan kolektor unit belum terdaftar.'
+        'Gagal menambahkan kolektor pusat. Pastikan kolektor belum terdaftar.'
       );
     } finally {
       setSubmitting(false);
@@ -241,10 +207,10 @@ export default function AddCollectorPage() {
         <div className='text-center'>
           <div className='text-lg text-red-600'>{error}</div>
           <button
-            onClick={() => router.push('/wastebank-unit/collectors')}
+            onClick={() => router.push('/wastebank-central/collectors')}
             className='mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700'
           >
-            Kembali ke Daftar Kolektor Unit
+            Kembali ke Daftar Kolektor Pusat
           </button>
         </div>
       </div>
@@ -261,10 +227,10 @@ export default function AddCollectorPage() {
           </div>
           <div>
             <h1 className='text-2xl font-bold text-gray-900'>
-              Tambah Kolektor Unit Baru
+              Tambah Kolektor Pusat Baru
             </h1>
             <p className='mt-1 text-gray-600'>
-              Tambahkan kolektor unit baru ke dalam tim bank sampah Anda
+              Tambahkan kolektor pusat baru ke dalam tim bank sampah pusat Anda
             </p>
           </div>
         </div>
@@ -292,12 +258,12 @@ export default function AddCollectorPage() {
           <div className='space-y-4'>
             <div className='relative' ref={dropdownRef}>
               <label className='mb-2 block text-sm font-medium text-gray-700'>
-                Pilih Kolektor Unit <span className='text-red-500'>*</span>
+                Pilih Kolektor Pusat <span className='text-red-500'>*</span>
               </label>
               <div className='relative'>
                 <input
                   type='text'
-                  placeholder='Klik atau ketik untuk mencari kolektor unit...'
+                  placeholder='Klik atau ketik untuk mencari kolektor pusat...'
                   className='w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500'
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
@@ -320,7 +286,7 @@ export default function AddCollectorPage() {
                       <div className='p-4 text-center'>
                         <div className='mx-auto h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent'></div>
                         <div className='mt-2 text-sm text-gray-500'>
-                          Mencari kolektor unit...
+                          Mencari kolektor pusat...
                         </div>
                       </div>
                     ) : filteredCollectors.length > 0 ? (
@@ -347,10 +313,10 @@ export default function AddCollectorPage() {
                       <div className='p-3'>
                         <div className='text-center text-sm text-gray-500'>
                           {availableCollectors.length === 0
-                            ? 'Belum ada kolektor unit dari institusi yang sama terdaftar di sistem'
+                            ? 'Belum ada kolektor pusat dari institusi yang sama terdaftar di sistem'
                             : searchQuery.length > 0
-                              ? `Tidak ada kolektor unit ditemukan dengan kata kunci "${searchQuery}"`
-                              : 'Klik untuk melihat daftar kolektor unit yang tersedia'}
+                              ? `Tidak ada kolektor pusat ditemukan dengan kata kunci "${searchQuery}"`
+                              : 'Klik untuk melihat daftar kolektor pusat yang tersedia'}
                         </div>
                       </div>
                     )}
@@ -387,11 +353,11 @@ export default function AddCollectorPage() {
               )}
 
               <p className='mt-1 text-xs text-gray-500'>
-                Cari kolektor unit dari institusi yang sama yang terdaftar di
+                Cari kolektor pusat dari institusi yang sama yang terdaftar di
                 sistem
                 {availableCollectors.length > 0 && (
                   <span className='ml-1 text-emerald-600'>
-                    ({availableCollectors.length} kolektor unit tersedia)
+                    ({availableCollectors.length} kolektor pusat tersedia)
                   </span>
                 )}
               </p>
@@ -411,7 +377,7 @@ export default function AddCollectorPage() {
                 <option value='inactive'>Tidak Aktif</option>
               </select>
               <p className='mt-1 text-xs text-gray-500'>
-                Pilih status awal untuk kolektor unit ini
+                Pilih status awal untuk kolektor pusat ini
               </p>
             </div>
           </div>
@@ -439,7 +405,7 @@ export default function AddCollectorPage() {
               ) : (
                 <>
                   <Save size={20} />
-                  Tambah Kolektor Unit
+                  Tambah Kolektor Pusat
                 </>
               )}
             </button>
