@@ -322,7 +322,7 @@ export default function SchedulePage() {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [selectedLocation, setSelectedLocation] =
     useState<LocationDataMap | null>(null);
-  const [schedules, setSchedules] = useState<WasteDropRequestSimpleResponse[]>(
+  const [_schedules, setSchedules] = useState<WasteDropRequestSimpleResponse[]>(
     []
   );
 
