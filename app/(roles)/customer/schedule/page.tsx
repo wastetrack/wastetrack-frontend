@@ -20,7 +20,7 @@ import {
   Navigation,
   Minus,
   Plus,
-  X
+  X,
 } from 'lucide-react';
 import {
   wasteDropRequestAPI,
@@ -1963,27 +1963,27 @@ export default function SchedulePage() {
         )}
 
         {showLocationPicker && (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
-          <div className='relative h-full w-full max-w-4xl overflow-hidden rounded-lg bg-white sm:h-[80vh] sm:max-h-[600px]'>
-            {/* Tambahkan tombol close untuk mobile */}
-            <button
-              onClick={handleCancelPicker}
-              className='absolute right-4 top-4 z-10 rounded-full bg-white p-2 shadow-lg hover:bg-gray-50 sm:hidden'
-            >
-              <X className='h-5 w-5' />
-            </button>
-            
-            <PickLocation
-              // Konversi selectedLocation ke format yang diharapkan PickLocation
-              initialLocation={convertToPickLocationFormat(selectedLocation)}
-              onSaveLocation={handleSaveLocation}
-              onCancel={handleCancelPicker}
-              allowBack={true}
-              pageTitle='Pilih Lokasi Penjemputan'
-            />
+          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
+            <div className='relative h-full w-full max-w-4xl overflow-hidden rounded-lg bg-white sm:h-[80vh] sm:max-h-[600px]'>
+              {/* Tambahkan tombol close untuk mobile */}
+              <button
+                onClick={handleCancelPicker}
+                className='absolute right-4 top-4 z-10 rounded-full bg-white p-2 shadow-lg hover:bg-gray-50 sm:hidden'
+              >
+                <X className='h-5 w-5' />
+              </button>
+
+              <PickLocation
+                // Konversi selectedLocation ke format yang diharapkan PickLocation
+                initialLocation={convertToPickLocationFormat(selectedLocation)}
+                onSaveLocation={handleSaveLocation}
+                onCancel={handleCancelPicker}
+                allowBack={true}
+                pageTitle='Pilih Lokasi Penjemputan'
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
         {/* Step 5 (pickup) or Step 4 (self-delivery): Confirmation */}
         {((formData.deliveryType === 'pickup' && step === 6) ||
