@@ -83,13 +83,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
       });
       setActiveTab('home');
     } else if (pathname?.includes('/schedule')) {
-      showDevModal({
-        title: 'Schedule Pickup',
-        message:
-          'Fitur schedule pickup sedang dalam pengembangan dan belum dapat diakses saat ini.',
-        buttonText: 'Mengerti',
-      });
-      setActiveTab('home');
+      setActiveTab('schedule');
     } else if (pathname?.includes('/marketplace')) {
       // Show dev modal for marketplace and redirect to home
       showDevModal({
@@ -138,12 +132,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
         });
         break;
       case 'schedule':
-        showDevModal({
-          title: 'Schedule Pickup',
-          message:
-            'Fitur schedule pickup sedang dalam pengembangan dan belum dapat diakses saat ini.',
-          buttonText: 'Mengerti',
-        });
+        router.push('/customer/schedule');
         break;
       case 'marketplace':
         showDevModal({
