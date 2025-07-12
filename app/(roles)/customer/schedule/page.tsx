@@ -322,9 +322,9 @@ export default function SchedulePage() {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [selectedLocation, setSelectedLocation] =
     useState<LocationDataMap | null>(null);
-  const [_schedules, setSchedules] = useState<WasteDropRequestSimpleResponse[]>(
-    []
-  );
+  const [, setSchedules] = useState<WasteDropRequestSimpleResponse[]>(
+  []
+);
 
   // Auth state using only currentUserAPI
   const [authLoading, setAuthLoading] = useState(true);
