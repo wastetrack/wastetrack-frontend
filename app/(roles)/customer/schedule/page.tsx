@@ -322,9 +322,7 @@ export default function SchedulePage() {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [selectedLocation, setSelectedLocation] =
     useState<LocationDataMap | null>(null);
-  const [, setSchedules] = useState<WasteDropRequestSimpleResponse[]>(
-  []
-);
+  const [, setSchedules] = useState<WasteDropRequestSimpleResponse[]>([]);
 
   // Auth state using only currentUserAPI
   const [authLoading, setAuthLoading] = useState(true);
@@ -867,13 +865,21 @@ export default function SchedulePage() {
     }));
 
     setShowLocationPicker(false);
+
+    // Tambahan: Show success message
+    console.log('Lokasi berhasil disimpan:', locationData);
   };
 
   const handleCancelPicker = () => {
+    console.log('Picker dibatalkan');
     setShowLocationPicker(false);
   };
 
   const handleLocationCorrection = () => {
+    console.log(
+      'Membuka location picker. Current selectedLocation:',
+      selectedLocation
+    );
     setShowLocationPicker(true);
   };
 
@@ -1323,10 +1329,10 @@ export default function SchedulePage() {
         <div className='flex hidden justify-between px-1 text-[10px] text-gray-600'>
           {[
             'Pengiriman',
+            'Lokasi',
             'Bank Sampah',
             'Jadwal',
             'Detail',
-            'Lokasi',
             'Konfirmasi',
           ]
             .slice(0, formData.deliveryType === 'pickup' ? 6 : 4)
@@ -1435,12 +1441,12 @@ export default function SchedulePage() {
                     onClick={() =>
                       setFormData({
                         ...formData,
-                        deliveryType: 'self-delivery',
+                        deliveryType: 'dropoff',
                       })
                     }
                     className={`rounded-lg border-2 p-4 transition-all
                       ${
-                        formData.deliveryType === 'self-delivery'
+                        formData.deliveryType === 'dropoff'
                           ? 'border-emerald-500 bg-emerald-50'
                           : 'border-gray-200 hover:border-emerald-200'
                       }`}
@@ -1462,7 +1468,7 @@ export default function SchedulePage() {
                           Tanpa biaya layanan
                         </p>
                       </div>
-                      {formData.deliveryType === 'self-delivery' && (
+                      {formData.deliveryType === 'dropoff' && (
                         <div className='hidden rounded-full bg-emerald-500 p-1 text-white'>
                           <Check className='h-3 w-3 sm:h-4 sm:w-4' />
                         </div>
@@ -1475,8 +1481,146 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Step 2: WasteBank Selection */}
-        {step === 2 && (
+        {/* Step 2: Location - Only show for pickup service */}
+        {formData.deliveryType === 'pickup' && step === 2 && (
+          <div className='space-y-6'>
+            <div className='sm:shadow-xs overflow-hidden rounded-xl sm:border sm:border-gray-200 sm:bg-white'>
+              <div className='border-b border-gray-100 py-4 sm:p-6'>
+                <div className='text-center'>
+                  <h2 className='text-lg font-semibold text-gray-800 sm:text-xl'>
+                    Lokasi Penjemputan
+                  </h2>
+                  <p className='mt-1 text-sm text-gray-500'>
+                    Di mana kami harus menjemput sampah Anda?
+                  </p>
+                </div>
+              </div>
+              <div className='space-y-4 sm:p-6'>
+                <div className='flex flex-col items-start justify-between gap-4 sm:flex-col'>
+                  <textarea
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
+                    className='w-full rounded-lg border border-gray-200 p-3 text-sm placeholder:text-xs'
+                    rows={4}
+                    placeholder='Masukkan alamat lengkap Anda'
+                    required
+                  />
+                  <button
+                    type='button'
+                    onClick={handleGetLocation}
+                    className='flex hidden w-full flex-shrink-0 items-center gap-2 rounded-lg bg-emerald-100 px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-200'
+                  >
+                    {gettingLocation ? (
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                    ) : (
+                      <Navigation className='h-4 w-4' />
+                    )}
+                    Lokasi Saat Ini
+                  </button>
+
+                  <button
+                    type='button'
+                    onClick={handleLocationCorrection}
+                    className='flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-200'
+                  >
+                    <MapPin className='h-4 w-4' />
+                    {selectedLocation
+                      ? 'Ubah Lokasi di Peta'
+                      : 'Pilih Lokasi di Peta'}
+                  </button>
+
+                  {/* Location Picker Modal */}
+                  {selectedLocation && (
+                    <div className='hidden w-full rounded-lg border border-emerald-200 bg-emerald-50 p-3'>
+                      <div className='flex items-start gap-2'>
+                        <MapPin className='mt-0.5 h-4 w-4 text-emerald-600' />
+                        <div>
+                          <p className='text-sm font-medium text-emerald-800'>
+                            Lokasi Terpilih dari Peta:
+                          </p>
+                          <p className='text-xs text-emerald-700'>
+                            {selectedLocation.address}
+                          </p>
+                          <p className='text-xs text-emerald-600'>
+                            {selectedLocation.latitude.toFixed(6)},{' '}
+                            {selectedLocation.longitude.toFixed(6)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <input
+                  type='tel'
+                  value={formData.phone}
+                  onChange={handlePhoneChange}
+                  className='w-full rounded-lg border border-gray-200 p-3 text-sm placeholder:text-xs'
+                  placeholder='No. Telp. (contoh: 0812-3456-7890)'
+                  pattern='[0-9]{4}-[0-9]{4}-[0-9]{4}(-[0-9]{1,4})?'
+                  required
+                />
+
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  className='w-full rounded-lg border border-gray-200 p-3 text-sm placeholder:text-xs'
+                  rows={3}
+                  placeholder="Catatan tambahan (contoh: 'Sampah berada dalam kantong hitam dekat garasi')"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showLocationPicker && (
+          <div className='fixed inset-0 z-50 bg-opacity-50'>
+            <div className='h-full w-full rounded-lg bg-white'>
+              {/* Tambahkan tombol close untuk mobile */}
+              <button
+                onClick={handleCancelPicker}
+                className='absolute right-4 top-4 z-10 hidden rounded-full bg-white p-2 shadow-lg hover:bg-gray-50'
+              >
+                <X className='h-5 w-5' />
+              </button>
+
+              <PickLocation
+                // Konversi selectedLocation ke format yang diharapkan PickLocation
+                initialLocation={convertToPickLocationFormat(selectedLocation)}
+                onSaveLocation={handleSaveLocation}
+                onCancel={handleCancelPicker}
+                allowBack={true}
+                pageTitle='Pilih Lokasi Penjemputan'
+              />
+            </div>
+          </div>
+        )}
+
+        {process.env.NODE_ENV === 'development' && (
+          <div className='mt-4 hidden rounded border border-yellow-300 bg-yellow-50 p-2 text-xs'>
+            <strong>DEBUG Location State:</strong>
+            <pre>
+              {JSON.stringify(
+                {
+                  showLocationPicker,
+                  selectedLocation,
+                  formDataLocation: formData.location,
+                  formDataCoordinates: formData.coordinates,
+                },
+                null,
+                2
+              )}
+            </pre>
+          </div>
+        )}
+
+        {/* Step 2 for dropoff dan Step 3 for pickup: WasteBank Selection */}
+        {((formData.deliveryType === 'dropoff' && step === 2) ||
+          (formData.deliveryType === 'pickup' && step === 3)) && (
           <div className='space-y-6'>
             <div className='sm:shadow-xs overflow-hidden rounded-xl sm:border sm:border-gray-200 sm:bg-white'>
               <div className='border-b border-gray-100 py-4 text-center sm:p-6'>
@@ -1565,8 +1709,9 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Step 3: Schedule */}
-        {step === 3 && (
+        {/* Step 4: Schedule */}
+        {((formData.deliveryType === 'dropoff' && step === 3) ||
+          (formData.deliveryType === 'pickup' && step === 4)) && (
           <div className='space-y-6'>
             {/* Date selection */}
             <div className='sm:shadow-xs overflow-hidden rounded-xl sm:border sm:border-gray-200 sm:bg-white'>
@@ -1633,8 +1778,9 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Step 4: Waste Details */}
-        {step === 4 && (
+        {/* Step 5: Waste Details */}
+        {((formData.deliveryType === 'dropoff' && step === 4) ||
+          (formData.deliveryType === 'pickup' && step === 5)) && (
           <div className='space-y-6'>
             <div className='sm:shadow-xs overflow-hidden rounded-xl sm:border sm:border-gray-200 sm:bg-white'>
               <div className='py-4 sm:border-b sm:border-gray-100 sm:p-6'>
@@ -1866,128 +2012,9 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Step 5: Location - Only show for pickup service */}
-        {formData.deliveryType === 'pickup' && step === 5 && (
-          <div className='space-y-6'>
-            <div className='sm:shadow-xs overflow-hidden rounded-xl sm:border sm:border-gray-200 sm:bg-white'>
-              <div className='border-b border-gray-100 py-4 sm:p-6'>
-                <div className='text-center'>
-                  <h2 className='text-lg font-semibold text-gray-800 sm:text-xl'>
-                    Lokasi Penjemputan
-                  </h2>
-                  <p className='mt-1 text-sm text-gray-500'>
-                    Di mana kami harus menjemput sampah Anda?
-                  </p>
-                </div>
-              </div>
-              <div className='space-y-4 sm:p-6'>
-                <div className='flex flex-col items-start justify-between gap-4 sm:flex-col'>
-                  <textarea
-                    value={formData.location}
-                    onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
-                    }
-                    className='w-full rounded-lg border border-gray-200 p-3 text-sm placeholder:text-xs'
-                    rows={4}
-                    placeholder='Masukkan alamat lengkap Anda'
-                    required
-                  />
-                  <button
-                    type='button'
-                    onClick={handleGetLocation}
-                    className='flex w-full flex-shrink-0 items-center gap-2 rounded-lg bg-emerald-100 px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-200'
-                  >
-                    {gettingLocation ? (
-                      <Loader2 className='h-4 w-4 animate-spin' />
-                    ) : (
-                      <Navigation className='h-4 w-4' />
-                    )}
-                    Lokasi Saat Ini
-                  </button>
-
-                  <button
-                    type='button'
-                    onClick={handleLocationCorrection}
-                    className='flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-200'
-                  >
-                    <MapPin className='h-4 w-4' />
-                    {selectedLocation
-                      ? 'Ubah Lokasi di Peta'
-                      : 'Pilih Lokasi di Peta'}
-                  </button>
-
-                  {/* Location Picker Modal */}
-                  {selectedLocation && (
-                    <div className='w-full rounded-lg border border-emerald-200 bg-emerald-50 p-3'>
-                      <div className='flex items-start gap-2'>
-                        <MapPin className='mt-0.5 h-4 w-4 text-emerald-600' />
-                        <div>
-                          <p className='text-sm font-medium text-emerald-800'>
-                            Lokasi Terpilih dari Peta:
-                          </p>
-                          <p className='text-xs text-emerald-700'>
-                            {selectedLocation.address}
-                          </p>
-                          <p className='text-xs text-emerald-600'>
-                            {selectedLocation.latitude.toFixed(6)},{' '}
-                            {selectedLocation.longitude.toFixed(6)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <input
-                  type='tel'
-                  value={formData.phone}
-                  onChange={handlePhoneChange}
-                  className='w-full rounded-lg border border-gray-200 p-3 text-sm placeholder:text-xs'
-                  placeholder='No. Telp. (contoh: 0812-3456-7890)'
-                  pattern='[0-9]{4}-[0-9]{4}-[0-9]{4}(-[0-9]{1,4})?'
-                  required
-                />
-
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                  className='w-full rounded-lg border border-gray-200 p-3 text-sm placeholder:text-xs'
-                  rows={3}
-                  placeholder="Catatan tambahan (contoh: 'Sampah berada dalam kantong hitam dekat garasi')"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showLocationPicker && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
-            <div className='relative h-full w-full max-w-4xl overflow-hidden rounded-lg bg-white sm:h-[80vh] sm:max-h-[600px]'>
-              {/* Tambahkan tombol close untuk mobile */}
-              <button
-                onClick={handleCancelPicker}
-                className='absolute right-4 top-4 z-10 rounded-full bg-white p-2 shadow-lg hover:bg-gray-50 sm:hidden'
-              >
-                <X className='h-5 w-5' />
-              </button>
-
-              <PickLocation
-                // Konversi selectedLocation ke format yang diharapkan PickLocation
-                initialLocation={convertToPickLocationFormat(selectedLocation)}
-                onSaveLocation={handleSaveLocation}
-                onCancel={handleCancelPicker}
-                allowBack={true}
-                pageTitle='Pilih Lokasi Penjemputan'
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Step 5 (pickup) or Step 4 (self-delivery): Confirmation */}
+        {/* Step 6 (pickup) or Step 4 (dropoff): Confirmation */}
         {((formData.deliveryType === 'pickup' && step === 6) ||
-          (formData.deliveryType === 'self-delivery' && step === 4)) && (
+          (formData.deliveryType === 'dropoff' && step === 4)) && (
           <div className='sm:shadow-xs overflow-hidden rounded-xl sm:border sm:border-gray-200 sm:bg-white'>
             <div className='py-4 text-center sm:border-b sm:border-gray-100 sm:p-6'>
               <h2 className='text-lg font-semibold text-gray-800 sm:text-xl'>
@@ -2015,7 +2042,7 @@ export default function SchedulePage() {
                   <p className='text-sm font-semibold text-gray-900'>
                     {formData.wasteBankName}
                   </p>
-                  {formData.deliveryType === 'self-delivery' && (
+                  {formData.deliveryType === 'dropoff' && (
                     <>
                       <p className='mt-2 text-sm text-gray-500'>
                         {
@@ -2144,7 +2171,7 @@ export default function SchedulePage() {
           )}
 
           {((formData.deliveryType === 'pickup' && step < 6) ||
-            (formData.deliveryType === 'self-delivery' && step < 4)) && (
+            (formData.deliveryType === 'dropoff' && step < 4)) && (
             <button
               type='button'
               onClick={() => {
@@ -2152,46 +2179,94 @@ export default function SchedulePage() {
 
                 switch (step) {
                   case 1:
+                    // Step 1: Delivery Type (sama untuk pickup & dropoff)
                     if (!formData.deliveryType) {
                       validationError =
                         'Silahkan pilih tipe pengiriman untuk melanjutkan';
                     }
                     break;
+
                   case 2:
-                    if (!formData.wasteBankId) {
-                      validationError =
-                        'Silahkan pilih Bank Sampah untuk melanjutkan';
+                    // Step 2: Location untuk pickup, WasteBank untuk dropoff
+                    if (formData.deliveryType === 'pickup') {
+                      // Pickup step 2: Location
+                      if (!formData.location.trim()) {
+                        validationError =
+                          'Silahkan masukkan lokasi penjemputan untuk melanjutkan';
+                      } else if (!formData.phone) {
+                        validationError =
+                          'Silahkan masukkan nomor telepon untuk melanjutkan';
+                      }
+                    } else {
+                      // Dropoff step 2: WasteBank
+                      if (!formData.wasteBankId) {
+                        validationError =
+                          'Silahkan pilih Bank Sampah untuk melanjutkan';
+                      }
                     }
                     break;
+
                   case 3:
-                    if (!formData.date) {
-                      validationError =
-                        'Silahkan pilih tanggal untuk melanjutkan';
-                    } else if (!formData.time) {
-                      validationError =
-                        'Silahkan pilih waktu untuk melanjutkan';
+                    // Step 3: WasteBank untuk pickup, Schedule untuk dropoff
+                    if (formData.deliveryType === 'pickup') {
+                      // Pickup step 3: WasteBank
+                      if (!formData.wasteBankId) {
+                        validationError =
+                          'Silahkan pilih Bank Sampah untuk melanjutkan';
+                      }
+                    } else {
+                      // Dropoff step 3: Schedule
+                      if (!formData.date) {
+                        validationError =
+                          'Silahkan pilih tanggal untuk melanjutkan';
+                      } else if (!formData.time) {
+                        validationError =
+                          'Silahkan pilih waktu untuk melanjutkan';
+                      }
                     }
                     break;
+
                   case 4:
-                    if (formData.wasteTypes.length === 0) {
-                      validationError =
-                        'Silahkan pilih minimal satu jenis sampah untuk melanjutkan';
-                    } else if (
-                      formData.wasteTypes.some(
-                        (typeId) => !formData.wasteQuantities[typeId]
-                      )
-                    ) {
-                      validationError =
-                        'Silahkan tentukan jumlah untuk semua jenis sampah yang dipilih';
+                    // Step 4: Schedule untuk pickup, WasteDetails untuk dropoff
+                    if (formData.deliveryType === 'pickup') {
+                      // Pickup step 4: Schedule
+                      if (!formData.date) {
+                        validationError =
+                          'Silahkan pilih tanggal untuk melanjutkan';
+                      } else if (!formData.time) {
+                        validationError =
+                          'Silahkan pilih waktu untuk melanjutkan';
+                      }
+                    } else {
+                      // Dropoff step 4: WasteDetails
+                      if (formData.wasteTypes.length === 0) {
+                        validationError =
+                          'Silahkan pilih minimal satu jenis sampah untuk melanjutkan';
+                      } else if (
+                        formData.wasteTypes.some(
+                          (typeId) => !formData.wasteQuantities[typeId]
+                        )
+                      ) {
+                        validationError =
+                          'Silahkan tentukan jumlah untuk semua jenis sampah yang dipilih';
+                      }
                     }
                     break;
+
                   case 5:
-                    if (!formData.location.trim()) {
-                      validationError =
-                        'Silahkan masukkan lokasi penjemputan untuk melanjutkan';
-                    } else if (!formData.phone) {
-                      validationError =
-                        'Silahkan masukkan nomor telepon untuk melanjutkan';
+                    // Step 5: WasteDetails untuk pickup saja
+                    if (formData.deliveryType === 'pickup') {
+                      if (formData.wasteTypes.length === 0) {
+                        validationError =
+                          'Silahkan pilih minimal satu jenis sampah untuk melanjutkan';
+                      } else if (
+                        formData.wasteTypes.some(
+                          (typeId) => !formData.wasteQuantities[typeId]
+                        )
+                      ) {
+                        validationError =
+                          'Silahkan tentukan jumlah untuk semua jenis sampah yang dipilih';
+                      }
                     }
                     break;
                 }
@@ -2212,7 +2287,7 @@ export default function SchedulePage() {
           )}
 
           {((formData.deliveryType === 'pickup' && step === 6) ||
-            (formData.deliveryType === 'self-delivery' && step === 4)) && (
+            (formData.deliveryType === 'dropoff' && step === 4)) && (
             <button
               type='submit'
               disabled={loading}
