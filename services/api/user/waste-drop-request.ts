@@ -80,7 +80,10 @@ export const wasteDropRequestAPI = {
         queryParams.append('waste_bank_id', params.waste_bank_id);
       }
       if (params?.assigned_collector_id) {
-        queryParams.append('assigned_collector_id', params.assigned_collector_id);
+        queryParams.append(
+          'assigned_collector_id',
+          params.assigned_collector_id
+        );
       }
       if (params?.status) {
         queryParams.append('status', params.status);
@@ -91,7 +94,10 @@ export const wasteDropRequestAPI = {
         queryParams.append('appointment_date', params.appointment_date);
       }
       if (params?.appointment_start_time) {
-        queryParams.append('appointment_start_time', params.appointment_start_time);
+        queryParams.append(
+          'appointment_start_time',
+          params.appointment_start_time
+        );
       }
       if (params?.appointment_end_time) {
         queryParams.append('appointment_end_time', params.appointment_end_time);
@@ -152,7 +158,9 @@ export const wasteDropRequestAPI = {
   /**
    * Get waste drop request details by ID
    */
-  async getWasteDropRequestById(id: string): Promise<WasteDropRequestDetailResponse> {
+  async getWasteDropRequestById(
+    id: string
+  ): Promise<WasteDropRequestDetailResponse> {
     try {
       const response = await authenticatedApiClient.get(
         `/api/waste-drop-requests/${id}`

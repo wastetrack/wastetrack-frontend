@@ -29,28 +29,28 @@ export interface WasteDropRequestListParams {
   waste_bank_id?: string;
   assigned_collector_id?: string;
   status?: 'pending' | 'assigned' | 'collecting' | 'completed' | 'cancelled';
-  
+
   // Date/Time filtering
-  appointment_date?: string;       // YYYY-MM-DD
-  appointment_date_from?: string;   // Option 2: Specific appointment date
+  appointment_date?: string; // YYYY-MM-DD
+  appointment_date_from?: string; // Option 2: Specific appointment date
   appointment_date_to?: string;
 
   appointment_start_time?: string; // HH:MM:SS
   appointment_end_time?: string; // HH:MM:SS
-  
+
   // Location filtering
   latitude?: number;
   longitude?: number;
   radius?: number; // dalam kilometer
-  
+
   // Pagination
   page?: number;
   size?: number;
-  
+
   // Sorting
   sort_by?: 'created_at' | 'appointment_date' | 'status' | 'total_price';
   sort_order?: 'asc' | 'desc';
-  
+
   // Date range filtering
   date_from?: string; // YYYY-MM-DD
   date_to?: string; // YYYY-MM-DD
