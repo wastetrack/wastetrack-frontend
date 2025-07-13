@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Header, BottomNavigation } from '@/components/customer';
 import { showDevModal } from '@/components/ui';
-import { customerProfileAPI } from '@/services/api/customer/profile';
+import { customerProfileAPI } from '@/services/api/customer';
 
 interface UserProfile {
   fullName?: string;
@@ -94,14 +94,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
       });
       setActiveTab('home');
     } else if (pathname?.includes('/history')) {
-      // Show dev modal for history
-      showDevModal({
-        title: 'Riwayat Transaksi',
-        message:
-          'Fitur riwayat transaksi sedang dalam pengembangan dan belum dapat diakses saat ini.',
-        buttonText: 'OK',
-      });
-      setActiveTab('home');
+      setActiveTab('history');
     }
   }, [pathname]);
 
@@ -143,12 +136,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
         });
         break;
       case 'history':
-        showDevModal({
-          title: 'Riwayat Transaksi',
-          message:
-            'Fitur riwayat transaksi sedang dalam pengembangan dan belum dapat diakses saat ini.',
-          buttonText: 'OK',
-        });
+        router.push('/customer/history');
         break;
       default:
         router.push('/customer');
