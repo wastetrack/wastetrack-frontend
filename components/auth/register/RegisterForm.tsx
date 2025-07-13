@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { RegisterFormProps, InstitutionSuggestion } from '@/types';
 import { getCurrentLocation } from '@/helpers/utils/register/register';
+import PickLocation from '@/components/ui/PickLocation';
 import { ROLES, ROLE_DESCRIPTIONS } from '@/constants';
 import { Alert } from '@/components/ui';
 import { userListAPI } from '@/services/api/user';
@@ -40,6 +41,13 @@ export default function RegisterForm({
     useState(false);
   const [institutionLoading, setInstitutionLoading] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    address: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -329,6 +337,13 @@ export default function RegisterForm({
     try {
       const locationData = await getCurrentLocation();
 
+      // Update selectedLocation state
+      setSelectedLocation({
+        address: locationData.address || formData.address,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+      });
+
       onFormDataChange({
         ...formData,
         coordinates: {
@@ -358,6 +373,113 @@ export default function RegisterForm({
       }
     } finally {
       setLocationLoading(false);
+    }
+  };
+
+  const convertToPickLocationFormat = (
+    location: { address: string; latitude: number; longitude: number } | null
+  ): { latitude: number; longitude: number } | null => {
+    if (!location) return null;
+    return {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    };
+  };
+
+  const handleSaveLocationFromPicker = (payload: {
+    latitude: number;
+    longitude: number;
+    address: string;
+    updatedAt: string;
+  }) => {
+    console.log('=== LOCATION PICKER SAVE ===');
+    console.log('Raw address:', payload.address);
+
+    const locationData = {
+      address: payload.address,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+    };
+
+    setSelectedLocation(locationData);
+
+    // Extract dengan logic sederhana
+    const extractedCity = extractCityFromAddress(payload.address);
+    const extractedProvince = extractProvinceFromAddress(payload.address);
+
+    console.log('Extracted city:', extractedCity);
+    console.log('Extracted province:', extractedProvince);
+
+    onFormDataChange({
+      ...formData,
+      coordinates: {
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+      },
+      address: payload.address,
+      city: extractedCity,
+      province: extractedProvince,
+    });
+
+    setShowLocationPicker(false);
+    console.log('=== DONE ===');
+  };
+
+  const handleCancelLocationPicker = () => {
+    console.log('Location picker dibatalkan');
+    setShowLocationPicker(false);
+  };
+
+  const handleOpenLocationPicker = () => {
+    console.log(
+      'Membuka location picker. Current selectedLocation:',
+      selectedLocation
+    );
+    setShowLocationPicker(true);
+  };
+
+  // Helper functions untuk extract city/province dari address
+  const extractCityFromAddress = (address: string): string => {
+    if (!address) return formData.city;
+
+    const parts = address.split(',').map((part) => part.trim());
+    console.log('Address parts:', parts);
+
+    if (parts.length < 2) return formData.city;
+
+    // Jika ada "Indonesia" di akhir
+    if (parts[parts.length - 1].toLowerCase().includes('indonesia')) {
+      // City = ketiga dari belakang (sebelum province)
+      const city = parts[parts.length - 3];
+      console.log('Extracted city (with Indonesia):', city);
+      return city || formData.city;
+    } else {
+      // City = kedua dari belakang (sebelum province)
+      const city = parts[parts.length - 2];
+      console.log('Extracted city (without Indonesia):', city);
+      return city || formData.city;
+    }
+  };
+
+  const extractProvinceFromAddress = (address: string): string => {
+    if (!address) return formData.province;
+
+    const parts = address.split(',').map((part) => part.trim());
+    console.log('Address parts for province:', parts);
+
+    if (parts.length < 2) return formData.province;
+
+    // Jika ada "Indonesia" di akhir
+    if (parts[parts.length - 1].toLowerCase().includes('indonesia')) {
+      // Province = kedua dari belakang (sebelum Indonesia)
+      const province = parts[parts.length - 2];
+      console.log('Extracted province (with Indonesia):', province);
+      return province || formData.province;
+    } else {
+      // Province = terakhir
+      const province = parts[parts.length - 1];
+      console.log('Extracted province (without Indonesia):', province);
+      return province || formData.province;
     }
   };
 
@@ -1103,13 +1225,25 @@ export default function RegisterForm({
                   type='button'
                   onClick={handleGetLocation}
                   disabled={locationLoading}
-                  className='flex items-center p-0 text-xs text-emerald-600 hover:text-emerald-500 focus:outline-none focus:ring-0 disabled:opacity-50 sm:text-sm'
+                  className='flex hidden items-center p-0 text-xs text-emerald-600 hover:text-emerald-500 focus:outline-none focus:ring-0 disabled:opacity-50 sm:text-sm'
                 >
                   <MapPin className='mr-2 h-4 w-4' />
                   {locationLoading
                     ? 'Mendapatkan Lokasi...'
                     : 'Dapatkan Lokasi Saat Ini'}
                 </button>
+
+                <button
+                  type='button'
+                  onClick={handleOpenLocationPicker}
+                  className='flex items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-600 hover:bg-blue-100 focus:outline-none focus:ring-0'
+                >
+                  <MapPin className='h-4 w-4' />
+                  {selectedLocation
+                    ? 'Ubah Lokasi di Peta'
+                    : 'Pilih Lokasi di Peta'}
+                </button>
+
                 {formData.coordinates && (
                   <div className='flex hidden items-center space-x-2'>
                     <span className='text-sm font-medium text-green-600'>
@@ -1186,6 +1320,39 @@ export default function RegisterForm({
           Masuk
         </Link>
       </p>
+
+      {showLocationPicker && (
+        <div className='fixed inset-0 z-50 bg-black bg-opacity-50'>
+          <div className='h-full w-full bg-white'>
+            <PickLocation
+              initialLocation={convertToPickLocationFormat(selectedLocation)}
+              onSaveLocation={handleSaveLocationFromPicker}
+              onCancel={handleCancelLocationPicker}
+              allowBack={true}
+              pageTitle='Pilih Lokasi Anda'
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Debug info for development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className='mt-4 hidden rounded border border-yellow-300 bg-yellow-50 p-2 text-xs'>
+          <strong>DEBUG Location State:</strong>
+          <pre>
+            {JSON.stringify(
+              {
+                showLocationPicker,
+                selectedLocation,
+                formDataCoordinates: formData.coordinates,
+                formDataAddress: formData.address,
+              },
+              null,
+              2
+            )}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
