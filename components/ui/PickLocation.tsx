@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import mapboxgl, { Map, Marker, LngLatLike } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-// --- Komponen Ikon & UI (Tidak berubah) ---
+// --- Komponen Ikon & UI ---
 import {
   MapPin,
   Loader2,
@@ -41,7 +41,7 @@ type PickLocationProps = {
   allowBack?: boolean;
 };
 
-// --- Komponen Bantuan (Tooltip - Tidak berubah) ---
+// --- Komponen Bantuan (Tooltip) ---
 const HelpTooltip = ({
   title,
   content,
@@ -63,7 +63,7 @@ const HelpTooltip = ({
   </div>
 );
 
-// --- Komponen Utama dengan Mapbox ---
+// --- Komponen Utama ---
 const PickLocation: React.FC<PickLocationProps> = ({
   initialLocation = null,
   onSaveLocation,
@@ -87,9 +87,21 @@ const PickLocation: React.FC<PickLocationProps> = ({
   const markerRef = useRef<Marker | null>(null);
   const router = useRouter();
 
+  // Debug log untuk melihat props yang diterima
+  useEffect(() => {
+    console.log('PickLocation props:', {
+      initialLocation,
+      pageTitle,
+      allowBack,
+      onSaveLocation: !!onSaveLocation,
+      onCancel: !!onCancel,
+    });
+  }, [initialLocation, pageTitle, allowBack, onSaveLocation, onCancel]);
+
   // Fungsi untuk mengambil alamat menggunakan Mapbox Geocoding API
   const fetchAddressFromCoordinates = useCallback(
     async (lat: number, lng: number) => {
+      console.log('Fetching address for:', { lat, lng });
       try {
         const response = await fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&language=id`
@@ -97,8 +109,13 @@ const PickLocation: React.FC<PickLocationProps> = ({
         if (!response.ok) throw new Error('Gagal mengambil data alamat.');
         const data = await response.json();
         const feature = data.features[0];
-        setAddress(feature ? feature.place_name : 'Alamat tidak ditemukan');
-      } catch {
+        const newAddress = feature
+          ? feature.place_name
+          : 'Alamat tidak ditemukan';
+        console.log('Address found:', newAddress);
+        setAddress(newAddress);
+      } catch (err) {
+        console.error('Error fetching address:', err);
         setAddress('Gagal memuat detail alamat');
       }
     },
@@ -108,44 +125,52 @@ const PickLocation: React.FC<PickLocationProps> = ({
   // Inisialisasi Peta Mapbox
   const initializeMap = useCallback(
     (lat: number, lng: number) => {
+      console.log('Initializing map with:', { lat, lng });
+
       if (mapContainerRef.current && !mapRef.current) {
         const map = new mapboxgl.Map({
           container: mapContainerRef.current,
-          style: 'mapbox://styles/mapbox/streets-v12', // Gaya peta default Mapbox
-          center: [lng, lat], // Mapbox menggunakan format [longitude, latitude]
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: [lng, lat],
           zoom: 15,
         });
 
-        // Tambahkan kontrol navigasi (zoom in/out)
+        // Tambahkan kontrol navigasi
         map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
-        // Buat elemen HTML kustom untuk marker
-        const markerElement = document.createElement('div');
-        markerElement.className = 'custom-marker';
-        markerElement.innerHTML = `<div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: radial-gradient(circle, rgba(16,185,129,0.7) 0%, rgba(16,185,129,0.3) 60%, transparent 70%); cursor: pointer;">
-                                    <div class="w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-md"></div>
-                                 </div>`;
-
+        // Buat marker yang lebih sederhana
         const marker = new mapboxgl.Marker({
-          element: markerElement,
+          color: '#10b981', // emerald-500
           draggable: true,
         })
           .setLngLat([lng, lat])
           .addTo(map);
 
+        console.log('Marker created and added to map');
+
         // Event listener saat marker selesai digeser
         marker.on('dragend', () => {
           const newPos = marker.getLngLat();
-          setLocation({ latitude: newPos.lat, longitude: newPos.lng });
+          console.log('Marker dragged to:', newPos);
+          const newLocation = { latitude: newPos.lat, longitude: newPos.lng };
+          setLocation(newLocation);
           fetchAddressFromCoordinates(newPos.lat, newPos.lng);
         });
 
         // Event listener saat peta diklik
         map.on('click', (e) => {
           const newPos = e.lngLat;
+          console.log('Map clicked at:', newPos);
           marker.setLngLat(newPos);
-          setLocation({ latitude: newPos.lat, longitude: newPos.lng });
+          const newLocation = { latitude: newPos.lat, longitude: newPos.lng };
+          setLocation(newLocation);
           fetchAddressFromCoordinates(newPos.lat, newPos.lng);
+        });
+
+        // Event saat map selesai dimuat
+        map.on('load', () => {
+          console.log('Map loaded successfully');
+          setLoading(false);
         });
 
         mapRef.current = map;
@@ -160,6 +185,11 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
   // Efek untuk memuat lokasi awal & inisialisasi peta
   useEffect(() => {
+    console.log(
+      'Location effect triggered. Token exists:',
+      !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+    );
+
     // Validasi token Mapbox
     if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
       setError('Token Mapbox tidak ditemukan. Harap atur di file .env.local');
@@ -168,24 +198,32 @@ const PickLocation: React.FC<PickLocationProps> = ({
     }
 
     const setInitialLocation = (lat: number, lng: number) => {
+      console.log('Setting initial location:', { lat, lng });
       setLocation({ latitude: lat, longitude: lng });
-      setLoading(false);
-      if (!mapRef.current) {
-        initializeMap(lat, lng);
-      }
+
+      // Small delay to ensure container is ready
+      setTimeout(() => {
+        if (!mapRef.current) {
+          initializeMap(lat, lng);
+        }
+      }, 100);
     };
 
     if (initialLocation) {
+      console.log('Using provided initial location');
       setInitialLocation(initialLocation.latitude, initialLocation.longitude);
     } else {
+      console.log('Getting current location');
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log('Geolocation success:', position.coords);
           setInitialLocation(
             position.coords.latitude,
             position.coords.longitude
           );
         },
-        () => {
+        (err) => {
+          console.error('Geolocation error:', err);
           setError('Gagal mendapatkan lokasi. Menggunakan lokasi default.');
           const defaultLat = -6.2088; // Jakarta
           const defaultLng = 106.8456;
@@ -195,54 +233,270 @@ const PickLocation: React.FC<PickLocationProps> = ({
       );
     }
 
-    // Fungsi cleanup untuk menghapus map saat komponen unmount
+    // Cleanup function
     return () => {
       if (mapRef.current) {
+        console.log('Cleaning up map');
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
   }, [initialLocation, initializeMap]);
 
-  // Fungsi untuk mencari lokasi menggunakan Mapbox Geocoding API
+  const searchProviders = {
+    // Nominatim (OpenStreetMap) - lebih akurat untuk Indonesia
+    nominatim: async (
+      query: string,
+      proximity?: { lat: number; lng: number }
+    ) => {
+      const params = new URLSearchParams({
+        format: 'json',
+        q: query,
+        countrycodes: 'id', // Indonesia only
+        limit: '5',
+        addressdetails: '1',
+        extratags: '1',
+        namedetails: '1',
+      });
+
+      // Add proximity if available
+      if (proximity) {
+        params.set('lat', proximity.lat.toString());
+        params.set('lon', proximity.lng.toString());
+        params.set('bounded', '1'); // Prefer results near proximity
+      }
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+        {
+          headers: {
+            'User-Agent': 'WasteTrack-App/1.0', // Required by Nominatim
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Nominatim error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      type NominatimResult = {
+        display_name: string;
+        lon: string;
+        lat: string;
+        importance?: number;
+        category?: string;
+        type?: string;
+        address?: Record<string, unknown>;
+      };
+      return (data as NominatimResult[]).map((item) => ({
+        place_name: item.display_name,
+        center: [parseFloat(item.lon), parseFloat(item.lat)],
+        relevance: item.importance || 0.5,
+        properties: {
+          category: item.category,
+          type: item.type,
+          address: item.address,
+        },
+      }));
+    },
+
+    // MapBox sebagai fallback
+    mapbox: async (query: string, proximity?: { lat: number; lng: number }) => {
+      if (!mapboxgl.accessToken) {
+        throw new Error('Mapbox token not available');
+      }
+
+      const searchUrl = new URL(
+        'https://api.mapbox.com/geocoding/v5/mapbox.places/' +
+          encodeURIComponent(query) +
+          '.json'
+      );
+      searchUrl.searchParams.set('access_token', mapboxgl.accessToken);
+      searchUrl.searchParams.set('country', 'id');
+      searchUrl.searchParams.set('language', 'id');
+      searchUrl.searchParams.set('limit', '5');
+      searchUrl.searchParams.set('types', 'address,poi,place');
+
+      if (proximity) {
+        searchUrl.searchParams.set(
+          'proximity',
+          `${proximity.lng},${proximity.lat}`
+        );
+      }
+
+      const response = await fetch(searchUrl.toString());
+      if (!response.ok) {
+        throw new Error(`Mapbox error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.features || [];
+    },
+
+    // Google Places API sebagai backup premium (jika ada API key)
+    google: async (query: string, proximity?: { lat: number; lng: number }) => {
+      const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      if (!googleApiKey) {
+        throw new Error('Google API key not available');
+      }
+
+      const params = new URLSearchParams({
+        query: query,
+        key: googleApiKey,
+        region: 'id', // Indonesia
+        language: 'id',
+      });
+
+      if (proximity) {
+        params.set('location', `${proximity.lat},${proximity.lng}`);
+        params.set('radius', '50000'); // 50km radius
+      }
+
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?${params.toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Google error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      type GooglePlacesResult = {
+        name: string;
+        formatted_address: string;
+        geometry: {
+          location: {
+            lat: number;
+            lng: number;
+          };
+        };
+        rating?: number;
+        types?: string[];
+      };
+      return (data.results || []).map((item: GooglePlacesResult) => ({
+        place_name: `${item.name}, ${item.formatted_address}`,
+        center: [item.geometry.location.lng, item.geometry.location.lat],
+        relevance: item.rating ? item.rating / 5 : 0.5,
+        properties: {
+          category: item.types?.[0],
+          rating: item.rating,
+          address: item.formatted_address,
+        },
+      }));
+    },
+  };
+
+  // Enhanced search function dengan multiple providers
   const handleSearchLocation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
+
+    const cleanQuery = searchQuery.trim();
+    console.log('🔍 Searching for:', cleanQuery);
 
     setIsSearching(true);
     setError(null);
 
     try {
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${mapboxgl.accessToken}&country=id&language=id&limit=1&proximity=${location?.longitude || 'none'},${location?.latitude || 'none'}`
-      );
-      if (!response.ok) throw new Error('Gagal mencari lokasi.');
-      const data = await response.json();
+      const proximity = location
+        ? { lat: location.latitude, lng: location.longitude }
+        : undefined;
+      type SearchResult = {
+        place_name: string;
+        center: [number, number];
+        relevance: number;
+        properties: Record<string, unknown>;
+      };
+      let results: SearchResult[] = [];
+      let searchProvider = '';
 
-      if (data.features?.length > 0) {
-        const feature = data.features[0];
-        const [newLng, newLat] = feature.center;
+      // Try providers in order of preference for Indonesia
+      const providers = ['nominatim', 'mapbox', 'google'] as const;
 
-        setLocation({ latitude: newLat, longitude: newLng });
-        setAddress(feature.place_name);
+      for (const providerName of providers) {
+        try {
+          console.log(`🔄 Trying ${providerName}...`);
+          results = await searchProviders[providerName](cleanQuery, proximity);
 
-        if (mapRef.current && markerRef.current) {
-          const newLngLat: LngLatLike = [newLng, newLat];
-          mapRef.current.flyTo({ center: newLngLat, zoom: 15 });
-          markerRef.current.setLngLat(newLngLat);
+          if (results && results.length > 0) {
+            searchProvider = providerName;
+            console.log(
+              `✅ Found ${results.length} results from ${providerName}`
+            );
+            break;
+          }
+        } catch (providerError) {
+          console.warn(`❌ ${providerName} failed:`, providerError);
+          continue; // Try next provider
         }
-      } else {
-        setError('Lokasi tidak ditemukan.');
       }
+
+      if (results.length === 0) {
+        throw new Error(
+          `Tidak ditemukan hasil untuk "${cleanQuery}". Coba kata kunci yang lebih spesifik atau nama jalan yang lebih umum.`
+        );
+      }
+
+      // Use the best result (first one, usually most relevant)
+      const bestResult = results[0];
+      const [newLng, newLat] = bestResult.center;
+
+      console.log('📍 Selected result:', {
+        name: bestResult.place_name,
+        coordinates: [newLng, newLat],
+        provider: searchProvider,
+        relevance: bestResult.relevance,
+      });
+
+      const newLocation = { latitude: newLat, longitude: newLng };
+      setLocation(newLocation);
+      setAddress(bestResult.place_name);
+
+      // Update map and marker with smooth animation
+      if (mapRef.current && markerRef.current) {
+        const newLngLat: LngLatLike = [newLng, newLat];
+        mapRef.current.flyTo({
+          center: newLngLat,
+          zoom: 17, // Zoom in closer for search results
+          duration: 1500,
+          essential: true,
+        });
+        markerRef.current.setLngLat(newLngLat);
+      }
+
+      // Clear search query after successful search
+      setSearchQuery('');
+
+      // Show success feedback
+      console.log(`✅ Location found using ${searchProvider}`);
     } catch (err) {
-      setError((err as Error).message);
+      console.error('🚫 All search providers failed:', err);
+
+      let errorMessage =
+        'Gagal mencari lokasi. Silakan coba lagi dengan kata kunci yang berbeda.';
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      // Provide helpful suggestions for common search issues
+      if (cleanQuery.length < 3) {
+        errorMessage = 'Masukkan minimal 3 karakter untuk pencarian.';
+      } else if (!/[a-zA-Z]/.test(cleanQuery)) {
+        errorMessage = 'Gunakan nama tempat atau jalan, bukan hanya angka.';
+      }
+
+      setError(errorMessage);
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Fungsi simpan lokasi (tidak berubah secara fungsional)
+  // Fungsi simpan lokasi
   const handleSaveLocation = async () => {
+    console.log('Save location clicked. Current location:', location);
+
     if (!location) {
       setError('Lokasi belum dipilih pada peta.');
       return;
@@ -254,32 +508,43 @@ const PickLocation: React.FC<PickLocationProps> = ({
     try {
       const payload: SavedLocationPayload = {
         ...location,
-        address,
+        address: address || 'Alamat tidak tersedia',
         updatedAt: new Date().toISOString(),
       };
+
+      console.log('Saving location payload:', payload);
+
       if (onSaveLocation) {
         await onSaveLocation(payload);
+        console.log('onSaveLocation callback completed');
       }
+
       setSaveSuccess(true);
+
       setTimeout(() => {
-        if (!onCancel && allowBack) {
+        if (onCancel) {
+          onCancel();
+        } else if (allowBack) {
           router.back();
         }
       }, 1500);
-    } catch {
+    } catch (err) {
+      console.error('Save error:', err);
       setError('Gagal menyimpan lokasi. Coba lagi.');
     } finally {
       setSaving(false);
     }
   };
 
-  // Bagian JSX (Render) tidak banyak berubah
+  // JSX Render
   return (
-    <div className='flex h-screen flex-col bg-white sm:bg-gray-50'>
-      <header className='flex items-center justify-between border-b p-4 sm:bg-white'>
+    <div className='flex h-screen flex-col bg-white'>
+      {/* Header */}
+      <header className='flex items-center justify-between bg-white p-4 shadow-sm'>
         <div className='flex items-center gap-4'>
           {allowBack && (
             <button
+              type='button'
               onClick={() => (onCancel ? onCancel() : router.back())}
               className='text-gray-600 hover:text-gray-900'
             >
@@ -294,90 +559,118 @@ const PickLocation: React.FC<PickLocationProps> = ({
         />
       </header>
 
+      {/* Search Bar */}
+      <div className='m-4 flex gap-2'>
+        <div className='relative flex-grow'>
+          <input
+            type='text'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder='Cari nama jalan atau tempat...'
+            className='w-full rounded-md border border-gray-300 p-2 pl-10 text-sm focus:border-emerald-500 focus:ring-emerald-500'
+            disabled={isSearching}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSearchLocation(e as React.FormEvent<HTMLInputElement>);
+              }
+            }}
+          />
+          <Search
+            size={18}
+            className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
+          />
+        </div>
+        <button
+          type='button'
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+            handleSearchLocation(e)
+          }
+          className='flex items-center justify-center rounded-md bg-emerald-500 px-4 py-2 text-white hover:bg-emerald-600 disabled:opacity-50'
+          disabled={isSearching || !searchQuery.trim()}
+        >
+          {isSearching ? (
+            <Loader2 className='animate-spin' size={20} />
+          ) : (
+            <Search size={20} />
+          )}
+        </button>
+      </div>
+
+      {/* Main Map Container */}
       <main className='relative flex-1'>
         {loading && (
-          <div className='absolute inset-0 z-20 flex flex-col items-center justify-center bg-white bg-opacity-80 backdrop-blur-sm'>
+          <div className='absolute inset-0 z-20 flex flex-col items-center justify-center bg-white bg-opacity-90'>
             <Loader2 className='h-8 w-8 animate-spin text-emerald-500' />
             <p className='mt-2 text-gray-600'>Memuat peta...</p>
           </div>
         )}
-        <div ref={mapContainerRef} className='h-full w-full' id='map' />
+        <div ref={mapContainerRef} className='h-full w-full' />
       </main>
 
-      <footer className='shadow-top border-t bg-white p-4 sm:rounded-t-lg'>
+      {/* Footer Controls */}
+      <footer className=' bg-white p-4 shadow-lg'>
         {error && (
           <div className='mb-3 flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-700'>
             <AlertCircle size={16} />
             <span>{error}</span>
             <button
+              type='button'
               onClick={() => setError(null)}
-              className='ml-auto text-red-700 hover:text-red-900'
+              className='ml-auto hidden text-red-700 hover:text-red-900'
             >
               <X size={16} />
             </button>
           </div>
         )}
+
         {saveSuccess && (
           <div className='mb-3 flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm text-green-700'>
             <CheckCircle size={16} />
             <span>Lokasi berhasil disimpan! Anda akan diarahkan kembali.</span>
           </div>
         )}
-        <form onSubmit={handleSearchLocation} className='mb-4 flex gap-2'>
-          <div className='relative flex-grow'>
-            <input
-              type='text'
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder='Cari nama jalan atau tempat...'
-              className='w-full rounded-md border border-gray-300 p-2 pl-10 focus:border-emerald-500 focus:ring-emerald-500'
-              disabled={isSearching}
-            />
-            <Search
-              size={18}
-              className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
-            />
-          </div>
-          <button
-            type='submit'
-            className='flex items-center justify-center rounded-md bg-emerald-500 px-4 py-2 text-white hover:bg-emerald-600 disabled:opacity-50'
-            disabled={isSearching || !searchQuery.trim()}
-          >
-            {isSearching ? (
-              <Loader2 className='animate-spin' size={20} />
-            ) : (
-              <Search size={20} />
-            )}
-          </button>
-        </form>
 
+        {/* Address Display */}
         <div className='mb-4'>
           <div className='flex items-start gap-3'>
-            <MapPin size={24} className='mt-1 flex-shrink-0 text-emerald-500' />
-            <div>
-              <h3 className='font-semibold text-gray-800'>Alamat Terpilih</h3>
+            <MapPin size={20} className='mt-1 flex-shrink-0 text-emerald-500' />
+            <div className='flex-1'>
+              <h3 className='text-sm font-semibold text-gray-800'>
+                Alamat Terpilih
+              </h3>
               <p className='text-sm text-gray-600'>
-                {address || 'Geser peta untuk mendapatkan alamat...'}
+                {address || 'Klik atau geser marker untuk memilih lokasi...'}
               </p>
+              {location && (
+                <p className='mt-1 text-xs text-gray-500'>
+                  {location.latitude.toFixed(6)},{' '}
+                  {location.longitude.toFixed(6)}
+                </p>
+              )}
             </div>
           </div>
         </div>
-        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+
+        {/* Action Buttons */}
+        <div className='flex gap-3 bg-white'>
           <button
+            type='button'
             onClick={() => (onCancel ? onCancel() : router.back())}
-            className='w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50'
+            className='flex-1 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50'
           >
             Batal
           </button>
           <button
+            type='button'
             onClick={handleSaveLocation}
             disabled={saving || saveSuccess || !location}
-            className='flex w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300'
+            className='flex flex-1 items-center justify-center gap-2 rounded-md bg-emerald-500 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300'
           >
             {saving ? (
-              <Loader2 className='animate-spin' size={20} />
+              <Loader2 className='animate-spin' size={16} />
             ) : (
-              <Save size={20} />
+              <Save size={16} />
             )}
             <span>{saving ? 'Menyimpan...' : 'Simpan Lokasi'}</span>
           </button>
