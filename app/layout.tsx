@@ -13,6 +13,11 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: 'WasteTrack - Waste Management System',
   description: 'Efficient waste management tracking system',
+  icons: {
+    icon: '/icons/favicon.ico',
+    apple: '/images/apple-touch-icon.png',
+    shortcut: '/images/favicon-32x32.png',
+  },
 };
 
 export default function RootLayout({
