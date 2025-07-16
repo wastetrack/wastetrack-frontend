@@ -55,7 +55,6 @@ export interface FlatUserListResponse {
   message?: string;
 }
 
-
 // ===========================================
 // INSTITUTION AUTOCOMPLETE TYPES
 // ===========================================

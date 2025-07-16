@@ -111,7 +111,9 @@ export const userListAPI = {
     }
   },
 
-  async getFlatUserList(params: UserListParams = {}): Promise<FlatUserListResponse> {
+  async getFlatUserList(
+    params: UserListParams = {}
+  ): Promise<FlatUserListResponse> {
     try {
       const queryParams = new URLSearchParams();
       queryParams.append('page', (params.page || 1).toString());
@@ -119,9 +121,12 @@ export const userListAPI = {
 
       if (params.role) queryParams.append('role', params.role);
       if (params.province) queryParams.append('province', params.province);
-      if (params.institution) queryParams.append('institution', params.institution);
+      if (params.institution)
+        queryParams.append('institution', params.institution);
 
-      const response = await authenticatedApiClient.get(`/api/users?${queryParams.toString()}`);
+      const response = await authenticatedApiClient.get(
+        `/api/users?${queryParams.toString()}`
+      );
 
       return response.data; // ✅ langsung cocok dengan FlatUserListResponse
     } catch (error) {
