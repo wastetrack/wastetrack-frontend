@@ -5,6 +5,7 @@ import {
   InstitutionSearchParams,
   InstitutionSearchResponse,
   UserListItem,
+  FlatUserListResponse,
 } from '@/types';
 import { getTokenManager } from '@/lib/token-manager';
 
@@ -106,6 +107,33 @@ export const userListAPI = {
         throw new Error(errorMessage);
       }
       console.log('Network Error:', error);
+      throw new Error('Network error occurred. Please try again.');
+    }
+  },
+
+  async getFlatUserList(params: UserListParams = {}): Promise<FlatUserListResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', (params.page || 1).toString());
+      queryParams.append('size', (params.size || 10).toString());
+
+      if (params.role) queryParams.append('role', params.role);
+      if (params.province) queryParams.append('province', params.province);
+      if (params.institution) queryParams.append('institution', params.institution);
+
+      const response = await authenticatedApiClient.get(`/api/users?${queryParams.toString()}`);
+
+      return response.data; // ✅ langsung cocok dengan FlatUserListResponse
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.log('User List Error:', error.response?.data);
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          'Failed to fetch user list';
+        throw new Error(errorMessage);
+      }
+
       throw new Error('Network error occurred. Please try again.');
     }
   },
