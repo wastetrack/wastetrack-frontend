@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   ChevronRight,
+  ChevronDown,
   LogOut,
   Users,
   Loader2,
@@ -20,10 +21,21 @@ import {
   Package,
   ClipboardCheck,
   Route,
+  ArrowUpCircle,
+  ArrowDownCircle,
 } from 'lucide-react';
 import { SidebarProps, UserRole } from '@/types';
 import { handleLogout } from '@/helpers/utils/logout/logout';
 import Swal from 'sweetalert2';
+
+// Extended MenuItem interface to support nested menus
+interface MenuItem {
+  label: string;
+  path?: string;
+  icon: React.ReactNode;
+  children?: MenuItem[];
+  exact?: boolean;
+}
 
 const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed: initialCollapsed = false,
@@ -33,16 +45,18 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const pathname = usePathname();
   const router = useRouter();
 
-  const getMenuItems = (role: UserRole) => {
-    const menuConfigs = {
+  const getMenuItems = (role: UserRole): MenuItem[] => {
+    const menuConfigs: Record<UserRole, MenuItem[]> = {
       waste_bank_unit: [
         {
           label: 'Dashboard',
           path: '/wastebank-unit',
           icon: <LayoutDashboard size={20} />,
+          exact: true,
         },
         {
           label: 'Manajemen Kolektor',
@@ -55,9 +69,20 @@ const Sidebar: React.FC<SidebarProps> = ({
           icon: <CircleDollarSign size={20} />,
         },
         {
-          label: 'Transaksi Harian',
-          path: '/wastebank-unit/transactions',
+          label: 'Transaksi',
           icon: <CreditCard size={20} />,
+          children: [
+            {
+              label: 'Transaksi Masuk',
+              path: '/wastebank-unit/transactions/in',
+              icon: <ArrowUpCircle size={18} />,
+            },
+            {
+              label: 'Transaksi Keluar',
+              path: '/wastebank-unit/transactions/out',
+              icon: <ArrowDownCircle size={18} />,
+            },
+          ],
         },
         {
           label: 'Penyimpanan Gudang',
@@ -85,6 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           label: 'Dashboard',
           path: '/collector-unit',
           icon: <LayoutDashboard size={20} />,
+          exact: true,
         },
         {
           label: 'Tugas',
@@ -107,6 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           label: 'Dashboard',
           path: '/wastebank-central',
           icon: <LayoutDashboard size={20} />,
+          exact: true,
         },
         {
           label: 'Manajemen Kolektor',
@@ -119,9 +146,20 @@ const Sidebar: React.FC<SidebarProps> = ({
           icon: <CircleDollarSign size={20} />,
         },
         {
-          label: 'Transaksi Harian',
-          path: '/wastebank-central/transactions',
+          label: 'Transaksi',
           icon: <CreditCard size={20} />,
+          children: [
+            {
+              label: 'Transaksi Masuk',
+              path: '/wastebank-central/transactions/in',
+              icon: <ArrowUpCircle size={18} />,
+            },
+            {
+              label: 'Transaksi Keluar',
+              path: '/wastebank-central/transactions/out',
+              icon: <ArrowDownCircle size={18} />,
+            },
+          ],
         },
         {
           label: 'Penyimpanan Gudang',
@@ -149,6 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           label: 'Dashboard',
           path: '/collector-central',
           icon: <LayoutDashboard size={20} />,
+          exact: true,
         },
         {
           label: 'Tugas',
@@ -171,6 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           label: 'Dashboard',
           path: '/offtaker',
           icon: <LayoutDashboard size={20} />,
+          exact: true,
         },
         {
           label: 'Transaksi',
@@ -193,6 +233,133 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const menuItems = getMenuItems(role);
+
+  // Auto-expand parent menu if child is active
+  useEffect(() => {
+    const newExpanded = new Set(expandedMenus);
+    let hasChanges = false;
+
+    menuItems.forEach((item) => {
+      if (item.children && hasActiveChild(item.children)) {
+        if (!newExpanded.has(item.label)) {
+          newExpanded.add(item.label);
+          hasChanges = true;
+        }
+      }
+    });
+
+    if (hasChanges) {
+      setExpandedMenus(newExpanded);
+    }
+  }, [pathname]);
+
+  // Toggle expanded menu
+  const toggleMenu = (menuLabel: string) => {
+    const newExpanded = new Set(expandedMenus);
+    if (newExpanded.has(menuLabel)) {
+      newExpanded.delete(menuLabel);
+    } else {
+      newExpanded.add(menuLabel);
+    }
+    setExpandedMenus(newExpanded);
+  };
+
+  // Check if menu item is active
+  const isMenuActive = (item: MenuItem): boolean => {
+    if (item.path) {
+      if (item.exact) {
+        return pathname === item.path;
+      } else {
+        // Untuk non-exact match, pastikan tidak ada konflik dengan path yang lebih spesifik
+        // Contoh: '/wastebank-unit' tidak boleh active saat di '/wastebank-unit/collectors'
+        const isExactMatch = pathname === item.path;
+        const isStartMatch = pathname.startsWith(item.path + '/');
+        return isExactMatch || isStartMatch;
+      }
+    }
+    if (item.children) {
+      return item.children.some((child) => isMenuActive(child));
+    }
+    return false;
+  };
+
+  // Check if any child is active
+  const hasActiveChild = (children: MenuItem[]): boolean => {
+    return children.some((child) => isMenuActive(child));
+  };
+
+  // Render menu item
+  const renderMenuItem = (item: MenuItem, index: number, level: number = 0) => {
+    const isActive = isMenuActive(item);
+    const isExpanded = expandedMenus.has(item.label);
+    const hasChildren = item.children && item.children.length > 0;
+
+    // If it has children, render expandable menu
+    if (hasChildren) {
+      return (
+        <div key={`${item.label}-${index}`}>
+          <button
+            onClick={() => !isCollapsed && toggleMenu(item.label)}
+            className={`group flex w-full items-center gap-3 rounded-lg p-3 transition-all
+              ${
+                isActive || hasActiveChild(item.children!)
+                  ? 'bg-emerald-50 text-emerald-600'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
+              }
+              ${isCollapsed ? 'justify-center' : ''}
+              ${level > 0 ? 'ml-4' : ''}`}
+          >
+            {item.icon}
+            {!isCollapsed && (
+              <>
+                <span className='flex-1 text-left text-sm font-medium transition-colors group-hover:text-emerald-600'>
+                  {item.label}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`transform transition-transform ${
+                    isExpanded ? 'rotate-180' : ''
+                  }`}
+                />
+              </>
+            )}
+          </button>
+
+          {/* Submenu */}
+          {!isCollapsed && isExpanded && (
+            <div className='ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-200'>
+              {item.children!.map((child, childIndex) =>
+                renderMenuItem(child, childIndex, level + 1)
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Regular menu item with link
+    return (
+      <Link
+        key={`${item.label}-${index}`}
+        href={item.path!}
+        className={`group flex items-center gap-3 rounded-lg p-3 transition-all
+          ${
+            isActive
+              ? 'bg-emerald-50 text-emerald-600'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
+          }
+          ${isCollapsed ? 'justify-center' : ''}
+          ${level > 0 ? 'ml-4' : ''}`}
+      >
+        {item.icon}
+        {!isCollapsed && (
+          <span className='text-sm font-medium transition-colors group-hover:text-emerald-600'>
+            {item.label}
+          </span>
+        )}
+      </Link>
+    );
+  };
 
   const handleLogoutClick = async () => {
     try {
@@ -309,30 +476,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation Menu */}
       <nav className='space-y-2 p-4'>
-        {menuItems.map((item, index) => {
-          const isActive = pathname === item.path;
-          // const isActive = item.exact ? pathname === item.path : pathname === item.path || pathname.startsWith(`${item.path}/`);
-          return (
-            <Link
-              key={index}
-              href={item.path}
-              className={`group flex items-center gap-3 rounded-lg p-3 transition-all
-                ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
-                }
-                ${isCollapsed ? 'justify-center' : ''}`}
-            >
-              {item.icon}
-              {!isCollapsed && (
-                <span className='text-sm font-medium transition-colors group-hover:text-emerald-600'>
-                  {item.label}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+        {menuItems.map((item, index) => renderMenuItem(item, index))}
       </nav>
 
       {/* Profile & Logout Section */}

@@ -10,7 +10,6 @@ interface RecentPickupsProps {
 }
 
 export default function RecentPickups({
-  pickups,
   displayedPickups,
   recentPickups,
   onViewAllPickups,
@@ -20,6 +19,7 @@ export default function RecentPickups({
     return date.toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
+      year: 'numeric',
     });
   };
 
@@ -41,18 +41,12 @@ export default function RecentPickups({
         Pengambilan Terbaru
       </h2>
 
-      {pickups.pending > 0 && (
-        <span className='rounded-full bg-yellow-50 px-2 py-1 text-xs text-yellow-600'>
-          {pickups.pending} menunggu
-        </span>
-      )}
-
       {displayedPickups.length > 0 ? (
         <div className='space-y-2'>
           {displayedPickups.map((pickup) => (
             <div
               key={pickup.id}
-              className='shadow-xs flex items-center justify-between rounded-lg border border-gray-50 bg-white p-3 transition-colors hover:border-emerald-100 sm:shadow-sm'
+              className='shadow-xs flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3 transition-colors hover:border-emerald-100 sm:shadow-sm'
             >
               <div className='flex gap-3'>
                 <div className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50'>
@@ -60,13 +54,9 @@ export default function RecentPickups({
                 </div>
                 <div>
                   <p className='text-left text-sm font-medium text-gray-800'>
-                    {pickup.wasteQuantities
-                      ? Object.values(pickup.wasteQuantities).reduce(
-                          (total, qty) => total + qty,
-                          0
-                        )
-                      : pickup.quantity || 0}{' '}
-                    kantong
+                    {pickup.delivery_type === 'pickup'
+                      ? 'Penjemputan'
+                      : 'Antar sendiri'}
                   </p>
                   <p className='text-xs text-gray-500'>
                     {formatDate(pickup)} • {pickup.time}

@@ -11,23 +11,22 @@ import { Alert } from '@/components/ui';
 export default function ProfilePage() {
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
-  const [formData, setFormData] = useState<UpdateCustomerProfileRequest>({});
+  const [, setFormData] = useState<UpdateCustomerProfileRequest>({});
 
   // Get user ID from localStorage or wherever it's stored
   const getUserId = (): string | null => {
     if (typeof window !== 'undefined') {
       const userData = localStorage.getItem('user');
-      console.log('Raw user data from localStorage:', userData);
+      // console.log('Raw user data from localStorage:', userData);
       if (userData) {
         try {
           const user = JSON.parse(userData);
-          console.log('Parsed user data:', user);
+          // console.log('Parsed user data:', user);
           const userId = user.id || user.user_id || null;
-          console.log('Extracted user ID:', userId);
+          // console.log('Extracted user ID:', userId);
           return userId;
-        } catch (error) {
-          console.error('Error parsing user data:', error);
+        } catch {
+          // console.error('Error parsing user data:', error);
           return null;
         }
       }
@@ -41,7 +40,7 @@ export default function ProfilePage() {
       setLoading(true);
       const userId = getUserId();
 
-      console.log('Fetching profile for user ID:', userId);
+      // console.log('Fetching profile for user ID:', userId);
 
       if (!userId) {
         throw new Error('User ID not found');
@@ -49,12 +48,12 @@ export default function ProfilePage() {
 
       const response = await customerProfileAPI.getProfile(userId);
 
-      console.log('API Response:', response);
+      // console.log('API Response:', response);
 
       if (response.data) {
         // The API returns { data: CustomerProfile } directly
         const profileData = response.data;
-        console.log('Profile data:', profileData);
+        // console.log('Profile data:', profileData);
         setProfile(profileData);
 
         // Initialize form data with current user data from the nested user object
@@ -86,60 +85,6 @@ export default function ProfilePage() {
     }
   }, []);
 
-  // Handle form input changes
-  const handleInputChange = (
-    field: keyof UpdateCustomerProfileRequest,
-    value: string
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!profile) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      const response = await customerProfileAPI.updateProfile(
-        profile.id,
-        formData
-      );
-
-      if (response.data) {
-        // The API returns { data: CustomerProfile } directly
-        const updatedProfileData = response.data;
-        setProfile(updatedProfileData);
-
-        await Alert.success({
-          title: 'Berhasil',
-          text: 'Profil berhasil diperbarui.',
-          timer: 1500,
-        });
-      } else {
-        throw new Error('Failed to update profile - no data received');
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      await Alert.error({
-        title: 'Gagal Menyimpan',
-        text:
-          error instanceof Error
-            ? error.message
-            : 'Terjadi kesalahan saat menyimpan profil.',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   // Load profile on component mount
   useEffect(() => {
     fetchProfile();
@@ -148,26 +93,30 @@ export default function ProfilePage() {
   // Show loading state
   if (loading) {
     return (
-      <div>
-        <div className='mb-6'>
-          <h1 className='text-2xl font-bold text-gray-800'>Profil Saya</h1>
-          <p className='mt-2 text-gray-600'>Kelola informasi profil Anda.</p>
+      <div className='p-3 sm:p-4'>
+        <div className='mb-4 sm:mb-6'>
+          <h1 className='text-xl font-bold text-gray-800 sm:text-2xl'>
+            Profil Saya
+          </h1>
+          <p className='mt-1 text-sm text-gray-600 sm:mt-2 sm:text-base'>
+            Kelola informasi profil Anda.
+          </p>
         </div>
 
-        <div className='rounded-lg border bg-white p-6 shadow-sm'>
+        <div className='rounded-lg border bg-white p-4 shadow-sm sm:p-6'>
           <div className='animate-pulse'>
-            <div className='mb-6 flex items-center gap-4'>
-              <div className='h-20 w-20 rounded-full bg-gray-200'></div>
-              <div>
-                <div className='mb-2 h-6 w-48 rounded bg-gray-200'></div>
-                <div className='h-4 w-32 rounded bg-gray-200'></div>
+            <div className='mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4'>
+              <div className='mx-auto h-16 w-16 rounded-full bg-gray-200 sm:mx-0 sm:h-20 sm:w-20'></div>
+              <div className='text-center sm:text-left'>
+                <div className='mx-auto mb-2 h-5 w-32 rounded bg-gray-200 sm:mx-0 sm:h-6 sm:w-48'></div>
+                <div className='mx-auto h-4 w-24 rounded bg-gray-200 sm:mx-0 sm:w-32'></div>
               </div>
             </div>
-            <div className='space-y-4'>
+            <div className='space-y-3 sm:space-y-4'>
               {[1, 2, 3, 4].map((i) => (
                 <div key={i}>
-                  <div className='mb-2 h-4 w-24 rounded bg-gray-200'></div>
-                  <div className='h-10 rounded bg-gray-200'></div>
+                  <div className='mb-2 h-4 w-20 rounded bg-gray-200 sm:w-24'></div>
+                  <div className='h-9 rounded bg-gray-200 sm:h-10'></div>
                 </div>
               ))}
             </div>
@@ -180,17 +129,23 @@ export default function ProfilePage() {
   // Show error state if no profile
   if (!profile) {
     return (
-      <div className='p-4'>
-        <div className='mb-6'>
-          <h1 className='text-2xl font-bold text-gray-800'>Profil Saya</h1>
-          <p className='mt-2 text-gray-600'>Kelola informasi profil Anda.</p>
+      <div className='p-3 sm:p-4'>
+        <div className='mb-4 sm:mb-6'>
+          <h1 className='text-xl font-bold text-gray-800 sm:text-2xl'>
+            Profil Saya
+          </h1>
+          <p className='mt-1 text-sm text-gray-600 sm:mt-2 sm:text-base'>
+            Kelola informasi profil Anda.
+          </p>
         </div>
 
-        <div className='rounded-lg border bg-white p-6 text-center shadow-sm'>
-          <p className='mb-4 text-gray-600'>Gagal memuat data profil.</p>
+        <div className='rounded-lg border bg-white p-4 text-center shadow-sm sm:p-6'>
+          <p className='mb-4 text-sm text-gray-600 sm:text-base'>
+            Gagal memuat data profil.
+          </p>
           <button
             onClick={fetchProfile}
-            className='rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700'
+            className='w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 sm:w-auto sm:text-base'
           >
             Coba Lagi
           </button>
@@ -200,126 +155,133 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className='p-4'>
-      <div className='mb-6'>
-        <h1 className='text-2xl font-bold text-gray-800'>Profil Saya</h1>
-        <p className='mt-2 text-gray-600'>Kelola informasi profil Anda.</p>
-      </div>
-
-      <div className='rounded-lg border bg-white p-6 shadow-sm'>
-        <div className='mb-6 flex items-center gap-4'>
-          <div className='flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100'>
-            <span className='text-2xl font-semibold text-emerald-600'>
-              {profile.user.username?.charAt(0)?.toUpperCase() || 'U'}
-            </span>
-          </div>
-          <div>
-            <h3 className='text-xl font-semibold text-gray-800'>
-              {profile.user.username}
-            </h3>
-            <p className='text-gray-600'>{profile.user.email}</p>
-            <div className='mt-2 flex items-center gap-4 text-sm text-gray-500'>
-              <span>Poin: {profile.user.points || 0}</span>
-              <span>
-                Saldo: Rp {(profile.user.balance || 0).toLocaleString('id-ID')}
+    <div>
+      <div className='rounded-lg sm:p-6'>
+        {/* Profile Header - Mobile First Design */}
+        <div className='mb-4 sm:mb-6'>
+          <div className='flex flex-col items-center text-center sm:flex-row sm:items-center sm:gap-4 sm:text-left'>
+            <div className='mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 sm:mb-0 sm:h-20 sm:w-20'>
+              <span className='text-xl font-semibold text-emerald-600 sm:text-2xl'>
+                {profile.user.username?.charAt(0)?.toUpperCase() || 'U'}
               </span>
             </div>
-            <div className='mt-1 flex items-center gap-4 text-xs text-gray-400'>
-              <span>CO₂ Deficit: {profile.carbon_deficit || 0}</span>
-              <span>Air Disimpan: {profile.water_saved || 0}L</span>
-              <span>Tas: {profile.bags_stored || 0}</span>
-              <span>Pohon: {profile.trees || 0}</span>
+
+            <div className='flex-1'>
+              <h3 className='text-lg font-semibold text-gray-800 sm:text-xl'>
+                {profile.user.username}
+              </h3>
+              <p className='text-sm text-gray-600 sm:text-base'>
+                {profile.user.email}
+              </p>
+
+              {/* Stats Grid - Mobile Optimized */}
+              <div className='mt-2 grid hidden grid-cols-2 gap-2 text-xs text-gray-500 sm:flex sm:items-center sm:gap-4 sm:text-sm'>
+                <span className='text-center sm:text-left'>
+                  Poin: {profile.user.points || 0}
+                </span>
+                <span className='text-center sm:text-left'>
+                  Saldo: Rp{' '}
+                  {(profile.user.balance || 0).toLocaleString('id-ID')}
+                </span>
+              </div>
+
+              {/* Environmental Stats - Mobile Optimized */}
+              <div className='mt-1 grid hidden grid-cols-2 gap-1 text-xs text-gray-400 sm:flex sm:items-center sm:gap-4'>
+                <span className='text-center sm:text-left'>
+                  CO₂: {profile.carbon_deficit || 0}
+                </span>
+                <span className='text-center sm:text-left'>
+                  Air: {profile.water_saved || 0}L
+                </span>
+                <span className='text-center sm:text-left'>
+                  Tas: {profile.bags_stored || 0}
+                </span>
+                <span className='text-center sm:text-left'>
+                  Pohon: {profile.trees || 0}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        {/* Form - Mobile Optimized */}
+        <div className='space-y-4 sm:space-y-4'>
           <div>
-            <label className='mb-1 block text-sm font-medium text-gray-700'>
+            <label className='block text-sm font-medium text-gray-700'>
+              Bergabung Sejak
+            </label>
+            <p className='text-sm text-gray-500'>
+              {profile.user.created_at
+                ? new Date(profile.user.created_at).toLocaleDateString(
+                    'id-ID',
+                    {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    }
+                  )
+                : '-'}
+            </p>
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium text-gray-700'>
               Nama Pengguna
             </label>
-            <input
-              type='text'
-              value={formData.username || ''}
-              onChange={(e) => handleInputChange('username', e.target.value)}
-              className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
-            />
+            <p className='text-sm text-gray-500'>{profile.user.username}</p>
           </div>
 
           <div>
-            <label className='mb-1 block text-sm font-medium text-gray-700'>
+            <label className='block text-sm font-medium text-gray-700'>
               Email
             </label>
-            <input
-              type='email'
-              value={formData.email || ''}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
-            />
+            <p className='text-sm text-gray-500'>{profile.user.email}</p>
           </div>
 
           <div>
-            <label className='mb-1 block text-sm font-medium text-gray-700'>
+            <label className='block text-sm font-medium text-gray-700'>
+              Role
+            </label>
+            <p className='text-sm text-gray-500'>{profile.user.role}</p>
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium text-gray-700'>
               Nomor Telepon
             </label>
-            <input
-              type='tel'
-              value={formData.phone_number || ''}
-              onChange={(e) =>
-                handleInputChange('phone_number', e.target.value)
-              }
-              className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
-            />
+            <p className='text-sm text-gray-500'>{profile.user.phone_number}</p>
           </div>
 
           <div>
-            <label className='mb-1 block text-sm font-medium text-gray-700'>
+            <label className='block text-sm font-medium text-gray-700'>
               Alamat
             </label>
-            <textarea
-              value={formData.address || ''}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              rows={3}
-              className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
-            />
+            <p className='text-sm text-gray-500'>
+              {profile.user.address || 'Tidak ada alamat yang ditentukan'}
+            </p>
           </div>
 
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+          {/* City and Province Grid - Mobile Optimized */}
+          <div className='space-y-3 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0'>
             <div>
-              <label className='mb-1 block text-sm font-medium text-gray-700'>
+              <label className='block text-sm font-medium text-gray-700'>
                 Kota
               </label>
-              <input
-                type='text'
-                value={formData.city || ''}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
-              />
+              <p className='text-sm text-gray-500'>
+                {profile.user.city || 'Tidak ada kota yang ditentukan'}
+              </p>
             </div>
 
             <div>
-              <label className='mb-1 block text-sm font-medium text-gray-700'>
+              <label className='block text-sm font-medium text-gray-700'>
                 Provinsi
               </label>
-              <input
-                type='text'
-                value={formData.province || ''}
-                onChange={(e) => handleInputChange('province', e.target.value)}
-                className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
-              />
+              <p className='text-sm text-gray-500'>
+                {profile.user.province || 'Tidak ada provinsi yang ditentukan'}
+              </p>
             </div>
           </div>
-
-          <div className='pt-4'>
-            <button
-              type='submit'
-              disabled={saving}
-              className='rounded-lg bg-emerald-600 px-6 py-2 text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50'
-            >
-              {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -74,3 +74,22 @@ export interface WasteDropRequestListResponse {
 export interface WasteDropRequestDetailResponse {
   data: WasteDropRequest;
 }
+
+// ============================================================================
+// WASTEBANK DROP REQUEST TYPES (ONLY FOR WASTEBANK)
+// ============================================================================
+export interface WasteDropRequestStatusUpdateParams {
+  status: 'assigned' | 'collecting' | 'pending' | 'cancelled';
+}
+
+export interface UpdateWasteDropRequestStatusResponse {
+  success: boolean;
+  message: string;
+  data?: unknown;
+}
+
+export interface AssignCollectorResponse {
+  success: boolean;
+  message: string;
+  data?: unknown;
+}

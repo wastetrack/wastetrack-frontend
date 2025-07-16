@@ -116,13 +116,13 @@ export const wasteDropRequestAPI = {
     requestData: WasteDropRequestRequest
   ): Promise<CreateWasteDropRequestResponse> {
     try {
-      console.log('Making API call to create waste drop request:', requestData);
+      // console.log('Making API call to create waste drop request:', requestData);
       const response = await apiClient.post(
         `/api/customer/waste-drop-requests`,
         requestData
       );
-      console.log('Raw API response:', response);
-      console.log('Response data:', response.data);
+      // console.log('Raw API response:', response);
+      // console.log('Response data:', response.data);
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
@@ -150,11 +150,11 @@ export const wasteDropRequestAPI = {
     requestId: string
   ): Promise<WasteDropRequestResponse> {
     try {
-      console.log('Making API call to get waste drop request:', requestId);
+      // console.log('Making API call to get waste drop request:', requestId);
       const response = await apiClient.get(
         `/api/waste-drop-requests/${requestId}`
       );
-      console.log('Raw API response:', response);
+      // console.log('Raw API response:', response);
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
@@ -210,11 +210,11 @@ export const wasteDropRequestAPI = {
         queryParams.append('size', params.size.toString());
       }
 
-      console.log('Making API call to get waste drop requests:', params);
+      // console.log('Making API call to get waste drop requests:', params);
       const response = await apiClient.get(
         `/api/waste-drop-requests?${queryParams.toString()}`
       );
-      console.log('Raw API response:', response);
+      // console.log('Raw API response:', response);
       return response.data;
     } catch (error) {
       console.error('API Error:', error);

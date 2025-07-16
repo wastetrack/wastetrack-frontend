@@ -105,7 +105,13 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
 
   // Handle settings navigation
   const handleSettingsClick = (): void => {
-    router.push('/customer/settings');
+    // router.push('/customer/settings');
+    showDevModal({
+      title: 'Pengaturan',
+      message:
+        'Fitur pengaturan sedang dalam pengembangan dan belum dapat diakses saat ini.',
+      buttonText: 'Mengerti',
+    });
   };
 
   // Handle tab navigation
@@ -144,7 +150,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className='bg-gray-50'>
       {/* Header */}
       <Header
         userData={userData}
@@ -153,7 +159,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
       />
 
       {/* Main Content */}
-      <main className='min-h-screen p-6 py-20'>
+      <main className='p-6 py-20'>
         <div className='mx-auto max-w-7xl'>{children}</div>
       </main>
 

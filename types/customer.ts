@@ -38,6 +38,7 @@ export type PickupStatus =
 
 export interface Pickup {
   id: string;
+  delivery_type?: string;
   status: PickupStatus;
   wasteQuantities?: Record<string, number>;
   quantity?: number;

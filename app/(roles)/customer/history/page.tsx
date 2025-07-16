@@ -1,28 +1,39 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Search,
   Filter,
   Calendar,
   Package,
-  MapPin,
   Clock,
   Truck,
   CheckCircle,
   XCircle,
   AlertCircle,
   Loader2,
+  X,
+  NotebookTabs,
   ChevronDown,
   ChevronUp,
-  RefreshCw,
+  Scale,
 } from 'lucide-react';
+import {
+  customerProfileAPI,
+  type CustomerProfile,
+} from '@/services/api/customer';
 import { wasteDropRequestAPI } from '@/services/api/user';
+import { wasteDropRequestItemAPI } from '@/services/api/user';
+import { wasteTypeAPI } from '@/services/api/user';
+import { userListAPI } from '@/services/api/user';
 import { currentUserAPI } from '@/services/api/user';
 import {
   WasteDropRequest,
   WasteDropRequestListParams,
-} from '@/types/waste-drop-request';
+  WasteDropRequestItem,
+  WasteType,
+  UserListItem,
+} from '@/types';
 
 // Utility functions (tidak ada perubahan)
 const formatDate = (dateString: string) => {
@@ -103,11 +114,25 @@ export default function HistoryPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [pageSize] = useState(10);
+  const [, setTotalCount] = useState(0);
+  const [pageSize] = useState(5);
   const [searchQuery, setSearchQuery] = useState('');
+  const [customerProfile, setCustomerProfile] =
+    useState<CustomerProfile | null>(null);
 
-  // PERBAIKAN 1: Mengubah nama state filter tanggal
+  // States for items
+  const [expandedRequests, setExpandedRequests] = useState<Set<string>>(
+    new Set()
+  );
+  const [requestItems, setRequestItems] = useState<
+    Record<string, WasteDropRequestItem[]>
+  >({});
+  const [wasteTypes, setWasteTypes] = useState<Record<string, WasteType>>({});
+  const [wasteBanks, setWasteBanks] = useState<Record<string, UserListItem>>(
+    {}
+  );
+  const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set());
+
   const [filters, setFilters] = useState<{
     status:
       | 'pending'
@@ -117,14 +142,16 @@ export default function HistoryPage() {
       | 'cancelled'
       | 'all';
     delivery_type: WasteDropRequest['delivery_type'] | 'all';
-    appointment_date_from?: string; // Option 2: Specific appointment date
+    appointment_date_from?: string;
     appointment_date_to?: string;
   }>({
     status: 'all',
     delivery_type: 'all',
-    appointment_date_from: '', // Diubah dari appointment_date ke date_from
+    appointment_date_from: '',
     appointment_date_to: '',
   });
+
+  const [tempFilters, setTempFilters] = useState(filters);
 
   const [showFilters, setShowFilters] = useState(false);
   const [summaryStats, setSummaryStats] = useState({
@@ -135,6 +162,22 @@ export default function HistoryPage() {
     collecting: 0,
     cancelled: 0,
   });
+
+  // Function to filter requests based on search query (only bank name)
+  const filteredRequests = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return requests;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+
+    return requests.filter((request) => {
+      // Search only by waste bank institution name
+      const wasteBankName =
+        wasteBanks[request.waste_bank_id]?.institution?.toLowerCase() || '';
+      return wasteBankName.includes(query);
+    });
+  }, [requests, searchQuery, wasteBanks]);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -148,6 +191,220 @@ export default function HistoryPage() {
     };
     getCurrentUser();
   }, []);
+
+  const fetchCustomerProfile = useCallback(async () => {
+    if (!currentUserId) return;
+
+    try {
+      const response = await customerProfileAPI.getProfile(currentUserId);
+      if (response.data) {
+        setCustomerProfile(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch customer profile:', error);
+      // Don't set error state here, as this is not critical for the page functionality
+    }
+  }, [currentUserId]);
+
+  // Function to fetch waste bank information
+  const fetchWasteBankInfo = useCallback(
+    async (wasteBankIds: string[]) => {
+      const newWasteBankIds = wasteBankIds.filter(
+        (id) => id && !wasteBanks[id]
+      );
+
+      if (newWasteBankIds.length === 0) {
+        return;
+      }
+
+      try {
+        // Fetch user list to find waste banks
+        const response = await userListAPI.getFlatUserList({
+          page: 1,
+          size: 100, // Get enough results to find our waste banks
+        });
+
+        // Response structure: { data: [UserListItem...] }
+        const users = response.data || [];
+
+        // console.log('Fetched waste banks:', users);
+        const foundWasteBanks: Record<string, UserListItem> = {};
+
+        // Find waste banks by ID
+        users.forEach((user: UserListItem) => {
+          if (newWasteBankIds.includes(user.id)) {
+            // console.log(
+            //   'Found matching waste bank:',
+            //   user.id,
+            //   user.institution
+            // );
+            foundWasteBanks[user.id] = user;
+          }
+        });
+
+        // console.log('Found waste banks:', foundWasteBanks);
+
+        // Create fallback entries for missing ones
+        newWasteBankIds.forEach((id) => {
+          if (!foundWasteBanks[id]) {
+            foundWasteBanks[id] = {
+              id,
+              username: '',
+              email: '',
+              role: '',
+              phone_number: '',
+              institution: 'Bank Sampah',
+              address: '',
+              city: '',
+              province: '',
+              points: 0,
+              balance: 0,
+              location: { latitude: 0, longitude: 0 },
+              is_email_verified: false,
+              created_at: '',
+              updated_at: '',
+            };
+          }
+        });
+
+        setWasteBanks((prev) => ({
+          ...prev,
+          ...foundWasteBanks,
+        }));
+      } catch (error) {
+        console.error('Failed to fetch waste bank info:', error);
+
+        // Create fallback entries for failed fetches
+        const fallbackWasteBanks: Record<string, UserListItem> = {};
+        newWasteBankIds.forEach((id) => {
+          fallbackWasteBanks[id] = {
+            id,
+            username: '',
+            email: '',
+            role: '',
+            phone_number: '',
+            institution: 'Bank Sampah',
+            address: '',
+            city: '',
+            province: '',
+            points: 0,
+            balance: 0,
+            location: { latitude: 0, longitude: 0 },
+            is_email_verified: false,
+            created_at: '',
+            updated_at: '',
+          };
+        });
+
+        setWasteBanks((prev) => ({
+          ...prev,
+          ...fallbackWasteBanks,
+        }));
+      }
+    },
+    [wasteBanks]
+  );
+
+  // Function to fetch items for a specific request
+  const fetchRequestItems = useCallback(
+    async (requestId: string) => {
+      if (requestItems[requestId] || loadingItems.has(requestId)) {
+        return; // Already loaded or loading
+      }
+
+      setLoadingItems((prev) => new Set(prev).add(requestId));
+
+      try {
+        const response = await wasteDropRequestItemAPI.getWasteDropRequestItems(
+          {
+            request_id: requestId,
+            page: 1,
+            size: 100, // Get all items for the request
+          }
+        );
+
+        setRequestItems((prev) => ({
+          ...prev,
+          [requestId]: response.data,
+        }));
+
+        // Fetch waste types for items that don't have cached data
+        const uniqueWasteTypeIds = [
+          ...new Set(response.data.map((item) => item.waste_type_id)),
+        ];
+        const newWasteTypeIds = uniqueWasteTypeIds.filter(
+          (id) => !wasteTypes[id]
+        );
+
+        if (newWasteTypeIds.length > 0) {
+          // Fetch waste types concurrently
+          const wasteTypePromises = newWasteTypeIds.map(async (wasteTypeId) => {
+            try {
+              const wasteTypeResponse =
+                await wasteTypeAPI.getWasteTypeById(wasteTypeId);
+              return { id: wasteTypeId, data: wasteTypeResponse.data };
+            } catch (error) {
+              console.error(
+                `Failed to fetch waste type ${wasteTypeId}:`,
+                error
+              );
+              return {
+                id: wasteTypeId,
+                data: {
+                  id: wasteTypeId,
+                  category_id: '',
+                  name: 'Unknown Type',
+                  description: '',
+                },
+              };
+            }
+          });
+
+          const wasteTypeResults = await Promise.all(wasteTypePromises);
+
+          const newWasteTypesData = wasteTypeResults.reduce(
+            (acc, result) => {
+              acc[result.id] = result.data;
+              return acc;
+            },
+            {} as Record<string, WasteType>
+          );
+
+          setWasteTypes((prev) => ({
+            ...prev,
+            ...newWasteTypesData,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch request items:', error);
+      } finally {
+        setLoadingItems((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(requestId);
+          return newSet;
+        });
+      }
+    },
+    [requestItems, loadingItems, wasteTypes]
+  );
+
+  // Toggle expanded request
+  const toggleRequestExpansion = useCallback(
+    (requestId: string) => {
+      const newExpanded = new Set(expandedRequests);
+
+      if (newExpanded.has(requestId)) {
+        newExpanded.delete(requestId);
+      } else {
+        newExpanded.add(requestId);
+        // Fetch items when expanding
+        fetchRequestItems(requestId);
+      }
+
+      setExpandedRequests(newExpanded);
+    },
+    [expandedRequests, fetchRequestItems]
+  );
 
   const fetchRequests = useCallback(
     async (page: number = 1, isRefresh = false) => {
@@ -173,24 +430,15 @@ export default function HistoryPage() {
         if (filters.delivery_type !== 'all')
           params.delivery_type = filters.delivery_type;
 
-        // PERBAIKAN 2: Mengirim parameter date_from dan date_to ke API
-        // API akan menggunakan ini untuk memfilter kolom 'appointment_date'
         if (filters.appointment_date_from)
           params.date_from = filters.appointment_date_from;
         if (filters.appointment_date_to)
           params.date_to = filters.appointment_date_to;
 
-        // Search dinonaktifkan sementara sesuai kode Anda, bisa diaktifkan kembali jika perlu
-        // if (searchQuery.trim()) (params as any).search = searchQuery.trim();
-
-        console.log('🔍 Fetching requests with params:', params);
-
         const response = await wasteDropRequestAPI.getCustomerWasteDropRequests(
           currentUserId,
           params
         );
-
-        console.log('📊 API Response:', response);
 
         const requestsData = response.data || [];
         const paginationInfo =
@@ -204,6 +452,19 @@ export default function HistoryPage() {
         setTotalPages(totalPagesFromAPI);
         setCurrentPage(page);
 
+        // Fetch waste bank information for the requests
+        const uniqueWasteBankIds = [
+          ...new Set(
+            requestsData
+              .map((r: WasteDropRequest) => r.waste_bank_id)
+              .filter((id) => id)
+          ),
+        ];
+
+        if (uniqueWasteBankIds.length > 0) {
+          fetchWasteBankInfo(uniqueWasteBankIds);
+        }
+
         setSummaryStats({
           total: totalItems,
           completed: requestsData.filter((r) => r.status === 'completed')
@@ -216,7 +477,7 @@ export default function HistoryPage() {
             .length,
         });
       } catch (error) {
-        console.error('❌ Failed to fetch requests:', error);
+        // console.error('❌ Failed to fetch requests:', error);
         setError(
           error instanceof Error ? error.message : 'Gagal memuat riwayat'
         );
@@ -225,14 +486,15 @@ export default function HistoryPage() {
         setRefreshing(false);
       }
     },
-    [currentUserId, filters, pageSize, searchQuery]
+    [currentUserId, filters, pageSize, searchQuery, fetchWasteBankInfo]
   );
 
   useEffect(() => {
     if (currentUserId) {
       fetchRequests(1);
+      fetchCustomerProfile(); // Fetch balance info
     }
-  }, [currentUserId, filters, fetchRequests]);
+  }, [currentUserId, filters, fetchRequests, fetchCustomerProfile]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -243,17 +505,98 @@ export default function HistoryPage() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, fetchRequests, currentUserId]);
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
-  };
-
   const handlePageChange = (page: number) => {
     fetchRequests(page);
   };
 
-  const handleRefresh = () => {
-    fetchRequests(currentPage, true);
+  const handleOpenFilters = () => {
+    setTempFilters(filters); // Set temp filters to current filters
+    setShowFilters(true);
+  };
+
+  const handleSaveFilters = () => {
+    setFilters(tempFilters); // Apply temp filters to actual filters
+    setCurrentPage(1); // Reset to first page
+    setShowFilters(false);
+  };
+
+  const handleTempFilterChange = (key: string, value: string) => {
+    setTempFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Component for rendering items
+  const renderRequestItems = (requestId: string) => {
+    const items = requestItems[requestId] || [];
+    const isLoading = loadingItems.has(requestId);
+
+    if (isLoading) {
+      return (
+        <div className='flex items-center justify-center py-4'>
+          <Loader2 className='h-4 w-4 animate-spin text-emerald-500' />
+          <span className='ml-2 text-xs text-gray-500'>Memuat items...</span>
+        </div>
+      );
+    }
+
+    if (items.length === 0) {
+      return (
+        <div className='py-4 text-center'>
+          <Package className='mx-auto mb-2 h-6 w-6 text-gray-400' />
+          <p className='text-xs text-gray-500'>Belum ada detail sampah</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className='space-y-2'>
+        {items.map((item) => {
+          const wasteType = wasteTypes[item.waste_type_id];
+          const wasteTypeName = wasteType?.name || 'Loading...';
+          const wasteTypeDescription = wasteType?.description || '';
+
+          return (
+            <div
+              key={item.id}
+              className='rounded-lg border border-gray-100 bg-gray-50 p-3'
+            >
+              <div className='flex items-start justify-between'>
+                <div className='flex flex-1 items-start gap-2'>
+                  <Package className='mt-0.5 h-4 w-4 text-gray-400' />
+                  <div className='flex-1'>
+                    <p className='text-xs font-medium text-gray-800'>
+                      {wasteTypeName}
+                    </p>
+                    {wasteTypeDescription && (
+                      <p className='mt-0.5 text-xs text-gray-500'>
+                        {wasteTypeDescription}
+                      </p>
+                    )}
+                    <div className='mt-1 flex items-center gap-3 text-xs text-gray-500'>
+                      <span className='flex items-center gap-1 text-[9px]'>
+                        Qty: {item.quantity} kantong
+                      </span>
+                      {item.verified_weight > 0 && (
+                        <span className='flex items-center gap-1 text-[9px]'>
+                          <Scale className='h-3 w-3' />
+                          {item.verified_weight}kg
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {item.verified_subtotal > 0 && (
+                  <div className='ml-2 text-right'>
+                    <p className='text-xs font-semibold text-emerald-600'>
+                      Rp {item.verified_subtotal.toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   if (loading && !refreshing) {
@@ -285,322 +628,430 @@ export default function HistoryPage() {
     );
   }
 
+  // Determine which requests to display
+  const requestsToDisplay = searchQuery.trim() ? filteredRequests : requests;
+
   return (
-    <div>
-      {/* Header & Summary Cards (Tidak ada perubahan) */}
-      <div className='mb-6 flex items-center justify-between'>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>
-            Riwayat Penyetoran
+    <div className='space-y-6'>
+      {/* Header & Summary Cards */}
+      <div>
+        <div className='rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-700 p-4 text-center text-white'>
+          <h1 className='mb-2 text-lg font-bold sm:text-2xl'>
+            Tabungan dan Riwayat Penyetoran
           </h1>
-          <p className='mt-2 text-gray-600'>
+          <p className='sm:text-md text-sm text-emerald-50'>
             Lihat riwayat penyetoran sampah dan status permintaan Anda.
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className='flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50'
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
-          />
-          {refreshing ? 'Memuat...' : 'Refresh'}
-        </button>
       </div>
-      <div className='mb-6 grid grid-cols-1 gap-4 md:grid-cols-6'>
-        <div className='rounded-lg border bg-white p-4 shadow-sm'>
-          <h3 className='mb-1 text-sm font-medium text-gray-600'>Total</h3>
-          <p className='text-2xl font-bold text-blue-600'>
+      <div className='mb-6 grid grid-cols-2 gap-4 md:grid-cols-4'>
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
+          <h3 className='mb-1 text-xs font-medium text-gray-600 sm:text-sm'>
+            Balance
+          </h3>
+          <p className='text-xl font-bold text-emerald-600 sm:text-2xl'>
+            Rp {customerProfile?.user?.balance?.toLocaleString() || 0}
+          </p>
+        </div>
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
+          <h3 className='mb-1 text-xs font-medium text-gray-600 sm:text-sm'>
+            Total Setor
+          </h3>
+          <p className='text-xl font-bold text-blue-600 sm:text-2xl'>
             {summaryStats.total}
           </p>
         </div>
-        <div className='rounded-lg border bg-white p-4 shadow-sm'>
-          <h3 className='mb-1 text-sm font-medium text-gray-600'>Menunggu</h3>
-          <p className='text-2xl font-bold text-yellow-600'>
-            {summaryStats.pending}
-          </p>
-        </div>
-        <div className='rounded-lg border bg-white p-4 shadow-sm'>
-          <h3 className='mb-1 text-sm font-medium text-gray-600'>
-            Dikonfirmasi
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
+          <h3 className='mb-1 text-xs font-medium text-gray-600 sm:text-sm'>
+            Selesai
           </h3>
-          <p className='text-2xl font-bold text-blue-600'>
-            {summaryStats.assigned}
-          </p>
-        </div>
-        <div className='rounded-lg border bg-white p-4 shadow-sm'>
-          <h3 className='mb-1 text-sm font-medium text-gray-600'>Proses</h3>
-          <p className='text-2xl font-bold text-purple-600'>
-            {summaryStats.collecting}
-          </p>
-        </div>
-        <div className='rounded-lg border bg-white p-4 shadow-sm'>
-          <h3 className='mb-1 text-sm font-medium text-gray-600'>Selesai</h3>
-          <p className='text-2xl font-bold text-emerald-600'>
+          <p className='text-xl font-bold text-green-600 sm:text-2xl'>
             {summaryStats.completed}
           </p>
         </div>
-        <div className='rounded-lg border bg-white p-4 shadow-sm'>
-          <h3 className='mb-1 text-sm font-medium text-gray-600'>Batal</h3>
-          <p className='text-2xl font-bold text-red-600'>
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
+          <h3 className='mb-1 text-xs font-medium text-gray-600 sm:text-sm'>
+            Batal
+          </h3>
+          <p className='text-xl font-bold text-red-600 sm:text-2xl'>
             {summaryStats.cancelled}
           </p>
         </div>
       </div>
 
       {/* Search & Filter */}
-      <div className='mb-6 rounded-lg border bg-white p-4 shadow-sm'>
-        <div className='flex flex-col gap-4 sm:flex-row'>
-          <div className='flex-1'>
-            <div className='relative'>
-              <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
+      <div className='rounded-lg sm:bg-white sm:p-4 sm:shadow-sm'>
+        <div className='mb-2 rounded-xl sm:mb-8 sm:bg-white sm:p-3 sm:p-4 sm:shadow-lg'>
+          <div className='flex items-center gap-2'>
+            {/* Search Input */}
+            <div className='relative flex-1'>
+              <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 sm:h-5 sm:w-5' />
               <input
                 type='text'
-                placeholder='Cari berdasarkan catatan atau ID...'
+                placeholder='Cari berdasarkan nama bank sampah...'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className='w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 focus:border-emerald-500 focus:ring-emerald-500'
+                className='w-full rounded-lg border border-gray-200 bg-white py-3 pl-9 pr-4 text-sm transition-all placeholder:text-xs focus:border-transparent focus:ring-2 focus:ring-emerald-500 sm:py-2.5 sm:pl-10 sm:text-base'
               />
             </div>
+
+            {/* Filter Button */}
+            <button
+              onClick={handleOpenFilters}
+              className='flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-700 transition-colors hover:bg-emerald-100 sm:p-2.5'
+              aria-label='Open filters'
+            >
+              <Filter className='h-4 w-4 sm:h-5 sm:w-5' />
+              <span className='hidden text-sm sm:inline'>Filter</span>
+            </button>
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className='flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50'
-          >
-            <Filter className='h-4 w-4' /> Filter{' '}
-            {showFilters ? (
-              <ChevronUp className='h-4 w-4' />
-            ) : (
-              <ChevronDown className='h-4 w-4' />
-            )}
-          </button>
         </div>
 
+        {/* Bottom Filter Modal */}
         {showFilters && (
-          <div className='mt-4 border-t border-gray-200 pt-4'>
-            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
-              <div>
-                <label className='mb-1 block text-sm font-medium text-gray-700'>
-                  Status
-                </label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className='w-full rounded-lg border border-gray-200 p-2 focus:border-emerald-500 focus:ring-emerald-500'
-                >
-                  <option value='all'>Semua Status</option>
-                  <option value='pending'>Menunggu</option>
-                  <option value='assigned'>Dikonfirmasi</option>
-                  <option value='collecting'>Dalam Proses</option>
-                  <option value='completed'>Selesai</option>
-                  <option value='cancelled'>Dibatalkan</option>
-                </select>
-              </div>
-              <div>
-                <label className='mb-1 block text-sm font-medium text-gray-700'>
-                  Jenis Layanan
-                </label>
-                <select
-                  value={filters.delivery_type}
-                  onChange={(e) =>
-                    handleFilterChange('delivery_type', e.target.value)
-                  }
-                  className='w-full rounded-lg border border-gray-200 p-2 focus:border-emerald-500 focus:ring-emerald-500'
-                >
-                  <option value='all'>Semua Jenis</option>
-                  <option value='pickup'>Penjemputan</option>
-                  <option value='dropoff'>Antar Mandiri</option>
-                </select>
-              </div>
+          <div
+            className='animate-fadeIn fixed inset-0 z-50 flex items-end justify-center bg-black/60'
+            style={{ animationDuration: '0.2s' }}
+          >
+            <div
+              className={`max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white ${showFilters ? 'animate-slideUp' : 'animate-slideDown'}`}
+              style={{ animationDuration: '0.3s' }}
+            >
+              <div className='p-6'>
+                {/* Modal Header with Title */}
+                <div className='mb-6 flex items-center justify-between'>
+                  <h2 className='text-xl font-bold'>Filter</h2>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className='p-2 text-gray-500'
+                  >
+                    <X className='h-5 w-5' />
+                  </button>
+                </div>
 
-              {/* PERBAIKAN 3: Menyesuaikan input dengan state date_from */}
-              <div className='hidden'>
-                <label className='mb-1 block text-sm font-medium text-gray-700'>
-                  Dari Tanggal
-                </label>
-                <input
-                  type='date'
-                  value={filters.appointment_date_from}
-                  onChange={(e) =>
-                    handleFilterChange('date_from', e.target.value)
-                  }
-                  className='w-full rounded-lg border border-gray-200 p-2 focus:border-emerald-500 focus:ring-emerald-500'
-                />
+                {/* Filter Status */}
+                <div className='mb-4'>
+                  <h3 className='mb-2 text-left text-sm font-medium sm:text-lg'>
+                    Status
+                  </h3>
+                  <select
+                    value={tempFilters.status}
+                    onChange={(e) =>
+                      handleTempFilterChange('status', e.target.value)
+                    }
+                    className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-emerald-500 sm:text-base'
+                  >
+                    <option value='all'>Semua Status</option>
+                    <option value='pending'>Menunggu</option>
+                    <option value='assigned'>Dikonfirmasi</option>
+                    <option value='collecting'>Dalam Proses</option>
+                    <option value='completed'>Selesai</option>
+                    <option value='cancelled'>Dibatalkan</option>
+                  </select>
+                </div>
+
+                {/* Filter Jenis Layanan */}
+                <div className='mb-4'>
+                  <h3 className='mb-2 text-left text-sm font-medium sm:text-lg'>
+                    Jenis Layanan
+                  </h3>
+                  <select
+                    value={tempFilters.delivery_type}
+                    onChange={(e) =>
+                      handleTempFilterChange('delivery_type', e.target.value)
+                    }
+                    className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-emerald-500 sm:text-base'
+                  >
+                    <option value='all'>Semua Jenis</option>
+                    <option value='pickup'>Penjemputan</option>
+                    <option value='dropoff'>Antar Mandiri</option>
+                  </select>
+                </div>
+
+                {/* Action Buttons */}
+                <div className='flex flex-col gap-3 border-t border-gray-100 pt-4'>
+                  <button
+                    onClick={handleSaveFilters}
+                    className='w-full rounded-lg bg-emerald-600 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-700'
+                  >
+                    Simpan
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTempFilters({
+                        status: 'all',
+                        delivery_type: 'all',
+                      });
+                    }}
+                    className='hidden w-full rounded-lg border border-gray-300 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50'
+                  >
+                    Reset Filter
+                  </button>
+                </div>
               </div>
-              <div className='hidden'>
-                <label className='mb-1 block text-sm font-medium text-gray-700'>
-                  Sampai Tanggal
-                </label>
-                <input
-                  type='date'
-                  value={filters.appointment_date_to}
-                  onChange={(e) =>
-                    handleFilterChange('date_to', e.target.value)
-                  }
-                  className='w-full rounded-lg border border-gray-200 p-2 focus:border-emerald-500 focus:ring-emerald-500'
-                />
-              </div>
-            </div>
-            <div className='mt-4 flex justify-end'>
-              <button
-                onClick={() => {
-                  setFilters({
-                    status: 'all',
-                    delivery_type: 'all',
-                    appointment_date_from: '',
-                    appointment_date_to: '',
-                  }); // PERBAIKAN: Reset filter
-                  setSearchQuery('');
-                }}
-                className='text-sm text-gray-600 hover:text-gray-800'
-              >
-                Hapus Semua Filter
-              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Results Info */}
-      <div className='mb-4 flex items-center justify-between text-sm text-gray-600'>
-        <div>
-          <p>
-            Menampilkan{' '}
-            <span className='font-medium'>
-              {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}-
-              {Math.min(currentPage * pageSize, totalCount)}
-            </span>{' '}
-            dari <span className='font-medium'>{totalCount}</span> hasil
-          </p>
-          {(filters.status !== 'all' ||
-            filters.delivery_type !== 'all' ||
-            filters.appointment_date_from ||
-            filters.appointment_date_to ||
-            searchQuery) && ( // PERBAIKAN: Cek filter
-            <p className='mt-1 text-xs text-gray-500'>
-              📊 Hasil difilter •
-              <button
-                onClick={() => {
-                  setFilters({
-                    status: 'all',
-                    delivery_type: 'all',
-                    appointment_date_from: '',
-                    appointment_date_to: '',
-                  }); // PERBAIKAN: Reset filter
-                  setSearchQuery('');
-                }}
-                className='ml-1 text-emerald-600 underline hover:text-emerald-700'
-              >
-                Lihat semua data
-              </button>
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Request List & Pagination (Tidak ada perubahan) */}
-      <div className='rounded-lg border bg-white shadow-sm'>
-        {requests.length === 0 ? (
-          <div className='py-12 text-center'>
-            <Package className='mx-auto mb-4 h-12 w-12 text-gray-400' />
-            <h3 className='mb-2 text-lg font-semibold text-gray-800'>
-              Belum Ada Riwayat
+      {/* Request List & Pagination */}
+      <div className='shadow-xs rounded-lg border border-gray-200 bg-white'>
+        {requestsToDisplay.length === 0 ? (
+          <div className='px-4 py-8 text-center sm:py-12'>
+            <Package className='mx-auto mb-4 h-10 w-10 text-gray-400 sm:h-12 sm:w-12' />
+            <h3 className='mb-2 text-base font-semibold text-gray-800 sm:text-lg'>
+              {searchQuery.trim() ? 'Tidak Ada Hasil' : 'Belum Ada Riwayat'}
             </h3>
-            <p className='text-gray-600'>
-              Anda belum melakukan penyetoran sampah.
+            <p className='text-sm text-gray-600 sm:text-base'>
+              {searchQuery.trim()
+                ? `Tidak ditemukan bank sampah yang sesuai dengan pencarian "${searchQuery}"`
+                : 'Anda belum melakukan penyetoran sampah.'}
             </p>
+            {searchQuery.trim() && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className='mt-4 rounded-lg bg-emerald-500 px-4 py-2 text-white hover:bg-emerald-600'
+              >
+                Hapus Pencarian
+              </button>
+            )}
           </div>
         ) : (
           <div className='divide-y divide-gray-200'>
-            {requests.map((request) => {
+            {requestsToDisplay.map((request) => {
               const statusInfo = getStatusInfo(request.status);
               const deliveryInfo = getDeliveryTypeInfo(request.delivery_type);
               const StatusIcon = statusInfo.icon;
               const DeliveryIcon = deliveryInfo.icon;
+              const isExpanded = expandedRequests.has(request.id);
 
               return (
                 <div
                   key={request.id}
-                  className='p-6 transition-colors hover:bg-gray-50'
+                  className='transition-colors hover:bg-gray-50'
                 >
-                  <div className='flex items-start justify-between'>
-                    <div className='flex flex-1 items-start gap-4'>
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full ${statusInfo.bgColor}`}
-                      >
-                        <StatusIcon
-                          className={`h-6 w-6 ${statusInfo.color.split(' ')[1]}`}
-                        />
-                      </div>
-                      <div className='min-w-0 flex-1'>
-                        <div className='mb-1 flex items-center gap-2'>
-                          <DeliveryIcon
-                            className={`h-4 w-4 ${deliveryInfo.color}`}
-                          />
-                          <h3 className='font-semibold text-gray-800'>
-                            {deliveryInfo.label}
-                          </h3>
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-medium ${statusInfo.color}`}
+                  <div className='p-3 sm:p-6'>
+                    {/* Mobile Layout - Stack */}
+                    <div className='flex flex-col gap-3 sm:hidden'>
+                      {/* Header */}
+                      <div className='flex items-center justify-between'>
+                        <div className='flex items-center gap-2'>
+                          <div
+                            className={`flex h-8 w-8 items-center justify-center rounded-full ${statusInfo.bgColor}`}
                           >
-                            {statusInfo.label}
-                          </span>
-                        </div>
-                        <div className='space-y-1 text-sm text-gray-600'>
+                            <StatusIcon
+                              className={`h-4 w-4 ${statusInfo.color.split(' ')[1]}`}
+                            />
+                          </div>
                           <div className='flex items-center gap-2'>
-                            <Calendar className='h-4 w-4' />
+                            <DeliveryIcon
+                              className={`h-4 w-4 ${deliveryInfo.color}`}
+                            />
+                            <h3 className='text-sm font-semibold text-gray-800'>
+                              {deliveryInfo.label}
+                            </h3>
+                          </div>
+                        </div>
+                        <span
+                          className={`rounded-full px-2 py-1 text-[8px] font-medium sm:text-xs ${statusInfo.color}`}
+                        >
+                          {statusInfo.label}
+                        </span>
+                      </div>
+
+                      {/* Content */}
+                      <div className='space-y-2 text-xs text-gray-600'>
+                        {request.waste_bank_id && (
+                          <div className='flex items-center gap-2'>
+                            <Package className='h-3 w-3' />
                             <span>
-                              {formatDate(request.appointment_date)} •{' '}
-                              {formatTime(request.appointment_start_time)}-
-                              {formatTime(request.appointment_end_time)}
+                              {wasteBanks[request.waste_bank_id]?.institution ||
+                                'Memuat bank sampah...'}
                             </span>
                           </div>
-                          {request.appointment_location && (
+                        )}
+                        <div className='flex items-center gap-2'>
+                          <Calendar className='h-3 w-3' />
+                          <span>
+                            {formatDate(request.appointment_date)} •{' '}
+                            {formatTime(request.appointment_start_time)}-
+                            {formatTime(request.appointment_end_time)}
+                          </span>
+                        </div>
+                        {request.notes && (
+                          <div className='flex items-start gap-2'>
+                            <NotebookTabs className='mt-0.5 h-3 w-3' />
+                            <span className='line-clamp-2'>
+                              {request.notes}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className='flex items-center justify-between pt-2'>
+                        <div className='text-[9px] text-gray-400'>
+                          {getRelativeTime(request.created_at)}
+                        </div>
+                        <div className='flex items-center gap-2'>
+                          {request.total_price > 0 && (
+                            <div className='text-sm font-semibold text-emerald-600'>
+                              Rp {request.total_price.toLocaleString()}
+                            </div>
+                          )}
+                          <button
+                            onClick={() => toggleRequestExpansion(request.id)}
+                            className='flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100'
+                          >
+                            <Package className='h-3 w-3' />
+                            {isExpanded ? (
+                              <ChevronUp className='h-3 w-3' />
+                            ) : (
+                              <ChevronDown className='h-3 w-3' />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Collapsible Items Section - Mobile */}
+                      {isExpanded && (
+                        <div className='mt-3 border-t border-gray-100 pt-3'>
+                          <h4 className='mb-2 text-xs font-medium text-gray-700'>
+                            Detail Sampah:
+                          </h4>
+                          {renderRequestItems(request.id)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desktop Layout - Horizontal */}
+                    <div className='hidden items-start justify-between sm:flex'>
+                      <div className='flex flex-1 items-start gap-4'>
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-full ${statusInfo.bgColor}`}
+                        >
+                          <StatusIcon
+                            className={`h-6 w-6 ${statusInfo.color.split(' ')[1]}`}
+                          />
+                        </div>
+                        <div className='min-w-0 flex-1'>
+                          <div className='mb-1 flex items-center gap-2'>
+                            <DeliveryIcon
+                              className={`h-4 w-4 ${deliveryInfo.color}`}
+                            />
+                            <h3 className='font-semibold text-gray-800'>
+                              {deliveryInfo.label}
+                            </h3>
+                            <span
+                              className={`rounded-full px-2 py-1 text-xs font-medium ${statusInfo.color}`}
+                            >
+                              {statusInfo.label}
+                            </span>
+                          </div>
+                          <div className='space-y-1 text-sm text-gray-600'>
+                            {request.waste_bank_id && (
+                              <div className='flex items-center gap-2'>
+                                <Package className='h-4 w-4' />
+                                <span className='font-medium text-gray-700'>
+                                  {wasteBanks[request.waste_bank_id]
+                                    ?.institution || 'Memuat bank sampah...'}
+                                </span>
+                              </div>
+                            )}
                             <div className='flex items-center gap-2'>
-                              <MapPin className='h-4 w-4' />
+                              <Calendar className='h-4 w-4' />
                               <span>
-                                {request.appointment_location.latitude.toFixed(
-                                  4
-                                )}
-                                ,{' '}
-                                {request.appointment_location.longitude.toFixed(
-                                  4
-                                )}
+                                {formatDate(request.appointment_date)} •{' '}
+                                {formatTime(request.appointment_start_time)}-
+                                {formatTime(request.appointment_end_time)}
                               </span>
                             </div>
-                          )}
-                          {request.notes && (
-                            <div className='flex items-start gap-2'>
-                              <Package className='mt-0.5 h-4 w-4' />
-                              <span>{request.notes}</span>
-                            </div>
-                          )}
+                            {request.notes && (
+                              <div className='flex items-start gap-2'>
+                                <NotebookTabs className='mt-0.5 h-4 w-4' />
+                                <span>{request.notes}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className='ml-4 text-right'>
+                        <div className='flex items-center gap-2'>
+                          <div>
+                            <p className='mb-1 text-sm text-gray-500'>
+                              {getRelativeTime(request.created_at)}
+                            </p>
+                            <p className='text-xs text-gray-400'>
+                              ID: {request.id.slice(0, 8)}...
+                            </p>
+                            {request.total_price > 0 && (
+                              <p className='mt-1 text-sm font-semibold text-emerald-600'>
+                                Rp {request.total_price.toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => toggleRequestExpansion(request.id)}
+                            className='flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50'
+                          >
+                            <Package className='h-4 w-4' />
+                            Items
+                            {isExpanded ? (
+                              <ChevronUp className='h-4 w-4' />
+                            ) : (
+                              <ChevronDown className='h-4 w-4' />
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
-                    <div className='ml-4 text-right'>
-                      <p className='mb-1 text-sm text-gray-500'>
-                        {getRelativeTime(request.created_at)}
-                      </p>
-                      <p className='text-xs text-gray-400'>
-                        ID: {request.id.slice(0, 8)}...
-                      </p>
-                      {request.total_price > 0 && (
-                        <p className='mt-1 text-sm font-semibold text-emerald-600'>
-                          Rp {request.total_price.toLocaleString()}
-                        </p>
-                      )}
-                    </div>
                   </div>
+
+                  {/* Collapsible Items Section - Desktop */}
+                  {isExpanded && (
+                    <div className='hidden border-t border-gray-100 bg-gray-50 px-6 py-4 sm:block'>
+                      <h4 className='mb-3 text-sm font-medium text-gray-700'>
+                        Detail Sampah:
+                      </h4>
+                      {renderRequestItems(request.id)}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
-        {totalPages > 1 && (
-          <div className='border-t border-gray-200 bg-gray-50 px-6 py-4'>
-            <div className='flex items-center justify-between'>
+
+        {/* Pagination - Only show if not searching */}
+        {totalPages > 1 && !searchQuery.trim() && (
+          <div className='border-t border-gray-200 bg-gray-50 px-3 py-3 sm:px-6 sm:py-4'>
+            {/* Mobile Pagination */}
+            <div className='flex items-center justify-between sm:hidden'>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className='rounded-lg border border-gray-200 px-3 py-2 text-xs hover:bg-white disabled:cursor-not-allowed disabled:opacity-50'
+              >
+                ← Prev
+              </button>
+
+              <div className='flex items-center gap-1'>
+                <span className='text-xs text-gray-600'>
+                  {currentPage} / {totalPages}
+                </span>
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className='rounded-lg border border-gray-200 px-3 py-2 text-xs hover:bg-white disabled:cursor-not-allowed disabled:opacity-50'
+              >
+                Next →
+              </button>
+            </div>
+
+            {/* Desktop Pagination */}
+            <div className='hidden items-center justify-between sm:flex'>
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
@@ -608,6 +1059,7 @@ export default function HistoryPage() {
               >
                 ← Sebelumnya
               </button>
+
               <div className='flex items-center gap-1'>
                 {(() => {
                   const pages = [];
@@ -673,6 +1125,7 @@ export default function HistoryPage() {
                   return pages;
                 })()}
               </div>
+
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -680,10 +1133,6 @@ export default function HistoryPage() {
               >
                 Selanjutnya →
               </button>
-            </div>
-            <div className='mt-3 text-center text-xs text-gray-500'>
-              Halaman {currentPage} dari {totalPages} • Menampilkan {pageSize}{' '}
-              item per halaman
             </div>
           </div>
         )}
