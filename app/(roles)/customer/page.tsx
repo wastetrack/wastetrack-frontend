@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   customerProfileAPI,
   type CustomerProfile,
 } from '@/services/api/customer';
+import { wasteDropRequestAPI } from '@/services/api/user';
 import { getTokenManager } from '@/lib/token-manager';
 import {
   HeroSection,
@@ -13,6 +15,7 @@ import {
   EcoTip,
 } from '@/components/customer/dashboard';
 import type { Stats, Pickup } from '@/types';
+import type { WasteDropRequest } from '@/types';
 
 export default function CustomerDashboard() {
   // State for profile data
@@ -21,7 +24,76 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Dummy data untuk stats yang belum ada API-nya
+  // State for waste drop requests
+  const [wasteDropRequests, setWasteDropRequests] = useState<
+    WasteDropRequest[]
+  >([]);
+  const [recentPickups, setRecentPickups] = useState<Pickup[]>([]);
+  const [loadingPickups, setLoadingPickups] = useState(true);
+
+  const router = useRouter();
+
+  // Function to map WasteDropRequest status to Pickup status
+  const mapStatusToPickupStatus = (
+    status: WasteDropRequest['status']
+  ): 'pending' | 'in_progress' | 'completed' | 'cancelled' => {
+    switch (status) {
+      case 'pending':
+        return 'pending';
+      case 'assigned':
+      case 'collecting':
+        return 'in_progress';
+      case 'completed':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return 'pending';
+    }
+  };
+
+  // Function to map WasteDropRequest to Pickup format
+  const mapWasteDropRequestToPickup = (request: WasteDropRequest): Pickup => {
+    const startTimeMatch =
+      request.appointment_start_time.match(/(\d{2}:\d{2})/);
+    const endTimeMatch = request.appointment_end_time?.match(/(\d{2}:\d{2})/);
+    const startTime = startTimeMatch
+      ? startTimeMatch[1]
+      : request.appointment_start_time;
+    const endTime = endTimeMatch
+      ? endTimeMatch[1]
+      : request.appointment_end_time || '';
+    const time = endTime ? `${startTime} - ${endTime}` : startTime;
+
+    const mappedPickup = {
+      id: request.id,
+      delivery_type: request.delivery_type,
+      status: mapStatusToPickupStatus(request.status),
+      date: request.appointment_date,
+      time: time,
+    };
+
+    return mappedPickup;
+  };
+
+  // Calculate pickup stats from waste drop requests
+  const calculatePickupStats = (requests: WasteDropRequest[]) => {
+    const pending = requests.filter((r) => r.status === 'pending').length;
+    const in_progress = requests.filter(
+      (r) => r.status === 'assigned' || r.status === 'collecting'
+    ).length;
+    const completed = requests.filter((r) => r.status === 'completed').length;
+    const cancelled = requests.filter((r) => r.status === 'cancelled').length;
+
+    return {
+      pending,
+      completed,
+      cancelled,
+      in_progress,
+    };
+  };
+
+  // Stats with real pickup data
   const stats: Stats = {
     points: customerProfile?.user.points || 0,
     impact: {
@@ -32,38 +104,11 @@ export default function CustomerDashboard() {
     waste: {
       total: customerProfile?.bags_stored || 0,
     },
-    pickups: {
-      pending: 2,
-      completed: 18,
-      cancelled: 1,
-    },
+    pickups: calculatePickupStats(wasteDropRequests),
   };
 
-  const recentPickups: Pickup[] = [
-    {
-      id: '1',
-      status: 'completed',
-      wasteQuantities: { plastic: 3, paper: 2 },
-      date: '2025-07-03',
-      time: '14:30',
-    },
-    {
-      id: '2',
-      status: 'pending',
-      quantity: 4,
-      date: '2025-07-05',
-      time: '10:00',
-    },
-    {
-      id: '3',
-      status: 'in_progress',
-      wasteQuantities: { organic: 2, plastic: 1 },
-      date: '2025-07-04',
-      time: '16:15',
-    },
-  ];
-
-  const [displayedPickups] = useState<Pickup[]>(recentPickups.slice(0, 3));
+  // Get recent pickups (last 3) - akan di-update setelah data API berhasil
+  const displayedPickups = recentPickups.slice(0, 3);
 
   // Fetch customer profile data
   useEffect(() => {
@@ -102,8 +147,59 @@ export default function CustomerDashboard() {
     fetchProfile();
   }, []);
 
+  // Fetch waste drop requests data
+  useEffect(() => {
+    const fetchWasteDropRequests = async () => {
+      try {
+        setLoadingPickups(true);
+
+        // Get user ID from token
+        const tokenManager = getTokenManager();
+        const token = await tokenManager.getValidAccessToken();
+
+        if (!token) {
+          console.log('No token found');
+          setLoadingPickups(false);
+          return;
+        }
+
+        // Decode token to get user ID
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.user_id || payload.sub || payload.id;
+
+        if (!userId) {
+          setLoadingPickups(false);
+          return;
+        }
+
+        const response = await wasteDropRequestAPI.getCustomerWasteDropRequests(
+          userId,
+          {
+            sort_by: 'created_at',
+            sort_order: 'desc',
+            size: 5,
+          }
+        );
+
+        setWasteDropRequests(response.data);
+
+        const mappedPickups = response.data.map(mapWasteDropRequestToPickup);
+        setRecentPickups(mappedPickups);
+      } catch (err) {
+        console.error('Error fetching waste drop requests:', err);
+        if (err instanceof Error) {
+          console.error('Error message:', err.message);
+        }
+      } finally {
+        setLoadingPickups(false);
+      }
+    };
+
+    fetchWasteDropRequests();
+  }, []);
+
   const handleViewAllPickups = (): void => {
-    // Navigate to pickups page
+    router.push('/customer/history');
     console.log('Navigate to all pickups');
   };
 
@@ -156,14 +252,27 @@ export default function CustomerDashboard() {
       <EnvironmentalImpact impact={stats.impact} waste={stats.waste} />
 
       {/* Recent Pickups Component */}
-      <RecentPickups
-        pickups={stats.pickups}
-        displayedPickups={displayedPickups}
-        recentPickups={recentPickups}
-        onViewAllPickups={handleViewAllPickups}
-      />
+      {loadingPickups ? (
+        <div className='rounded-lg bg-white p-6 shadow-sm'>
+          <h2 className='mb-4 text-lg font-semibold'>Pengambilan Terbaru</h2>
+          <div className='flex items-center justify-center py-8'>
+            <div className='text-center'>
+              <div className='mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-b-2 border-emerald-600'></div>
+              <p className='text-sm text-gray-500'>
+                Memuat data pengambilan...
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <RecentPickups
+          pickups={stats.pickups}
+          displayedPickups={displayedPickups}
+          recentPickups={recentPickups}
+          onViewAllPickups={handleViewAllPickups}
+        />
+      )}
 
-      {/* Eco Tip Component */}
       <EcoTip />
     </div>
   );
