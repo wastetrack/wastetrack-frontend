@@ -20,48 +20,40 @@ export default function EnvironmentalImpact({
         Dampak Lingkungan
       </h2>
       <div className='grid grid-cols-2 gap-3 text-left'>
-        <div className='flex items-center gap-3 rounded-lg border border-emerald-200 bg-white p-3 sm:bg-emerald-50'>
+        <div className='flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 sm:bg-emerald-50'>
           <Recycle className='h-4 w-4 text-emerald-600 sm:h-5 sm:w-5' />
           <div>
-            <p className='text-xs text-emerald-500 sm:text-emerald-600'>
-              CO₂ Berkurang
-            </p>
+            <p className='text-xs text-gray-600'>CO₂ Berkurang</p>
             <p className='text-md sm-text-emerald-700 font-bold text-emerald-600'>
               {formatNumber(impact.carbonReduced || 0)} kg
             </p>
           </div>
         </div>
 
-        <div className='flex items-center gap-3 rounded-lg border border-emerald-200 bg-white p-3 sm:bg-emerald-50'>
+        <div className='flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 sm:bg-emerald-50'>
           <Droplet className='h-4 w-4 text-emerald-600 sm:h-5 sm:w-5' />
           <div>
-            <p className='text-xs text-emerald-500 sm:text-emerald-600'>
-              Air Terhemat
-            </p>
+            <p className='text-xs text-gray-600'>Air Terhemat</p>
             <p className='text-md font-bold text-emerald-600 sm:text-emerald-700'>
               {formatNumber(impact.waterSaved || 0)} L
             </p>
           </div>
         </div>
 
-        <div className='flex items-center gap-3 rounded-lg border border-emerald-200 bg-white p-3 sm:bg-emerald-50'>
+        <div className='flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 sm:bg-emerald-50'>
           <Trees className='h-4 w-4 text-emerald-600 sm:h-5 sm:w-5' />
           <div>
-            <p className='text-xs text-emerald-500 sm:text-emerald-600'>
-              Pohon
-            </p>
+            <p className='text-xs text-gray-600'>Pohon</p>
             <p className='text-md font-bold text-emerald-600 sm:text-emerald-700'>
               {formatNumber(impact.treesPreserved || 0)}
             </p>
           </div>
         </div>
 
-        <div className='flex items-center gap-3 rounded-lg border border-emerald-200 bg-white p-3 sm:bg-emerald-50'>
+        <div className='flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 sm:bg-emerald-50'>
           <Package className='h-4 w-4 text-emerald-600 sm:h-5 sm:w-5' />
           <div>
-            <p className='text-xs text-emerald-500 sm:text-emerald-600'>
-              Sampah
-            </p>
+            <p className='text-xs text-gray-600'>Sampah</p>
             <p className='text-md font-bold text-emerald-600 sm:text-emerald-700'>
               {waste.total || 0} ktg
             </p>
