@@ -219,13 +219,14 @@ export default function HistoryPage() {
 
       try {
         // Fetch user list to find waste banks
-        const response = await userListAPI.getUserList({
+        const response = await userListAPI.getFlatUserList({
           page: 1,
           size: 100, // Get enough results to find our waste banks
         });
 
         // Response structure: { data: [UserListItem...] }
         const users = response.data || [];
+
         // console.log('Fetched waste banks:', users);
         const foundWasteBanks: Record<string, UserListItem> = {};
 
