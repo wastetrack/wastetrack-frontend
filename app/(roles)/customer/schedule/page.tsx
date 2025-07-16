@@ -1117,7 +1117,7 @@ export default function SchedulePage() {
   }, [formData.wasteBankId, formData.wasteBankName, formData.wasteTypes]);
 
   return (
-    <div className='mx-auto max-w-3xl'>
+    <div>
       {/* Auth Loading State */}
       {authLoading && (
         <div className='mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4'>
