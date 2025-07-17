@@ -57,7 +57,7 @@ authenticatedApiClient.interceptors.response.use(
   }
 );
 
-export const wasteDropRequestAPI = {
+export const wasteBankDropRequestAPI = {
   /**
    * Update waste drop request status
    * PUT /api/waste-bank/waste-drop-requests/:id?status=:status
