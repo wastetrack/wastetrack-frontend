@@ -5,14 +5,13 @@ export interface FormData {
   password: string;
   confirmPassword: string;
   role: string;
-  fullName: string;
-  phone: string; // Formatted phone (with dashes)
-  phoneClean: string; // Clean phone number for DB
+  username: string;
+  phone_number: string; // Clean phone number for DB
   institution: string;
   address: string;
   city: string;
   province: string;
-  coordinates: {
+  location: {
     latitude: number;
     longitude: number;
   } | null;
@@ -41,16 +40,16 @@ export const validateForm = (formData: FormData) => {
     errors.push('Konfirmasi password tidak sesuai');
   }
 
-  if (!formData.fullName || formData.fullName.trim().length < 2) {
+  if (!formData.username || formData.username.trim().length < 2) {
     errors.push('Nama lengkap minimal 2 karakter');
   }
 
-  if (formData.fullName && formData.fullName.trim().length > 100) {
+  if (formData.username && formData.username.trim().length > 100) {
     errors.push('Nama lengkap maksimal 100 karakter');
   }
 
   // Validate phone number (clean version)
-  const cleanPhone = formData.phoneClean || formData.phone.replace(/\D/g, '');
+  const cleanPhone = formData.phone_number;
   if (!cleanPhone || cleanPhone.length < 10) {
     errors.push('Nomor telepon minimal 10 digit');
   }
@@ -99,7 +98,7 @@ export const validateForm = (formData: FormData) => {
     errors.push('Provinsi maksimal 50 karakter');
   }
 
-  if (!formData.coordinates) {
+  if (!formData.location) {
     errors.push('Lokasi GPS diperlukan');
   }
 
@@ -108,11 +107,10 @@ export const validateForm = (formData: FormData) => {
 
 export const transformFormDataToApi = (formData: FormData) => {
   // Ensure we always have clean phone number
-  const cleanPhoneNumber =
-    formData.phoneClean || formData.phone.replace(/\D/g, '');
+  const cleanPhoneNumber = formData.phone_number;
 
   return {
-    username: formData.fullName,
+    username: formData.username,
     email: formData.email,
     password: formData.password,
     role: formData.role,
@@ -122,8 +120,8 @@ export const transformFormDataToApi = (formData: FormData) => {
     city: formData.city,
     province: formData.province,
     location: {
-      latitude: formData.coordinates?.latitude || 0,
-      longitude: formData.coordinates?.longitude || 0,
+      latitude: formData.location?.latitude || 0,
+      longitude: formData.location?.longitude || 0,
     },
   };
 };
@@ -201,7 +199,7 @@ export const getCurrentLocation = (): Promise<{
               province: address.state || address.province || '',
             });
           } else {
-            // If reverse geocoding fails, just return coordinates
+            // If reverse geocoding fails, just return location
             resolve({
               latitude,
               longitude,
@@ -209,7 +207,7 @@ export const getCurrentLocation = (): Promise<{
           }
         } catch (error) {
           console.warn('Reverse geocoding failed:', error);
-          // If reverse geocoding fails, just return coordinates
+          // If reverse geocoding fails, just return location
           resolve({
             latitude,
             longitude,
