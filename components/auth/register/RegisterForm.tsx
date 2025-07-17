@@ -71,27 +71,11 @@ export default function RegisterForm({
 
     // Auto-correct: if starts with 8, add 0
     if (numbers.startsWith('8') && !numbers.startsWith('08')) {
-      const corrected = '0' + numbers.slice(0, 12);
-      return formatWithDashes(corrected);
+      return '0' + numbers.slice(0, 12);
     }
 
-    // Limit to 13 digits and format with dashes
-    const limited = numbers.slice(0, 13);
-    return formatWithDashes(limited);
-  };
-
-  const formatWithDashes = (numbers: string) => {
-    // Format: 0812-3456-7890
-    if (numbers.length <= 4) return numbers;
-    if (numbers.length <= 8)
-      return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
-    if (numbers.length <= 12)
-      return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8)}`;
-    return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8, 12)}-${numbers.slice(12)}`;
-  };
-
-  const getCleanPhoneNumber = (phone: string) => {
-    return phone.replace(/\D/g, ''); // Clean any non-digits
+    // Limit to 13 digits
+    return numbers.slice(0, 13);
   };
 
   const handleChange = (
@@ -99,14 +83,12 @@ export default function RegisterForm({
   ) => {
     const { name, value } = e.target;
 
-    if (name === 'phone') {
+    if (name === 'phone_number') {
       const formattedValue = formatPhoneDisplay(value);
-      const cleanValue = getCleanPhoneNumber(formattedValue);
 
       onFormDataChange({
         ...formData,
         [name]: formattedValue,
-        phoneClean: cleanValue, // Add this to your FormData interface
       });
       return;
     }
@@ -134,8 +116,17 @@ export default function RegisterForm({
         setInstitutionSuggestions([]);
         setInstitutionLoading(false);
       }
+
+      // Reset institution_id when typing manually (only for institution field)
+      onFormDataChange({
+        ...formData,
+        [name]: value,
+        institution_id: '', // Reset institution_id only when typing in institution field
+      });
+      return;
     }
 
+    // For all other fields, preserve institution_id
     onFormDataChange({
       ...formData,
       [name]: value,
@@ -163,12 +154,12 @@ export default function RegisterForm({
 
       setInstitutionLoading(true);
       try {
-        console.log(
-          'Searching institutions with query:',
-          query,
-          'role:',
-          formData.role
-        );
+        // console.log(
+        //   'Searching institutions with query:',
+        //   query,
+        //   'role:',
+        //   formData.role
+        // );
 
         // Use public API for institution suggestions (no authentication required)
         const response = await userListAPI.getPublicInstitutionSuggestions({
@@ -177,7 +168,7 @@ export default function RegisterForm({
           limit: 10,
         });
 
-        console.log('Institution search response:', response);
+        // console.log('Institution search response:', response);
 
         if (response && response.data && response.data.institutions) {
           setInstitutionSuggestions(response.data.institutions);
@@ -198,11 +189,12 @@ export default function RegisterForm({
   );
 
   // Handle institution selection from suggestions
-  const handleInstitutionSelect = (institution: string) => {
+  const handleInstitutionSelect = (suggestion: InstitutionSuggestion) => {
     try {
       onFormDataChange({
         ...formData,
-        institution: institution,
+        institution: suggestion.institution,
+        institution_id: suggestion.id.toString(), // Simpan institution_id
       });
       setShowInstitutionSuggestions(false);
       setInstitutionSuggestions([]);
@@ -244,9 +236,9 @@ export default function RegisterForm({
     return emailRegex.test(email);
   };
 
-  const isValidIndonesianPhone = (phone: string) => {
+  const isValidIndonesianPhone = (phone_number: string) => {
     // Remove dashes and check format
-    const cleanNumber = phone.replace(/\D/g, '');
+    const cleanNumber = phone_number.replace(/\D/g, '');
 
     // Must start with 08 and have 10-13 digits total
     if (!cleanNumber.startsWith('08')) return false;
@@ -284,7 +276,7 @@ export default function RegisterForm({
         if (value !== formData.password)
           return 'Konfirmasi password tidak sesuai';
         break;
-      case 'phone':
+      case 'phone_number':
         if (!isValidIndonesianPhone(value)) {
           const cleanNumber = value.replace(/\D/g, '');
           if (cleanNumber.length < 10) {
@@ -299,7 +291,7 @@ export default function RegisterForm({
           return 'Format nomor telepon tidak valid';
         }
         break;
-      case 'fullName':
+      case 'username':
         if (value.trim().length < 2) return 'Nama minimal 2 karakter';
         if (value.trim().length > 100) return 'Nama maksimal 100 karakter';
         break;
@@ -346,7 +338,7 @@ export default function RegisterForm({
 
       onFormDataChange({
         ...formData,
-        coordinates: {
+        location: {
           latitude: locationData.latitude,
           longitude: locationData.longitude,
         },
@@ -392,8 +384,8 @@ export default function RegisterForm({
     address: string;
     updatedAt: string;
   }) => {
-    console.log('=== LOCATION PICKER SAVE ===');
-    console.log('Raw address:', payload.address);
+    // console.log('=== LOCATION PICKER SAVE ===');
+    // console.log('Raw address:', payload.address);
 
     const locationData = {
       address: payload.address,
@@ -407,12 +399,12 @@ export default function RegisterForm({
     const extractedCity = extractCityFromAddress(payload.address);
     const extractedProvince = extractProvinceFromAddress(payload.address);
 
-    console.log('Extracted city:', extractedCity);
-    console.log('Extracted province:', extractedProvince);
+    // console.log('Extracted city:', extractedCity);
+    // console.log('Extracted province:', extractedProvince);
 
     onFormDataChange({
       ...formData,
-      coordinates: {
+      location: {
         latitude: payload.latitude,
         longitude: payload.longitude,
       },
@@ -422,19 +414,19 @@ export default function RegisterForm({
     });
 
     setShowLocationPicker(false);
-    console.log('=== DONE ===');
+    // console.log('=== DONE ===');
   };
 
   const handleCancelLocationPicker = () => {
-    console.log('Location picker dibatalkan');
+    // console.log('Location picker dibatalkan');
     setShowLocationPicker(false);
   };
 
   const handleOpenLocationPicker = () => {
-    console.log(
-      'Membuka location picker. Current selectedLocation:',
-      selectedLocation
-    );
+    // console.log(
+    //   'Membuka location picker. Current selectedLocation:',
+    //   selectedLocation
+    // );
     setShowLocationPicker(true);
   };
 
@@ -443,7 +435,7 @@ export default function RegisterForm({
     if (!address) return formData.city;
 
     const parts = address.split(',').map((part) => part.trim());
-    console.log('Address parts:', parts);
+    // console.log('Address parts:', parts);
 
     if (parts.length < 2) return formData.city;
 
@@ -451,12 +443,12 @@ export default function RegisterForm({
     if (parts[parts.length - 1].toLowerCase().includes('indonesia')) {
       // City = ketiga dari belakang (sebelum province)
       const city = parts[parts.length - 3];
-      console.log('Extracted city (with Indonesia):', city);
+      // console.log('Extracted city (with Indonesia):', city);
       return city || formData.city;
     } else {
       // City = kedua dari belakang (sebelum province)
       const city = parts[parts.length - 2];
-      console.log('Extracted city (without Indonesia):', city);
+      // console.log('Extracted city (without Indonesia):', city);
       return city || formData.city;
     }
   };
@@ -465,7 +457,7 @@ export default function RegisterForm({
     if (!address) return formData.province;
 
     const parts = address.split(',').map((part) => part.trim());
-    console.log('Address parts for province:', parts);
+    // console.log('Address parts for province:', parts);
 
     if (parts.length < 2) return formData.province;
 
@@ -473,12 +465,12 @@ export default function RegisterForm({
     if (parts[parts.length - 1].toLowerCase().includes('indonesia')) {
       // Province = kedua dari belakang (sebelum Indonesia)
       const province = parts[parts.length - 2];
-      console.log('Extracted province (with Indonesia):', province);
+      // console.log('Extracted province (with Indonesia):', province);
       return province || formData.province;
     } else {
       // Province = terakhir
       const province = parts[parts.length - 1];
-      console.log('Extracted province (without Indonesia):', province);
+      // console.log('Extracted province (without Indonesia):', province);
       return province || formData.province;
     }
   };
@@ -514,10 +506,45 @@ export default function RegisterForm({
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Only send fields needed by backend (exclude confirmPassword)
+    const pureData = JSON.parse(
+      JSON.stringify({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        phone_number: formData.phone_number,
+        institution: formData.institution,
+        institution_id: formData.institution_id,
+        address: formData.address,
+        city: formData.city,
+        province: formData.province,
+        location: formData.location
+          ? {
+              latitude: Number(formData.location.latitude),
+              longitude: Number(formData.location.longitude),
+            }
+          : null,
+      })
+    );
+
     if (step === 1) {
       handleNextStep();
     } else {
-      onSubmit(e);
+      if (
+        formData.role === 'waste_collector_unit' ||
+        formData.role === 'waste_collector_central'
+      ) {
+        if (!formData.institution_id || formData.institution_id.trim() === '') {
+          Alert.warning({
+            title: 'Pilih Institusi',
+            text: 'Untuk role waste collector, Anda harus memilih institusi dari daftar suggestions.',
+          });
+          return;
+        }
+      }
+      // Pass only pureData to onSubmit, not the whole formData
+      onSubmit(pureData);
     }
   };
 
@@ -802,39 +829,39 @@ export default function RegisterForm({
                 </div>
                 <input
                   type='text'
-                  name='fullName'
-                  value={formData.fullName}
+                  name='username'
+                  value={formData.username}
                   onChange={handleChange}
-                  onBlur={() => handleBlur('fullName')}
+                  onBlur={() => handleBlur('username')}
                   onKeyDown={handleKeyDown}
                   placeholder='Masukkan nama lengkap Anda'
                   className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
-                    touchedFields.has('fullName') &&
-                    !isFieldValid('fullName', formData.fullName)
+                    touchedFields.has('username') &&
+                    !isFieldValid('username', formData.username)
                       ? 'border-red-300 bg-red-50'
-                      : touchedFields.has('fullName') &&
-                          isFieldValid('fullName', formData.fullName)
+                      : touchedFields.has('username') &&
+                          isFieldValid('username', formData.username)
                         ? 'border-green-300 bg-green-50'
                         : 'border-gray-200'
                   }`}
                   required
                 />
-                {touchedFields.has('fullName') &&
-                  isFieldValid('fullName', formData.fullName) && (
+                {touchedFields.has('username') &&
+                  isFieldValid('username', formData.username) && (
                     <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
                       <span className='hidden text-green-500'>✓</span>
                     </div>
                   )}
               </div>
-              {touchedFields.has('fullName') && (
+              {touchedFields.has('username') && (
                 <p
                   className={`text-[10px] sm:text-xs ${
-                    isFieldValid('fullName', formData.fullName)
+                    isFieldValid('username', formData.username)
                       ? 'text-green-600'
                       : 'text-red-600'
                   }`}
                 >
-                  {getFieldError('fullName', formData.fullName) || 'Nama valid'}
+                  {getFieldError('username', formData.username) || 'Nama valid'}
                 </p>
               )}
             </div>
@@ -850,29 +877,28 @@ export default function RegisterForm({
                 </div>
                 <input
                   type='tel'
-                  name='phone'
-                  value={formData.phone}
+                  name='phone_number'
+                  value={formData.phone_number}
                   onChange={handleChange}
-                  onBlur={() => handleBlur('phone')}
-                  placeholder='0812-3456-7890'
+                  onBlur={() => handleBlur('phone_number')}
+                  placeholder='081234567890'
                   className={`w-full rounded-lg border bg-white p-3 pl-10 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
-                    touchedFields.has('phone') &&
-                    !isFieldValid('phone', formData.phone)
+                    touchedFields.has('phone_number') &&
+                    !isFieldValid('phone_number', formData.phone_number)
                       ? 'border-red-300 bg-red-50'
-                      : touchedFields.has('phone') &&
-                          isFieldValid('phone', formData.phone)
+                      : touchedFields.has('phone_number') &&
+                          isFieldValid('phone_number', formData.phone_number)
                         ? 'border-green-300 bg-green-50'
                         : 'border-gray-200'
                   }`}
                   required
-                  maxLength={16} // 13 digits + 3 dashes
+                  maxLength={13} // 08 + 11 digits max
                   onKeyDown={(e) => {
                     // Prevent form submission on Enter key
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       return;
                     }
-
                     // Allow: backspace, delete, tab, escape, enter
                     if (
                       [8, 9, 13, 27, 46].includes(e.keyCode) ||
@@ -898,32 +924,29 @@ export default function RegisterForm({
                     const paste = e.clipboardData.getData('text');
                     const cleanPaste = paste.replace(/\D/g, '');
                     if (cleanPaste) {
-                      const formattedValue = formatPhoneDisplay(cleanPaste);
-                      const cleanValue = getCleanPhoneNumber(formattedValue);
                       onFormDataChange({
                         ...formData,
-                        phone: formattedValue,
-                        phoneClean: cleanValue,
+                        phone_number: cleanPaste.slice(0, 13),
                       });
                     }
                   }}
                 />
-                {touchedFields.has('phone') &&
-                  isFieldValid('phone', formData.phone) && (
+                {touchedFields.has('phone_number') &&
+                  isFieldValid('phone_number', formData.phone_number) && (
                     <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
                       <span className='hidden text-green-500'>✓</span>
                     </div>
                   )}
               </div>
-              {touchedFields.has('phone') && (
+              {touchedFields.has('phone_number') && (
                 <p
                   className={`text-[10px] sm:text-xs ${
-                    isFieldValid('phone', formData.phone)
+                    isFieldValid('phone_number', formData.phone_number)
                       ? 'text-green-600'
                       : 'text-red-600'
                   }`}
                 >
-                  {getFieldError('phone', formData.phone) ||
+                  {getFieldError('phone_number', formData.phone_number) ||
                     'Format nomor telepon valid'}
                 </p>
               )}
@@ -1034,7 +1057,7 @@ export default function RegisterForm({
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                handleInstitutionSelect(suggestion.institution);
+                                handleInstitutionSelect(suggestion); // Pass entire suggestion object
                               }}
                               onMouseDown={(e) => {
                                 // Prevent blur from firing before click
@@ -1244,21 +1267,21 @@ export default function RegisterForm({
                     : 'Pilih Lokasi di Peta'}
                 </button>
 
-                {formData.coordinates && (
+                {formData.location && (
                   <div className='flex hidden items-center space-x-2'>
                     <span className='text-sm font-medium text-green-600'>
                       📍 Lokasi berhasil didapat
                     </span>
                     <span className='text-xs text-gray-500'>
-                      ({formData.coordinates.latitude.toFixed(4)},{' '}
-                      {formData.coordinates.longitude.toFixed(4)})
+                      ({formData.location.latitude.toFixed(4)},{' '}
+                      {formData.location.longitude.toFixed(4)})
                     </span>
                   </div>
                 )}
               </div>
 
               {/* Location requirement info */}
-              {!formData.coordinates && (
+              {!formData.location && (
                 <div className='rounded-lg border border-amber-200 bg-amber-50 p-3'>
                   <div className='flex items-start space-x-2'>
                     <span className='mt-0.5 text-amber-500'>⚠️</span>
@@ -1344,7 +1367,7 @@ export default function RegisterForm({
               {
                 showLocationPicker,
                 selectedLocation,
-                formDataCoordinates: formData.coordinates,
+                formDataCoordinates: formData.location,
                 formDataAddress: formData.address,
               },
               null,
