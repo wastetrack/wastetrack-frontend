@@ -2107,7 +2107,7 @@ export default function SchedulePage() {
                       const quantity = formData.wasteQuantities[typeId] || 0;
                       return waste ? (
                         <div key={typeId} className='flex justify-between'>
-                          <span className='text-gray-700'>
+                          <span className='text-gray-900'>
                             {waste.name} ({quantity} kantong)
                           </span>
                         </div>

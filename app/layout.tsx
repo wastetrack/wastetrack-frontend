@@ -27,7 +27,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang='id'>
-      <body className={`${poppins.variable} font-poppins antialiased`}>
+      <body
+        className={`${poppins.variable} bg-gray-50 font-poppins antialiased`}
+      >
         {children}
         <Toaster
           position='top-right' // Bisa diadjust sesuai kebutuhan

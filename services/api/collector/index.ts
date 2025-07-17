@@ -5,3 +5,4 @@ export type {
   CollectorProfile,
   CollectorProfileResponse,
 } from './profile';
+export { wasteCollectorDropRequestAPI } from './waste-drop-request';

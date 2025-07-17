@@ -1,9 +1,8 @@
 import axios from 'axios';
 import { getTokenManager } from '@/lib/token-manager';
 import {
-  WasteDropRequestStatusUpdateParams,
-  UpdateWasteDropRequestStatusResponse,
-  AssignCollectorResponse,
+  CompleteWasteDropRequestParams,
+  CompleteWasteDropRequestResponse,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -57,18 +56,19 @@ authenticatedApiClient.interceptors.response.use(
   }
 );
 
-export const wasteBankDropRequestAPI = {
+export const wasteCollectorDropRequestAPI = {
   /**
-   * Update waste drop request status
-   * PUT /api/waste-bank/waste-drop-requests/:id?status=:status
+   * Complete waste drop request by collector
+   * PUT /api/waste-collector/waste-drop-requests/:id/complete
    */
-  async updateWasteDropRequestStatus(
+  async completeWasteDropRequest(
     id: string,
-    params: WasteDropRequestStatusUpdateParams
-  ): Promise<UpdateWasteDropRequestStatusResponse> {
+    params: CompleteWasteDropRequestParams
+  ): Promise<CompleteWasteDropRequestResponse> {
     try {
       const response = await authenticatedApiClient.put(
-        `/api/waste-bank/waste-drop-requests/${id}?status=${params.status}`
+        `/api/waste-collector/waste-drop-requests/${id}/complete`,
+        params
       );
       return response.data;
     } catch (error) {
@@ -76,33 +76,7 @@ export const wasteBankDropRequestAPI = {
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
-          'Failed to update waste drop request status';
-
-        throw new Error(errorMessage);
-      }
-      throw new Error('Network error occurred. Please try again.');
-    }
-  },
-
-  /**
-   * Assign collector to waste drop request
-   * PUT /api/waste-bank/waste-drop-requests/:id/assign-collector?collector_id=:collector_id
-   */
-  async assignCollectorToWasteDropRequest(
-    id: string,
-    collectorId: string
-  ): Promise<AssignCollectorResponse> {
-    try {
-      const response = await authenticatedApiClient.put(
-        `/api/waste-bank/waste-drop-requests/${id}/assign-collector?collector_id=${collectorId}`
-      );
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage =
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          'Failed to assign collector to waste drop request';
+          'Failed to complete waste drop request';
 
         throw new Error(errorMessage);
       }

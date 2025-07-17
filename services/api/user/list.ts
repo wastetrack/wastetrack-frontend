@@ -285,7 +285,7 @@ export const userListAPI = {
 
       console.log(
         'Public Institution Search - Request URL:',
-        `/api/public/users?${queryParams.toString()}`
+        `/api/users?${queryParams.toString()}`
       );
       console.log('Public Institution Search - Target Role:', targetRole);
       console.log('Public Institution Search - Query:', params.query);
@@ -294,7 +294,7 @@ export const userListAPI = {
       let response;
       try {
         response = await publicApiClient.get(
-          `/api/public/users?${queryParams.toString()}`
+          `/api/users?${queryParams.toString()}`
         );
       } catch {
         console.log('Public endpoint failed, trying regular endpoint...');
