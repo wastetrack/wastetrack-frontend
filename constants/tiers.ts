@@ -1,10 +1,10 @@
 // Tier thresholds and configuration
 export const TIER_THRESHOLDS = {
-  rookie: { min: 0, max: 499, next: 'bronze' },
-  bronze: { min: 500, max: 999, next: 'silver' },
-  silver: { min: 1000, max: 2499, next: 'gold' },
-  gold: { min: 2500, max: 4999, next: 'platinum' },
-  platinum: { min: 5000, max: Infinity, next: null },
+  rookie: { min: 0, max: 9999, next: 'bronze' },
+  bronze: { min: 10000, max: 49999, next: 'silver' },
+  silver: { min: 50000, max: 149999, next: 'gold' },
+  gold: { min: 150000, max: 499999, next: 'platinum' },
+  platinum: { min: 500000, max: Infinity, next: null },
 } as const;
 
 // Type for tier names
