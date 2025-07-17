@@ -56,7 +56,7 @@ export interface FormData {
 export interface RegisterFormProps {
   formData: FormData;
   onFormDataChange: (data: FormData) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (submitData: FormData) => Promise<void>;
   loading: boolean;
   error: string;
 }
