@@ -93,3 +93,27 @@ export interface AssignCollectorResponse {
   message: string;
   data?: unknown;
 }
+
+// ============================================================================
+// WASTEBANK DROP REQUEST TYPES (ONLY FOR COLLECTOR)
+// ============================================================================
+export interface CompleteWasteDropRequestParams {
+  items: {
+    waste_type_ids: string[];
+    weights: number[];
+  };
+}
+
+export interface CompleteWasteDropRequestResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    id: string;
+    status: string;
+    completed_at: string;
+    items: {
+      waste_type_ids: string[];
+      weights: number[];
+    };
+  };
+}
