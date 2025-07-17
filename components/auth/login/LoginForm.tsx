@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { loginFunctions } from '@/helpers/utils/login/login';
-import { Alert } from '@/components/ui';
+// import { Alert } from '@/components/ui';
 import { LoginRequest } from '@/types';
 
 // Loading component untuk Suspense fallback
@@ -63,10 +63,10 @@ function LoginFormContent() {
       // Pastikan kita berada di browser sebelum melakukan replace
       if (typeof window !== 'undefined') {
         router.replace('/login');
-        Alert.error({
-          title: 'Peringatan Keamanan! 🚨',
-          text: 'Kredensial login tidak boleh muncul di URL. Halaman telah dibersihkan untuk keamanan Anda.',
-        });
+        // Alert.error({
+        //   title: 'Peringatan Keamanan! 🚨',
+        //   text: 'Kredensial login tidak boleh muncul di URL. Halaman telah dibersihkan untuk keamanan Anda.',
+        // });
       }
     }
   }, [mounted, searchParams, router]);
@@ -74,7 +74,7 @@ function LoginFormContent() {
   useEffect(() => {
     if (!mounted) return;
     loginFunctions.checkAndRedirectIfAuthenticated(router);
-  }, [mounted, router]);
+  }, [mounted]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -89,10 +89,10 @@ function LoginFormContent() {
 
     // Basic client-side validation
     if (!formData.email || !formData.password) {
-      Alert.error({
-        title: 'Validation Error',
-        text: 'Email dan password harus diisi',
-      });
+      // Alert.error({
+      //   title: 'Validation Error',
+      //   text: 'Email dan password harus diisi',
+      // });
       setLoading(false);
       return;
     }
@@ -100,10 +100,10 @@ function LoginFormContent() {
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      Alert.error({
-        title: 'Validation Error',
-        text: 'Format email tidak valid',
-      });
+      // Alert.error({
+      //   title: 'Validation Error',
+      //   text: 'Format email tidak valid',
+      // });
       setLoading(false);
       return;
     }
@@ -133,10 +133,10 @@ function LoginFormContent() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      Alert.error({
-        title: 'Error',
-        text: 'Terjadi kesalahan yang tidak terduga saat login',
-      });
+      // Alert.error({
+      //   title: 'Error',
+      //   text: 'Terjadi kesalahan yang tidak terduga saat login',
+      // });
       setFormData((prev) => ({ ...prev, password: '' }));
     } finally {
       setLoading(false);
