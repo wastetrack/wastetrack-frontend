@@ -40,17 +40,17 @@ export interface FormData {
   password: string;
   confirmPassword: string;
   role: string;
-  fullName: string;
-  phone: string;
-  phoneClean: string;
+  username: string;
+  phone_number: string;
   institution: string;
+  institution_id: string;
   address: string;
   city: string;
   province: string;
-  coordinates: {
+  location: {
     latitude: number;
     longitude: number;
-  } | null;
+  };
 }
 
 export interface RegisterFormProps {
@@ -66,13 +66,15 @@ export interface RegisterResponse {
     id: string;
     email: string;
     role: string;
-    fullName: string;
-    phone: string;
+    username: string;
+    phone_number: string;
     institution?: string;
     address: string;
     city: string;
     province: string;
-    coordinates?: {
+    points: number;
+    balance: number;
+    location?: {
       latitude: number;
       longitude: number;
     };
@@ -87,7 +89,6 @@ export interface User {
   id: string;
   email: string;
   role: string;
-  fullName?: string;
   username?: string;
   phone_number?: string;
   institution?: string;
