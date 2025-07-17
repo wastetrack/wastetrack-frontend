@@ -1,138 +1,216 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation, type LocationType } from '@/lib/mapbox-utils';
+import { encodeId } from '@/lib/id-utils';
+import { getTokenManager } from '@/lib/token-manager';
+import { useRouter } from 'next/navigation';
+import {
+  Plus,
+  ClipboardCheck,
+  Clock,
+  Zap,
+  CheckCircle,
+  Search,
+  Filter,
+  XCircle,
+} from 'lucide-react';
+import { wasteDropRequestAPI } from '@/services/api/user';
+import { WasteDropRequest } from '@/types';
+
+// Helper to get duration in minutes
+function getDuration(start: string, end: string): string {
+  try {
+    const startTime = start.split('+')[0];
+    const endTime = end.split('+')[0];
+
+    const [sh, sm] = startTime.split(':');
+    const [eh, em] = endTime.split(':');
+    const startMins = parseInt(sh) * 60 + parseInt(sm);
+    const endMins = parseInt(eh) * 60 + parseInt(em);
+    return (endMins - startMins).toString();
+  } catch {
+    return '-';
+  }
+}
+
+// Map API response to UI task format (no UITask type)
+function mapApiTaskToUiTask(task: WasteDropRequest) {
+  const startTime = task.appointment_start_time?.split('+')[0]?.slice(0, 5);
+  const endTime = task.appointment_end_time?.split('+')[0]?.slice(0, 5);
+  return {
+    id: task.id,
+    title: `${task.delivery_type === 'pickup' ? 'Penjemputan' : 'Antar Sendiri'}`,
+    notes: task.notes || '-',
+    dueDate: task.appointment_date,
+    dueTime: startTime,
+    total_price: task.total_price,
+    locations: task.appointment_location ? [task.appointment_location] : [],
+    estimatedDuration:
+      task.appointment_start_time && task.appointment_end_time
+        ? `${getDuration(task.appointment_start_time, task.appointment_end_time)} menit`
+        : '-',
+    status: mapApiStatusToUiStatus(task.status),
+    startTime,
+    endTime,
+    completedDate:
+      task.status === 'completed' ? task.appointment_date : undefined,
+    phoneNumber: task.user_phone_number,
+    deliveryType: task.delivery_type,
+    update: task.updated_at,
+  };
+}
+
+// Map API status to UI status
+function mapApiStatusToUiStatus(apiStatus: string): string {
+  switch (apiStatus) {
+    case 'pending':
+    case 'assigned':
+      return 'pending';
+    case 'collecting':
+      return 'in-progress';
+    case 'completed':
+      return 'completed';
+    case 'cancelled':
+      return 'cancelled';
+    default:
+      return apiStatus;
+  }
+}
 
 export default function TasksPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('pending');
-  const [tasks] = useState({
-    pending: [
-      {
-        id: 1,
-        title: 'Pengumpulan Sampah Rumah Tangga - Zona A',
-        description:
-          'Mengumpulkan sampah rumah tangga di area Jl. Raya Surabaya',
-        priority: 'high',
-        dueDate: '2025-07-08',
-        dueTime: '10:00',
-        assignedTo: 'Budi Santoso',
-        vehicle: 'Truck A - B 1234 CD',
-        locations: ['Jl. Raya Surabaya No. 123', 'Jl. Raya Surabaya No. 456'],
-        estimatedDuration: '2 jam',
-        wasteType: 'Organik & Anorganik',
-        status: 'pending',
-      },
-      {
-        id: 2,
-        title: 'Pengumpulan Sampah Komersial - Mall',
-        description: 'Pengumpulan sampah dari pusat perbelanjaan',
-        priority: 'medium',
-        dueDate: '2025-07-08',
-        dueTime: '14:00',
-        assignedTo: 'Siti Aminah',
-        vehicle: 'Truck B - B 5678 EF',
-        locations: ['Mall Surabaya Plaza', 'Mall Galaxy'],
-        estimatedDuration: '3 jam',
-        wasteType: 'Plastik & Kertas',
-        status: 'pending',
-      },
-      {
-        id: 3,
-        title: 'Pengumpulan Sampah Industri',
-        description: 'Mengumpulkan sampah dari kawasan industri',
-        priority: 'low',
-        dueDate: '2025-07-09',
-        dueTime: '08:00',
-        assignedTo: 'Ahmad Rizki',
-        vehicle: 'Truck C - B 9012 GH',
-        locations: ['Kawasan Industri Surabaya'],
-        estimatedDuration: '4 jam',
-        wasteType: 'Logam & Plastik',
-        status: 'pending',
-      },
-    ],
-    inProgress: [
-      {
-        id: 4,
-        title: 'Pengumpulan Sampah Sekolah',
-        description: 'Mengumpulkan sampah dari kompleks sekolah',
-        priority: 'high',
-        dueDate: '2025-07-08',
-        dueTime: '09:00',
-        assignedTo: 'Dewi Sartika',
-        vehicle: 'Truck D - B 3456 IJ',
-        locations: ['SDN 1 Surabaya', 'SMPN 2 Surabaya'],
-        estimatedDuration: '2 jam',
-        wasteType: 'Kertas & Organik',
-        status: 'in-progress',
-        startTime: '09:15',
-        progress: 50,
-      },
-    ],
-    completed: [
-      {
-        id: 5,
-        title: 'Pengumpulan Sampah Pasar',
-        description: 'Mengumpulkan sampah dari pasar tradisional',
-        priority: 'high',
-        dueDate: '2025-07-07',
-        dueTime: '06:00',
-        assignedTo: 'Budi Santoso',
-        vehicle: 'Truck A - B 1234 CD',
-        locations: ['Pasar Atom', 'Pasar Keputran'],
-        estimatedDuration: '3 jam',
-        wasteType: 'Organik',
-        status: 'completed',
-        startTime: '06:00',
-        endTime: '08:45',
-        wasteCollected: 156.8,
-        completedDate: '2025-07-07',
-      },
-      {
-        id: 6,
-        title: 'Pengumpulan Sampah Perkantoran',
-        description: 'Mengumpulkan sampah dari gedung perkantoran',
-        priority: 'medium',
-        dueDate: '2025-07-06',
-        dueTime: '16:00',
-        assignedTo: 'Siti Aminah',
-        vehicle: 'Truck B - B 5678 EF',
-        locations: ['Gedung Perkantoran A', 'Gedung Perkantoran B'],
-        estimatedDuration: '2 jam',
-        wasteType: 'Kertas & Plastik',
-        status: 'completed',
-        startTime: '16:00',
-        endTime: '17:30',
-        wasteCollected: 89.2,
-        completedDate: '2025-07-06',
-      },
-    ],
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  type UITask = ReturnType<typeof mapApiTaskToUiTask>;
+  const [tasks, setTasks] = useState<{
+    pending: UITask[];
+    inProgress: UITask[];
+    completed: UITask[];
+  }>({
+    pending: [],
+    inProgress: [],
+    completed: [],
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  // Component untuk menampilkan lokasi
+  const LocationDisplay = ({ location }: { location: LocationType }) => {
+    const { formattedLocation, isLoading } = useLocation(location);
+    return (
+      <div className='flex items-center'>
+        <div className='flex items-center'>
+          {isLoading ? (
+            <div className='flex items-center'>
+              <div className='h-3 w-3 animate-spin rounded-full border border-gray-300 border-t-gray-600'></div>
+              <span className='font-medium text-gray-700'>
+                Loading alamat...
+              </span>
+            </div>
+          ) : (
+            <span className='font-medium text-gray-700'>
+              {formattedLocation}
+            </span>
+          )}
+        </div>
+      </div>
+    );
   };
 
-  const getPriorityText = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'Tinggi';
-      case 'medium':
-        return 'Sedang';
-      case 'low':
-        return 'Rendah';
-      default:
-        return priority;
-    }
+  useEffect(() => {
+    const fetchTasks = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const user = getTokenManager().getCurrentUser();
+        if (!user?.id) {
+          setError('User tidak ditemukan. Silakan login kembali.');
+          setLoading(false);
+          return;
+        }
+
+        const response = await wasteDropRequestAPI.getWasteDropRequests({
+          assigned_collector_id: user.id,
+          page: 1,
+          size: 20,
+        });
+
+        // Group tasks by status for tabs
+        type UITask = ReturnType<typeof mapApiTaskToUiTask>;
+        const pending: UITask[] = [];
+        const inProgress: UITask[] = [];
+        const completed: UITask[] = [];
+        response.data.forEach((task: WasteDropRequest) => {
+          const uiTask = mapApiTaskToUiTask(task);
+          if (uiTask.status === 'pending') {
+            pending.push(uiTask);
+          } else if (uiTask.status === 'in-progress') {
+            inProgress.push(uiTask);
+          } else if (uiTask.status === 'completed') {
+            completed.push(uiTask);
+          }
+        });
+        setTasks({ pending, inProgress, completed });
+      } catch (err) {
+        console.error('Error fetching tasks:', err);
+        setError((err as Error).message || 'Gagal memuat tugas');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
+  // Filter tasks based on search term and filter type
+  const filterTasks = (taskList: UITask[]) => {
+    return taskList.filter((task) => {
+      const matchesSearch =
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.notes.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesFilter =
+        filterType === 'all' ||
+        (filterType === 'pickup' && task.deliveryType === 'pickup') ||
+        (filterType === 'dropoff' && task.deliveryType === 'dropoff');
+
+      return matchesSearch && matchesFilter;
+    });
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className='flex h-64 items-center justify-center'>
+        <div className='text-center'>
+          <div className='mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600'></div>
+          <p className='text-gray-600'>Memuat tugas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className='flex h-64 items-center justify-center'>
+        <div className='text-center'>
+          <div className='mx-auto mb-4 w-fit rounded-full bg-red-100 p-3'>
+            <XCircle className='h-6 w-6 text-red-600' />
+          </div>
+          <p className='mb-4 text-red-600'>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className='rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700'
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -160,444 +238,413 @@ export default function TasksPage() {
     }
   };
 
+  const currentTasks =
+    activeTab === 'pending'
+      ? filterTasks(tasks.pending)
+      : activeTab === 'inProgress'
+        ? filterTasks(tasks.inProgress)
+        : filterTasks(tasks.completed);
+
   return (
-    <div className='space-y-6'>
+    <div className='space-y-6 font-poppins'>
       {/* Header */}
-      <div className='rounded-lg bg-white p-6 shadow-sm'>
-        <div className='flex items-center justify-between'>
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between'>
+        <div className='flex items-center gap-4'>
+          <div className='shadow-xs rounded-xl border border-zinc-200 bg-white p-4'>
+            <ClipboardCheck className='text-emerald-600' size={28} />
+          </div>
           <div>
-            <h1 className='mb-2 text-2xl font-bold text-gray-900'>
+            <h1 className='text-2xl font-bold text-gray-900'>
               Manajemen Tugas
             </h1>
-            <p className='text-gray-600'>
-              Kelola dan pantau tugas pengumpulan sampah untuk unit pengumpul.
+            <p className='mt-1 text-gray-600'>
+              Kelola dan pantau tugas pengumpulan sampah Anda.
             </p>
           </div>
-          <button className='rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700'>
-            + Buat Tugas Baru
+        </div>
+        <div className='mt-4 sm:mt-0'>
+          <button className='hidden rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700'>
+            <Plus size={20} className='mr-2 inline' />
+            Tambah Harga
           </button>
         </div>
       </div>
 
       {/* Stats */}
       <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
-        <div className='rounded-lg bg-white p-6 shadow-sm'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm text-gray-600'>Tugas Pending</p>
-              <p className='text-2xl font-bold text-orange-600'>
-                {tasks.pending.length}
-              </p>
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
+                <Clock className='h-5 w-5' />
+              </div>
             </div>
-            <div className='rounded-full bg-orange-100 p-3'>
-              <svg
-                className='h-6 w-6 text-orange-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-                />
-              </svg>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Total Tugas Pending
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {tasks.pending.length}
+                </dd>
+              </dl>
             </div>
           </div>
         </div>
 
-        <div className='rounded-lg bg-white p-6 shadow-sm'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm text-gray-600'>Tugas Berjalan</p>
-              <p className='text-2xl font-bold text-blue-600'>
-                {tasks.inProgress.length}
-              </p>
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
+                <Zap className='h-5 w-5' />
+              </div>
             </div>
-            <div className='rounded-full bg-blue-100 p-3'>
-              <svg
-                className='h-6 w-6 text-blue-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M13 10V3L4 14h7v7l9-11h-7z'
-                />
-              </svg>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Total Tugas Ongoing
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {tasks.inProgress.length}
+                </dd>
+              </dl>
             </div>
           </div>
         </div>
 
-        <div className='rounded-lg bg-white p-6 shadow-sm'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm text-gray-600'>Tugas Selesai</p>
-              <p className='text-2xl font-bold text-green-600'>
-                {tasks.completed.length}
-              </p>
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
+                <CheckCircle className='h-5 w-5' />
+              </div>
             </div>
-            <div className='rounded-full bg-green-100 p-3'>
-              <svg
-                className='h-6 w-6 text-green-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-                />
-              </svg>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Total Tugas Selesai
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {tasks.completed.length}
+                </dd>
+              </dl>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className='rounded-lg bg-white shadow-sm'>
-        <div className='border-b border-gray-200'>
-          <nav className='flex space-x-8 px-6'>
-            <button
-              onClick={() => setActiveTab('pending')}
-              className={`border-b-2 px-1 py-4 text-sm font-medium ${
+      {/* Search and Filter */}
+      <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
+        <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+          <div className='flex flex-1 items-center space-x-4'>
+            <div className='relative max-w-md flex-1'>
+              <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
+                <Search className='h-5 w-5 text-gray-400' />
+              </div>
+              <input
+                type='text'
+                placeholder='Cari tugas...'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className='block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
+              />
+            </div>
+            <div className='relative'>
+              <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
+                <Filter className='h-5 w-5 text-gray-400' />
+              </div>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className='appearance-none rounded-lg border border-gray-300 py-2 pl-10 pr-8 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
+              >
+                <option value='all'>Semua Jenis</option>
+                <option value='pickup'>Penjemputan</option>
+                <option value='dropoff'>Antar Sendiri</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Simple Navigation Tabs */}
+      <div className='flex space-x-1 rounded-lg bg-gray-100 p-1'>
+        <button
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            activeTab === 'pending'
+              ? 'bg-white text-orange-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => setActiveTab('pending')}
+        >
+          <div className='flex items-center justify-center space-x-2'>
+            <Clock className='h-4 w-4' />
+            <span>Pending</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
                 activeTab === 'pending'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-orange-100 text-orange-600'
+                  : 'bg-gray-200 text-gray-600'
               }`}
             >
-              Tugas Pending
-              <span className='ml-2 rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-600'>
-                {tasks.pending.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('inProgress')}
-              className={`border-b-2 px-1 py-4 text-sm font-medium ${
+              {tasks.pending.length}
+            </span>
+          </div>
+        </button>
+
+        <button
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            activeTab === 'inProgress'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => setActiveTab('inProgress')}
+        >
+          <div className='flex items-center justify-center space-x-2'>
+            <Zap className='h-4 w-4' />
+            <span>Berjalan</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
                 activeTab === 'inProgress'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-blue-100 text-blue-600'
+                  : 'bg-gray-200 text-gray-600'
               }`}
             >
-              Sedang Berjalan
-              <span className='ml-2 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-600'>
-                {tasks.inProgress.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('completed')}
-              className={`border-b-2 px-1 py-4 text-sm font-medium ${
+              {tasks.inProgress.length}
+            </span>
+          </div>
+        </button>
+
+        <button
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            activeTab === 'completed'
+              ? 'bg-white text-green-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => setActiveTab('completed')}
+        >
+          <div className='flex items-center justify-center space-x-2'>
+            <CheckCircle className='h-4 w-4' />
+            <span>Selesai</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
                 activeTab === 'completed'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  ? 'bg-green-100 text-green-600'
+                  : 'bg-gray-200 text-gray-600'
               }`}
             >
-              Selesai
-              <span className='ml-2 rounded-full bg-green-100 px-2 py-1 text-xs text-green-600'>
-                {tasks.completed.length}
-              </span>
-            </button>
-          </nav>
+              {tasks.completed.length}
+            </span>
+          </div>
+        </button>
+      </div>
+
+      {/* Tasks Content */}
+      <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
+        <div className='mb-6 text-center'>
+          <h2 className='text-xl font-semibold text-gray-900'>
+            {activeTab === 'pending' && 'Tugas Pending'}
+            {activeTab === 'inProgress' && 'Tugas Sedang Berjalan'}
+            {activeTab === 'completed' && 'Tugas Selesai'}
+          </h2>
+          <p className='text-sm text-gray-600'>
+            Menampilkan {currentTasks.length} dari{' '}
+            {activeTab === 'pending'
+              ? tasks.pending.length
+              : activeTab === 'inProgress'
+                ? tasks.inProgress.length
+                : tasks.completed.length}{' '}
+            tugas
+          </p>
         </div>
 
-        {/* Tab Content */}
-        <div className='p-6'>
-          {activeTab === 'pending' && (
-            <div className='space-y-4'>
-              {tasks.pending.map((task) => (
-                <div
-                  key={task.id}
-                  className='rounded-lg border border-gray-200 p-6'
-                >
-                  <div className='mb-4 flex items-start justify-between'>
-                    <div className='flex-1'>
-                      <div className='mb-2 flex items-center space-x-2'>
-                        <h3 className='text-lg font-semibold text-gray-900'>
-                          {task.title}
-                        </h3>
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs font-medium ${getPriorityColor(task.priority)}`}
-                        >
-                          {getPriorityText(task.priority)}
-                        </span>
-                      </div>
-                      <p className='mb-3 text-gray-600'>{task.description}</p>
-                      <div className='grid grid-cols-1 gap-4 text-sm text-gray-600 md:grid-cols-2'>
-                        <div>
-                          <span className='font-medium'>Deadline:</span>{' '}
-                          {task.dueDate} {task.dueTime}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Estimasi:</span>{' '}
-                          {task.estimatedDuration}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Petugas:</span>{' '}
-                          {task.assignedTo}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Kendaraan:</span>{' '}
-                          {task.vehicle}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Jenis Sampah:</span>{' '}
-                          {task.wasteType}
+        <div className='space-y-4'>
+          {currentTasks.length === 0 ? (
+            <div className='py-8 text-center'>
+              <div className='mx-auto mb-4 w-fit rounded-full bg-gray-100 p-3'>
+                <ClipboardCheck className='h-6 w-6 text-gray-400' />
+              </div>
+              <p className='text-gray-500'>
+                {searchTerm || filterType !== 'all'
+                  ? 'Tidak ada tugas yang sesuai dengan pencarian atau filter'
+                  : `Tidak ada tugas ${activeTab === 'pending' ? 'pending' : activeTab === 'inProgress' ? 'yang sedang berjalan' : 'yang selesai'}`}
+              </p>
+            </div>
+          ) : (
+            currentTasks.map((task) => (
+              <div
+                key={task.id}
+                className='rounded-lg border border-gray-200 p-6 transition-shadow'
+              >
+                <div className='mb-4 flex items-start justify-between'>
+                  <div className='flex-1'>
+                    <div className='mb-3 flex items-center space-x-2'>
+                      <h3 className='text-lg font-semibold text-gray-900'>
+                        {task.title}
+                      </h3>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs ${getStatusColor(task.status)}`}
+                      >
+                        {getStatusText(task.status)}
+                      </span>
+                    </div>
+
+                    <div className='text-md grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+                      <div>
+                        <div className='text-sm text-gray-600'>ID</div>
+                        <div className='font-medium text-gray-700'>
+                          {task.id.substring(0, 7)}...
                         </div>
                       </div>
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(task.status)}`}
-                    >
-                      {getStatusText(task.status)}
-                    </span>
-                  </div>
 
-                  <div className='mb-4'>
-                    <h4 className='mb-2 font-medium text-gray-900'>Lokasi:</h4>
-                    <div className='space-y-1'>
-                      {task.locations.map((location, index) => (
-                        <div
-                          key={index}
-                          className='flex items-center space-x-2'
-                        >
-                          <div className='h-2 w-2 rounded-full bg-gray-400'></div>
-                          <span className='text-sm text-gray-600'>
-                            {location}
-                          </span>
+                      <div>
+                        <div className='text-sm text-gray-600'>
+                          Jadwal Pengambilan
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        <div className='font-medium text-gray-700'>
+                          {new Date(task.dueDate).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </div>
+                      </div>
 
-                  <div className='flex space-x-3'>
-                    <button className='rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700'>
-                      Mulai Tugas
-                    </button>
-                    <button className='rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'>
-                      Edit
-                    </button>
-                    <button className='rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'>
-                      Detail
-                    </button>
+                      <div>
+                        <div className='text-sm text-gray-600'>
+                          Waktu Pengambilan
+                        </div>
+                        <div className='font-medium text-gray-700'>
+                          {task.startTime && task.endTime
+                            ? `${task.startTime} - ${task.endTime}`
+                            : task.estimatedDuration}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className='text-sm text-gray-600'>
+                          Nomor Telepon
+                        </div>
+                        <div className='font-medium text-gray-700'>
+                          {task.phoneNumber}
+                        </div>
+                      </div>
+
+                      <div className='md:col-span-2 lg:col-span-3'>
+                        <div className='text-sm text-gray-600'>Alamat</div>
+                        <div>
+                          {task.locations.length === 0 ? (
+                            <span className='font-medium text-gray-700'>
+                              Lokasi tidak tersedia
+                            </span>
+                          ) : (
+                            task.locations.map((location, index) => (
+                              <LocationDisplay
+                                key={index}
+                                location={location}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div className='md:col-span-2 lg:col-span-3'>
+                        <div className='text-sm text-gray-600'>Notes</div>
+                        <div className='font-medium text-gray-700'>
+                          {task.notes}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className='text-sm text-gray-600'>
+                          Diperbarui pada
+                        </div>
+                        <div className='font-medium text-gray-700'>
+                          {new Date(task.update).toLocaleString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </div>
+
+                      {activeTab === 'completed' && (
+                        <div>
+                          <div className='text-sm text-gray-600'>
+                            Total Harga
+                          </div>
+                          <div className='font-medium text-gray-700'>
+                            {task.total_price
+                              ? `Rp ${task.total_price.toLocaleString('id-ID')}`
+                              : 'Tidak tersedia'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {activeTab === 'inProgress' && (
-            <div className='space-y-4'>
-              {tasks.inProgress.map((task) => (
-                <div
-                  key={task.id}
-                  className='rounded-lg border border-gray-200 p-6'
-                >
-                  <div className='mb-4 flex items-start justify-between'>
-                    <div className='flex-1'>
-                      <div className='mb-2 flex items-center space-x-2'>
-                        <h3 className='text-lg font-semibold text-gray-900'>
-                          {task.title}
-                        </h3>
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs font-medium ${getPriorityColor(task.priority)}`}
-                        >
-                          {getPriorityText(task.priority)}
-                        </span>
-                      </div>
-                      <p className='mb-3 text-gray-600'>{task.description}</p>
-                      <div className='grid grid-cols-1 gap-4 text-sm text-gray-600 md:grid-cols-2'>
-                        <div>
-                          <span className='font-medium'>Mulai:</span>{' '}
-                          {task.startTime}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Estimasi:</span>{' '}
-                          {task.estimatedDuration}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Petugas:</span>{' '}
-                          {task.assignedTo}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Kendaraan:</span>{' '}
-                          {task.vehicle}
-                        </div>
-                      </div>
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(task.status)}`}
-                    >
-                      {getStatusText(task.status)}
-                    </span>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className='mb-4'>
-                    <div className='mb-1 flex justify-between text-sm text-gray-600'>
-                      <span>Progress</span>
-                      <span>{task.progress}%</span>
-                    </div>
-                    <div className='h-2 w-full rounded-full bg-gray-200'>
-                      <div
-                        className='h-2 rounded-full bg-blue-600 transition-all duration-300'
-                        style={{ width: `${task.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  <div className='mb-4'>
-                    <h4 className='mb-2 font-medium text-gray-900'>Lokasi:</h4>
-                    <div className='space-y-1'>
-                      {task.locations.map((location, index) => (
-                        <div
-                          key={index}
-                          className='flex items-center space-x-2'
-                        >
-                          <div className='h-2 w-2 rounded-full bg-blue-500'></div>
-                          <span className='text-sm text-gray-600'>
-                            {location}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className='flex space-x-3'>
-                    <button className='rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700'>
-                      Lacak Real-time
-                    </button>
-                    <button className='rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700'>
-                      Selesaikan
-                    </button>
-                    <button className='rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'>
-                      Hubungi Petugas
-                    </button>
-                  </div>
+                <div className='flex space-x-3 pt-4'>
+                  {activeTab === 'pending' && (
+                    <>
+                      <button
+                        className='rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50'
+                        onClick={() =>
+                          router.push(
+                            `/collector-unit/tasks/${encodeId(task.id)}`
+                          )
+                        }
+                      >
+                        Detail
+                      </button>
+                    </>
+                  )}
+                  {activeTab === 'inProgress' && (
+                    <>
+                      <button
+                        className='rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50'
+                        onClick={() => {
+                          // Remove non-digit characters, add country code if needed
+                          let phone = task.phoneNumber.replace(/\D/g, '');
+                          if (phone.startsWith('0')) {
+                            phone = '62' + phone.slice(1);
+                          }
+                          window.open(`https://wa.me/${phone}`, '_blank');
+                        }}
+                      >
+                        Hubungi Customer
+                      </button>
+                      <button
+                        className='rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50'
+                        onClick={() =>
+                          router.push(
+                            `/collector-unit/tasks/${encodeId(task.id)}`
+                          )
+                        }
+                      >
+                        Detail
+                      </button>
+                    </>
+                  )}
+                  {activeTab === 'completed' && (
+                    <>
+                      <button
+                        className='rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50'
+                        onClick={() =>
+                          router.push(
+                            `/collector-unit/tasks/${encodeId(task.id)}`
+                          )
+                        }
+                      >
+                        Detail
+                      </button>
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'completed' && (
-            <div className='space-y-4'>
-              {tasks.completed.map((task) => (
-                <div
-                  key={task.id}
-                  className='rounded-lg border border-gray-200 p-6'
-                >
-                  <div className='mb-4 flex items-start justify-between'>
-                    <div className='flex-1'>
-                      <div className='mb-2 flex items-center space-x-2'>
-                        <h3 className='text-lg font-semibold text-gray-900'>
-                          {task.title}
-                        </h3>
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs font-medium ${getPriorityColor(task.priority)}`}
-                        >
-                          {getPriorityText(task.priority)}
-                        </span>
-                      </div>
-                      <p className='mb-3 text-gray-600'>{task.description}</p>
-                      <div className='grid grid-cols-1 gap-4 text-sm text-gray-600 md:grid-cols-3'>
-                        <div>
-                          <span className='font-medium'>Tanggal:</span>{' '}
-                          {task.completedDate}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Mulai:</span>{' '}
-                          {task.startTime}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Selesai:</span>{' '}
-                          {task.endTime}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Petugas:</span>{' '}
-                          {task.assignedTo}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Kendaraan:</span>{' '}
-                          {task.vehicle}
-                        </div>
-                        <div>
-                          <span className='font-medium'>Sampah:</span>{' '}
-                          {task.wasteCollected} kg
-                        </div>
-                      </div>
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(task.status)}`}
-                    >
-                      {getStatusText(task.status)}
-                    </span>
-                  </div>
-
-                  <div className='mb-4'>
-                    <div className='rounded-lg bg-green-50 p-4'>
-                      <div className='flex items-center justify-between'>
-                        <div>
-                          <p className='text-sm text-green-600'>
-                            Total Sampah Terkumpul
-                          </p>
-                          <p className='text-xl font-bold text-green-800'>
-                            {task.wasteCollected} kg
-                          </p>
-                        </div>
-                        <div className='rounded-full bg-green-100 p-2'>
-                          <svg
-                            className='h-5 w-5 text-green-600'
-                            fill='none'
-                            stroke='currentColor'
-                            viewBox='0 0 24 24'
-                          >
-                            <path
-                              strokeLinecap='round'
-                              strokeLinejoin='round'
-                              strokeWidth={2}
-                              d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className='mb-4'>
-                    <h4 className='mb-2 font-medium text-gray-900'>
-                      Lokasi yang Dikunjungi:
-                    </h4>
-                    <div className='space-y-1'>
-                      {task.locations.map((location, index) => (
-                        <div
-                          key={index}
-                          className='flex items-center space-x-2'
-                        >
-                          <div className='h-2 w-2 rounded-full bg-green-500'></div>
-                          <span className='text-sm text-gray-600'>
-                            {location}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className='flex space-x-3'>
-                    <button className='rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700'>
-                      Lihat Laporan
-                    </button>
-                    <button className='rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'>
-                      Unduh PDF
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </div>
       </div>
