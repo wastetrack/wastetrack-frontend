@@ -6,7 +6,6 @@ import { registerAPI } from '@/services/api/auth';
 import { FormData } from '@/types';
 import {
   validateForm,
-  transformFormDataToApi,
   getRedirectPath,
 } from '@/helpers/utils/register/register';
 import { showToast } from '@/components/ui';
@@ -20,25 +19,26 @@ export function useRegisterLogic() {
     password: '',
     confirmPassword: '',
     role: 'customer',
-    fullName: '',
-    phone: '',
-    phoneClean: '',
+    username: '',
+    phone_number: '',
     institution: '',
+    institution_id: '',
     address: '',
     city: '',
     province: '',
-    coordinates: null,
+    location: {
+      latitude: 0,
+      longitude: 0,
+    },
   });
 
   const handleFormDataChange = (newFormData: FormData) => {
     setFormData(newFormData);
-    if (error) setError(''); // Clear error when user starts typing
+    if (error) setError('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate form
+  // ✅ Remove form event parameter, since preventDefault is handled in component
+  const handleSubmit = async (submitData: FormData) => {
     const validationErrors = validateForm(formData);
     if (validationErrors.length > 0) {
       setError(validationErrors[0]);
@@ -52,17 +52,13 @@ export function useRegisterLogic() {
     setError('');
 
     try {
-      // Transform and send data
-      const apiData = transformFormDataToApi(formData);
-
-      // Use promise toast for registration
-      await showToast.promise(registerAPI.register(apiData), {
+      // Use submitData (already transformed) instead of transforming again
+      await showToast.promise(registerAPI.register(submitData), {
         loading: 'Membuat akun...',
         success: `Email verifikasi telah dikirim ke ${formData.email}. Silakan cek inbox atau folder spam Anda.`,
         error: 'Gagal membuat akun. Silakan coba lagi.',
       });
 
-      // Redirect based on role
       const redirectPath = getRedirectPath();
       router.push(redirectPath);
     } catch (err) {
@@ -71,7 +67,7 @@ export function useRegisterLogic() {
       const errorMessage =
         err instanceof Error ? err.message : 'Terjadi kesalahan tidak terduga';
 
-      // Handle specific error cases with reusable toasts
+      // ... existing error handling
       if (
         errorMessage.toLowerCase().includes('email') &&
         (errorMessage.toLowerCase().includes('already') ||
