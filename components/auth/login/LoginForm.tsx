@@ -73,7 +73,7 @@ function LoginFormContent() {
 
   useEffect(() => {
     if (!mounted) return;
-    loginFunctions.checkAndRedirectIfAuthenticated(router);
+    // loginFunctions.checkAndRedirectIfAuthenticated(router);
   }, [mounted]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
