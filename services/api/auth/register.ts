@@ -59,6 +59,7 @@ export interface RegisterRequest {
   role: string;
   phone_number: string;
   institution?: string;
+  institution_id?: string;
   address: string;
   city: string;
   province: string;
