@@ -7,4 +7,8 @@ export * from './waste-price';
 export * from './waste-type';
 export * from './waste-drop-request';
 export * from './waste-drop-request-item';
+export * from './waste-transfer-request';
+export * from './waste-transfer-request-item';
+export * from './storage';
+export * from './storage-item';
 export * from './collector';
