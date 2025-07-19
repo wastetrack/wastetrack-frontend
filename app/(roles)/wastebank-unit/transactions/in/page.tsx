@@ -10,10 +10,20 @@ import {
   Loader2,
   AlertCircle,
   Eye,
+  Users,
+  Building2,
 } from 'lucide-react';
-import { wasteDropRequestAPI } from '@/services/api/user';
-import { currentUserAPI } from '@/services/api/user';
-import { WasteDropRequest, WasteDropRequestListResponse } from '@/types';
+import {
+  wasteDropRequestAPI,
+  currentUserAPI,
+  wasteTransferRequestAPI,
+} from '@/services/api/user';
+import {
+  WasteDropRequest,
+  WasteDropRequestListResponse,
+  WasteTransferRequest,
+  GetWasteTransferRequestsResponse,
+} from '@/types';
 import { encodeId } from '@/lib/id-utils';
 
 interface TransactionStats {
@@ -30,6 +40,8 @@ interface ClientPagination {
   totalPages: number;
 }
 
+type TabType = 'customer' | 'wastebank';
+
 export default function TransactionsInPage() {
   const router = useRouter();
   const [allTransactions, setAllTransactions] = useState<WasteDropRequest[]>(
@@ -38,11 +50,22 @@ export default function TransactionsInPage() {
   const [filteredTransactions, setFilteredTransactions] = useState<
     WasteDropRequest[]
   >([]);
+
+  // NEW: State for waste transfer requests
+  const [allWasteTransferRequests, setAllWasteTransferRequests] = useState<
+    WasteTransferRequest[]
+  >([]);
+  const [filteredWasteTransferRequests, setFilteredWasteTransferRequests] =
+    useState<WasteTransferRequest[]>([]);
+
+  // NEW: Tab state
+  const [activeTab, setActiveTab] = useState<TabType>('customer');
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState(''); // kosong = tampilkan semua
-  const [selectedType, setSelectedType] = useState(''); // kosong = semua tipe
-  const [selectedStatus, setSelectedStatus] = useState(''); // kosong = semua status
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [wasteBankId, setWasteBankId] = useState<string | null>(null);
 
   // Client-side pagination state
@@ -53,83 +76,160 @@ export default function TransactionsInPage() {
     totalPages: 1,
   });
 
-  // Calculate displayed transactions based on pagination
+  // Calculate displayed transactions based on pagination and active tab
   const displayedTransactions = React.useMemo(() => {
+    const currentData =
+      activeTab === 'customer'
+        ? filteredTransactions
+        : filteredWasteTransferRequests;
     const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
     const endIndex = startIndex + pagination.itemsPerPage;
-    return filteredTransactions.slice(startIndex, endIndex);
-  }, [filteredTransactions, pagination.currentPage, pagination.itemsPerPage]);
+    return currentData.slice(startIndex, endIndex);
+  }, [
+    filteredTransactions,
+    filteredWasteTransferRequests,
+    pagination.currentPage,
+    pagination.itemsPerPage,
+    activeTab,
+  ]);
 
   // Fungsi redirect ke detail transaksi dengan encodeId
   const handleViewDetail = (transactionId: string) => {
     const encoded = encodeId(transactionId);
-    router.push(`/wastebank-unit/transactions/in/${encoded}`);
+    if (activeTab === 'customer') {
+      router.push(`/wastebank-unit/transactions/in/${encoded}`);
+    } else {
+      // TODO: Add waste transfer detail route if needed
+      router.push(`/wastebank-unit/transactions/in/${encoded}`);
+    }
   };
 
   // Calculate today's stats from all filtered transactions
   const todayStats: TransactionStats = React.useMemo(() => {
-    const completedTransactions = filteredTransactions.filter(
-      (t) => t.status === 'completed'
-    );
-    const totalTransactions = completedTransactions.length;
-    const totalRevenue = completedTransactions.reduce(
-      (sum, t) => sum + t.total_price,
-      0
-    );
+    if (activeTab === 'customer') {
+      const completedTransactions = filteredTransactions.filter(
+        (t) => t.status === 'completed'
+      );
+      const totalTransactions = completedTransactions.length;
+      const totalRevenue = completedTransactions.reduce(
+        (sum, t) => sum + t.total_price,
+        0
+      );
 
-    return {
-      totalTransactions,
-      totalWeight: 0, // Weight data not available in current API response
-      totalRevenue,
-      avgTransaction:
-        totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
-    };
-  }, [filteredTransactions]);
+      return {
+        totalTransactions,
+        totalWeight: 0, // Weight data not available in current API response
+        totalRevenue,
+        avgTransaction:
+          totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+      };
+    } else {
+      // NEW: Stats for waste transfer requests
+      const completedTransfers = filteredWasteTransferRequests.filter(
+        (t) => t.status === 'completed'
+      );
+      const totalTransactions = completedTransfers.length;
+      const totalRevenue = completedTransfers.reduce(
+        (sum, t) => sum + (t.total_price || 0),
+        0
+      );
+
+      return {
+        totalTransactions,
+        totalWeight: 0,
+        totalRevenue,
+        avgTransaction:
+          totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+      };
+    }
+  }, [filteredTransactions, filteredWasteTransferRequests, activeTab]);
 
   // Filter transactions based on selected date
   const filterTransactions = useCallback(() => {
-    let filtered = allTransactions;
+    if (activeTab === 'customer') {
+      let filtered = allTransactions;
 
-    // Filter by date
-    if (selectedDate) {
-      filtered = filtered.filter((transaction) => {
-        const transactionDate = new Date(transaction.appointment_date)
-          .toISOString()
-          .split('T')[0];
-        return transactionDate === selectedDate;
-      });
+      // Filter by date
+      if (selectedDate) {
+        filtered = filtered.filter((transaction) => {
+          const transactionDate = new Date(transaction.appointment_date)
+            .toISOString()
+            .split('T')[0];
+          return transactionDate === selectedDate;
+        });
+      }
+
+      // Filter by type
+      if (selectedType) {
+        filtered = filtered.filter(
+          (transaction) => transaction.delivery_type === selectedType
+        );
+      }
+
+      // Filter by status
+      if (selectedStatus) {
+        filtered = filtered.filter(
+          (transaction) => transaction.status === selectedStatus
+        );
+      }
+
+      setFilteredTransactions(filtered);
+
+      // Update pagination info
+      const totalPages = Math.ceil(filtered.length / pagination.itemsPerPage);
+      setPagination((prev) => ({
+        ...prev,
+        currentPage: 1, // Reset to first page when filtering
+        totalItems: filtered.length,
+        totalPages: totalPages || 1,
+      }));
+    } else {
+      // NEW: Filter waste transfer requests
+      let filtered = allWasteTransferRequests;
+
+      // Filter by date
+      if (selectedDate) {
+        filtered = filtered.filter((transaction) => {
+          const transactionDate = new Date(transaction.appointment_date)
+            .toISOString()
+            .split('T')[0];
+          return transactionDate === selectedDate;
+        });
+      }
+
+      // Filter by form_type (equivalent to delivery_type)
+      if (selectedType) {
+        filtered = filtered.filter(
+          (transaction) => transaction.form_type === selectedType
+        );
+      }
+
+      // Filter by status
+      if (selectedStatus) {
+        filtered = filtered.filter(
+          (transaction) => transaction.status === selectedStatus
+        );
+      }
+
+      setFilteredWasteTransferRequests(filtered);
+
+      // Update pagination info
+      const totalPages = Math.ceil(filtered.length / pagination.itemsPerPage);
+      setPagination((prev) => ({
+        ...prev,
+        currentPage: 1,
+        totalItems: filtered.length,
+        totalPages: totalPages || 1,
+      }));
     }
-
-    // Filter by type
-    if (selectedType) {
-      filtered = filtered.filter(
-        (transaction) => transaction.delivery_type === selectedType
-      );
-    }
-
-    // Filter by status
-    if (selectedStatus) {
-      filtered = filtered.filter(
-        (transaction) => transaction.status === selectedStatus
-      );
-    }
-
-    setFilteredTransactions(filtered);
-
-    // Update pagination info
-    const totalPages = Math.ceil(filtered.length / pagination.itemsPerPage);
-    setPagination((prev) => ({
-      ...prev,
-      currentPage: 1, // Reset to first page when filtering
-      totalItems: filtered.length,
-      totalPages: totalPages || 1,
-    }));
   }, [
     allTransactions,
+    allWasteTransferRequests,
     selectedDate,
     selectedType,
     selectedStatus,
     pagination.itemsPerPage,
+    activeTab,
   ]);
 
   // Fetch all transactions from API (100 items)
@@ -159,6 +259,34 @@ export default function TransactionsInPage() {
     }
   }, [wasteBankId]);
 
+  // NEW: Fetch waste transfer requests
+  const fetchWasteTransferRequests = useCallback(async () => {
+    if (!wasteBankId) return;
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        destination_user_id: wasteBankId,
+        page: 1,
+        size: 100,
+      };
+
+      const response: GetWasteTransferRequestsResponse =
+        await wasteTransferRequestAPI.getWasteTransferRequests(params);
+
+      setAllWasteTransferRequests(response.data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to fetch waste transfer requests'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [wasteBankId]);
+
   // Get current user (waste bank) ID on mount
   useEffect(() => {
     const getCurrentWasteBankId = async () => {
@@ -177,20 +305,38 @@ export default function TransactionsInPage() {
   useEffect(() => {
     if (wasteBankId) {
       fetchAllTransactions();
+      fetchWasteTransferRequests(); // NEW: Also fetch waste transfer requests
     }
-  }, [wasteBankId, fetchAllTransactions]);
+  }, [wasteBankId, fetchAllTransactions, fetchWasteTransferRequests]);
 
   // Filter transactions when allTransactions or selectedDate changes
   useEffect(() => {
     filterTransactions();
   }, [filterTransactions]);
 
+  // NEW: Handle tab change
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    // Reset filters when changing tabs
+    setSelectedDate('');
+    setSelectedType('');
+    setSelectedStatus('');
+    setPagination((prev) => ({
+      ...prev,
+      currentPage: 1,
+    }));
+  };
+
   // Handle items per page change
   const handleItemsPerPageChange = (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     const newItemsPerPage = parseInt(e.target.value, 10);
-    const totalPages = Math.ceil(filteredTransactions.length / newItemsPerPage);
+    const currentData =
+      activeTab === 'customer'
+        ? filteredTransactions
+        : filteredWasteTransferRequests;
+    const totalPages = Math.ceil(currentData.length / newItemsPerPage);
     setPagination((prev) => ({
       ...prev,
       itemsPerPage: newItemsPerPage,
@@ -258,6 +404,28 @@ export default function TransactionsInPage() {
     }
   };
 
+  // NEW: Format form type for waste transfer requests
+  const getFormTypeChip = (formType: string) => {
+    const typeMap = {
+      pickup: { text: 'Pickup', color: 'bg-green-100 text-green-800' },
+      dropoff: { text: 'Drop-off', color: 'bg-blue-100 text-blue-800' },
+      delivery: { text: 'Delivery', color: 'bg-purple-100 text-purple-800' },
+    };
+
+    const type = typeMap[formType as keyof typeof typeMap] || {
+      text: formType,
+      color: 'bg-gray-100 text-gray-800',
+    };
+
+    return (
+      <span
+        className={`inline-flex rounded-full px-2 py-1 text-xs ${type.color}`}
+      >
+        {type.text}
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className='flex min-h-[400px] items-center justify-center'>
@@ -300,7 +468,13 @@ export default function TransactionsInPage() {
           <AlertCircle className='text-red-600' size={20} />
           <span className='text-red-700'>{error}</span>
           <button
-            onClick={() => fetchAllTransactions()}
+            onClick={() => {
+              if (activeTab === 'customer') {
+                fetchAllTransactions();
+              } else {
+                fetchWasteTransferRequests();
+              }
+            }}
             className='ml-auto text-red-600 underline hover:text-red-800'
           >
             Coba Lagi
@@ -343,7 +517,9 @@ export default function TransactionsInPage() {
                   Total Transaksi Masuk
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
-                  {filteredTransactions.length}
+                  {activeTab === 'customer'
+                    ? filteredTransactions.length
+                    : filteredWasteTransferRequests.length}
                 </dd>
               </dl>
             </div>
@@ -419,6 +595,9 @@ export default function TransactionsInPage() {
               <option value=''>Semua Tipe</option>
               <option value='pickup'>Pickup</option>
               <option value='dropoff'>Drop-off</option>
+              {activeTab === 'wastebank' && (
+                <option value='delivery'>Delivery</option>
+              )}
             </select>
             {/* Filter Status */}
             <select
@@ -465,6 +644,56 @@ export default function TransactionsInPage() {
         </div>
       </div>
 
+      {/* Simple Navigation Tabs */}
+
+      <div className='flex space-x-1 rounded-lg bg-gray-100 p-1'>
+        <button
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            activeTab === 'customer'
+              ? 'bg-white text-emerald-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => handleTabChange('customer')}
+        >
+          <div className='flex items-center justify-center space-x-2'>
+            <Users className='h-4 w-4' />
+            <span>Transaksi Nasabah</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                activeTab === 'customer'
+                  ? 'bg-emerald-100 text-emerald-600'
+                  : 'bg-gray-200 text-gray-600'
+              }`}
+            >
+              {filteredTransactions.length}
+            </span>
+          </div>
+        </button>
+
+        <button
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            activeTab === 'wastebank'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => handleTabChange('wastebank')}
+        >
+          <div className='flex items-center justify-center space-x-2'>
+            <Building2 className='h-4 w-4' />
+            <span>Bank Sampah/Industri</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                activeTab === 'wastebank'
+                  ? 'bg-blue-100 text-blue-600'
+                  : 'bg-gray-200 text-gray-600'
+              }`}
+            >
+              {filteredWasteTransferRequests.length}
+            </span>
+          </div>
+        </button>
+      </div>
+
       {/* Transactions Table */}
       <div className='shadow-xs overflow-hidden rounded-lg border border-gray-200 bg-white'>
         <div className='overflow-x-auto'>
@@ -475,7 +704,7 @@ export default function TransactionsInPage() {
                   Tipe
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
-                  Customer ID
+                  {activeTab === 'customer' ? 'Customer ID' : 'Source ID'}
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
                   Tanggal Janji
@@ -504,71 +733,170 @@ export default function TransactionsInPage() {
                     colSpan={8}
                     className='px-6 py-8 text-center text-gray-500'
                   >
-                    {filteredTransactions.length === 0
-                      ? 'Tidak ada transaksi ditemukan'
-                      : 'Tidak ada data di halaman ini'}
+                    {activeTab === 'customer'
+                      ? filteredTransactions.length === 0
+                        ? 'Tidak ada transaksi nasabah ditemukan'
+                        : 'Tidak ada data di halaman ini'
+                      : filteredWasteTransferRequests.length === 0
+                        ? 'Tidak ada transaksi bank sampah/industri ditemukan'
+                        : 'Tidak ada data di halaman ini'}
                   </td>
                 </tr>
               ) : (
                 displayedTransactions.map((transaction) => {
                   const status = getStatusDisplay(transaction.status);
-                  return (
-                    <tr key={transaction.id} className='hover:bg-gray-50'>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        {getDeliveryTypeChip(transaction.delivery_type)}
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm text-gray-900'>
-                          {transaction.customer_id.substring(0, 7)}...
-                        </div>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm text-gray-900'>
-                          {new Date(
-                            transaction.appointment_date
-                          ).toLocaleDateString('id-ID', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </div>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm text-gray-900'>
-                          {formatTime(transaction.appointment_start_time)} -{' '}
-                          {formatTime(transaction.appointment_end_time)}
-                        </div>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm font-bold text-emerald-600'>
-                          Rp {transaction.total_price.toLocaleString('id-ID')}
-                        </div>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <span
-                          className={`inline-flex rounded-full px-2 text-xs ${status.color}`}
-                        >
-                          {status.text}
-                        </span>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm text-gray-500'>
-                          {transaction.assigned_collector_id
-                            ? `${transaction.assigned_collector_id.substring(0, 7)}...`
-                            : '-'}
-                        </div>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <button
-                          className='rounded-md p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-800'
-                          title='Lihat Detail'
-                          onClick={() => handleViewDetail(transaction.id)}
-                        >
-                          <Eye className='h-4 w-4' />
-                        </button>
-                      </td>
-                    </tr>
-                  );
+
+                  if (activeTab === 'customer') {
+                    // Original customer transaction display
+                    const customerTransaction = transaction as WasteDropRequest;
+                    return (
+                      <tr
+                        key={customerTransaction.id}
+                        className='hover:bg-gray-50'
+                      >
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          {getDeliveryTypeChip(
+                            customerTransaction.delivery_type
+                          )}
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm text-gray-900'>
+                            {customerTransaction.customer_id.substring(0, 7)}...
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm text-gray-900'>
+                            {new Date(
+                              customerTransaction.appointment_date
+                            ).toLocaleDateString('id-ID', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm text-gray-900'>
+                            {formatTime(
+                              customerTransaction.appointment_start_time
+                            )}{' '}
+                            -{' '}
+                            {formatTime(
+                              customerTransaction.appointment_end_time
+                            )}
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm font-bold text-emerald-600'>
+                            Rp{' '}
+                            {customerTransaction.total_price.toLocaleString(
+                              'id-ID'
+                            )}
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <span
+                            className={`inline-flex rounded-full px-2 text-xs ${status.color}`}
+                          >
+                            {status.text}
+                          </span>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm text-gray-500'>
+                            {customerTransaction.assigned_collector_id
+                              ? `${customerTransaction.assigned_collector_id.substring(0, 7)}...`
+                              : '-'}
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <button
+                            className='rounded-md p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-800'
+                            title='Lihat Detail'
+                            onClick={() =>
+                              handleViewDetail(customerTransaction.id)
+                            }
+                          >
+                            <Eye className='h-4 w-4' />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  } else {
+                    // NEW: Waste transfer transaction display
+                    const transferTransaction =
+                      transaction as WasteTransferRequest;
+                    return (
+                      <tr
+                        key={transferTransaction.id}
+                        className='hover:bg-gray-50'
+                      >
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          {getFormTypeChip(transferTransaction.form_type)}
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm text-gray-900'>
+                            {transferTransaction.source_user_id.substring(0, 7)}
+                            ...
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm text-gray-900'>
+                            {new Date(
+                              transferTransaction.appointment_date
+                            ).toLocaleDateString('id-ID', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm text-gray-900'>
+                            {formatTime(
+                              transferTransaction.appointment_start_time
+                            )}{' '}
+                            -{' '}
+                            {formatTime(
+                              transferTransaction.appointment_end_time
+                            )}
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm font-bold text-emerald-600'>
+                            Rp{' '}
+                            {(
+                              transferTransaction.total_price || 0
+                            ).toLocaleString('id-ID')}
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <span
+                            className={`inline-flex rounded-full px-2 text-xs ${status.color}`}
+                          >
+                            {status.text}
+                          </span>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='text-sm text-gray-500'>
+                            {transferTransaction.assigned_collector_id
+                              ? `${transferTransaction.assigned_collector_id.substring(0, 7)}...`
+                              : '-'}
+                          </div>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <button
+                            className='rounded-md p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-800'
+                            title='Lihat Detail'
+                            onClick={() =>
+                              handleViewDetail(transferTransaction.id)
+                            }
+                          >
+                            <Eye className='h-4 w-4' />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
                 })
               )}
             </tbody>
