@@ -6,7 +6,6 @@ import { encodeId } from '@/lib/id-utils';
 import { getTokenManager } from '@/lib/token-manager';
 import { useRouter } from 'next/navigation';
 import {
-  Plus,
   ClipboardCheck,
   Clock,
   Zap,
@@ -14,9 +13,13 @@ import {
   Search,
   Filter,
   XCircle,
+  CircleDollarSign,
 } from 'lucide-react';
-import { wasteDropRequestAPI } from '@/services/api/user';
-import { WasteDropRequest } from '@/types';
+import {
+  wasteDropRequestAPI,
+  wasteTransferRequestAPI,
+} from '@/services/api/user';
+import { WasteDropRequest, WasteTransferRequest } from '@/types';
 
 // Helper to get duration in minutes
 function getDuration(start: string, end: string): string {
@@ -34,13 +37,13 @@ function getDuration(start: string, end: string): string {
   }
 }
 
-// Map API response to UI task format (no UITask type)
-function mapApiTaskToUiTask(task: WasteDropRequest) {
+// Map API response to UI task format for Drop Request
+function mapDropRequestToUiTask(task: WasteDropRequest) {
   const startTime = task.appointment_start_time?.split('+')[0]?.slice(0, 5);
   const endTime = task.appointment_end_time?.split('+')[0]?.slice(0, 5);
   return {
     id: task.id,
-    title: `${task.delivery_type === 'pickup' ? 'Penjemputan' : 'Antar Sendiri'}`,
+    title: `Drop Request - ${task.delivery_type === 'pickup' ? 'Penjemputan' : 'Antar Sendiri'}`,
     notes: task.notes || '-',
     dueDate: task.appointment_date,
     dueTime: startTime,
@@ -58,6 +61,41 @@ function mapApiTaskToUiTask(task: WasteDropRequest) {
     phoneNumber: task.user_phone_number,
     deliveryType: task.delivery_type,
     update: task.updated_at,
+    taskType: 'drop' as const,
+    customerName: task.customer?.username || 'Tidak diketahui',
+  };
+}
+
+// Map API response to UI task format for Transfer Request
+function mapTransferRequestToUiTask(task: WasteTransferRequest) {
+  const startTime = task.appointment_start_time?.split('+')[0]?.slice(0, 5);
+  const endTime = task.appointment_end_time?.split('+')[0]?.slice(0, 5);
+  return {
+    id: task.id,
+    title: `Transfer Request - ${task.form_type === 'industry_request' ? 'dari Industri' : 'dari Bank Sampah'}`,
+    notes: task.notes || '-',
+    dueDate: task.appointment_date,
+    dueTime: startTime,
+    total_price: 0, // Transfer request tidak punya total_price langsung
+    locations: task.appointment_location ? [task.appointment_location] : [],
+    estimatedDuration:
+      task.appointment_start_time && task.appointment_end_time
+        ? `${getDuration(task.appointment_start_time, task.appointment_end_time)} menit`
+        : '-',
+    status: mapApiStatusToUiStatus(task.status),
+    startTime,
+    endTime,
+    completedDate:
+      task.status === 'completed' ? task.appointment_date : undefined,
+    phoneNumber: task.source_phone_number,
+    deliveryType: 'pickup' as const, // Transfer request selalu pickup
+    update: task.updated_at,
+    taskType: 'transfer' as const,
+    customerName:
+      task.source_user?.institution ||
+      task.source_user?.username ||
+      'Tidak diketahui',
+    sourceAddress: task.source_user?.address || 'Alamat tidak tersedia',
   };
 }
 
@@ -83,7 +121,11 @@ export default function TasksPage() {
   const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  type UITask = ReturnType<typeof mapApiTaskToUiTask>;
+
+  type UITask =
+    | ReturnType<typeof mapDropRequestToUiTask>
+    | ReturnType<typeof mapTransferRequestToUiTask>;
+
   const [tasks, setTasks] = useState<{
     pending: UITask[];
     inProgress: UITask[];
@@ -131,19 +173,56 @@ export default function TasksPage() {
           return;
         }
 
-        const response = await wasteDropRequestAPI.getWasteDropRequests({
+        // Fetch drop requests
+        const dropResponse = await wasteDropRequestAPI.getWasteDropRequests({
           assigned_collector_id: user.id,
           page: 1,
-          size: 20,
+          size: 50,
         });
 
+        // Fetch transfer requests - ambil list dulu untuk filter berdasarkan assigned_collector_id
+        const transferListResponse =
+          await wasteTransferRequestAPI.getWasteTransferRequests({
+            page: 1,
+            size: 50,
+          });
+
+        // Filter transfer requests yang assigned ke collector ini
+        const assignedTransferIds = transferListResponse.data
+          .filter(
+            (request: WasteTransferRequest) =>
+              request.assigned_collector_id === user.id
+          )
+          .map((request: WasteTransferRequest) => request.id);
+
+        // Fetch detail untuk setiap transfer request yang assigned
+        const assignedTransferRequests: WasteTransferRequest[] = [];
+        for (const transferId of assignedTransferIds) {
+          try {
+            const transferDetailResponse =
+              await wasteTransferRequestAPI.getWasteTransferRequestById(
+                transferId
+              );
+            assignedTransferRequests.push(transferDetailResponse.data);
+          } catch (error) {
+            console.warn(
+              `Failed to fetch transfer request detail for ID: ${transferId}`,
+              error
+            );
+          }
+        }
+
+        console.log('Drop Requests:', dropResponse.data);
+        console.log('Transfer Requests:', assignedTransferRequests);
+
         // Group tasks by status for tabs
-        type UITask = ReturnType<typeof mapApiTaskToUiTask>;
         const pending: UITask[] = [];
         const inProgress: UITask[] = [];
         const completed: UITask[] = [];
-        response.data.forEach((task: WasteDropRequest) => {
-          const uiTask = mapApiTaskToUiTask(task);
+
+        // Process drop requests
+        dropResponse.data.forEach((task: WasteDropRequest) => {
+          const uiTask = mapDropRequestToUiTask(task);
           if (uiTask.status === 'pending') {
             pending.push(uiTask);
           } else if (uiTask.status === 'in-progress') {
@@ -152,6 +231,26 @@ export default function TasksPage() {
             completed.push(uiTask);
           }
         });
+
+        // Process transfer requests
+        assignedTransferRequests.forEach((task: WasteTransferRequest) => {
+          const uiTask = mapTransferRequestToUiTask(task);
+          if (uiTask.status === 'pending') {
+            pending.push(uiTask);
+          } else if (uiTask.status === 'in-progress') {
+            inProgress.push(uiTask);
+          } else if (uiTask.status === 'completed') {
+            completed.push(uiTask);
+          }
+        });
+
+        // Sort by appointment date
+        const sortByDate = (a: UITask, b: UITask) =>
+          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        pending.sort(sortByDate);
+        inProgress.sort(sortByDate);
+        completed.sort(sortByDate);
+
         setTasks({ pending, inProgress, completed });
       } catch (err) {
         console.error('Error fetching tasks:', err);
@@ -169,10 +268,13 @@ export default function TasksPage() {
     return taskList.filter((task) => {
       const matchesSearch =
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.notes.toLowerCase().includes(searchTerm.toLowerCase());
+        task.notes.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.customerName.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesFilter =
         filterType === 'all' ||
+        (filterType === 'drop' && task.taskType === 'drop') ||
+        (filterType === 'transfer' && task.taskType === 'transfer') ||
         (filterType === 'pickup' && task.deliveryType === 'pickup') ||
         (filterType === 'dropoff' && task.deliveryType === 'dropoff');
 
@@ -262,12 +364,6 @@ export default function TasksPage() {
             </p>
           </div>
         </div>
-        <div className='mt-4 sm:mt-0'>
-          <button className='hidden rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700'>
-            <Plus size={20} className='mr-2 inline' />
-            Tambah Harga
-          </button>
-        </div>
       </div>
 
       {/* Stats */}
@@ -334,7 +430,7 @@ export default function TasksPage() {
       </div>
 
       {/* Search and Filter */}
-      <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
+      <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
         <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
           <div className='flex flex-1 items-center space-x-4'>
             <div className='relative max-w-md flex-1'>
@@ -359,6 +455,8 @@ export default function TasksPage() {
                 className='appearance-none rounded-lg border border-gray-300 py-2 pl-10 pr-8 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
               >
                 <option value='all'>Semua Jenis</option>
+                <option value='drop'>Drop Request</option>
+                <option value='transfer'>Transfer Request</option>
                 <option value='pickup'>Penjemputan</option>
                 <option value='dropoff'>Antar Sendiri</option>
               </select>
@@ -380,15 +478,6 @@ export default function TasksPage() {
           <div className='flex items-center justify-center space-x-2'>
             <Clock className='h-4 w-4' />
             <span>Pending</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                activeTab === 'pending'
-                  ? 'bg-orange-100 text-orange-600'
-                  : 'bg-gray-200 text-gray-600'
-              }`}
-            >
-              {tasks.pending.length}
-            </span>
           </div>
         </button>
 
@@ -403,15 +492,6 @@ export default function TasksPage() {
           <div className='flex items-center justify-center space-x-2'>
             <Zap className='h-4 w-4' />
             <span>Berjalan</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                activeTab === 'inProgress'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-200 text-gray-600'
-              }`}
-            >
-              {tasks.inProgress.length}
-            </span>
           </div>
         </button>
 
@@ -426,15 +506,6 @@ export default function TasksPage() {
           <div className='flex items-center justify-center space-x-2'>
             <CheckCircle className='h-4 w-4' />
             <span>Selesai</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                activeTab === 'completed'
-                  ? 'bg-green-100 text-green-600'
-                  : 'bg-gray-200 text-gray-600'
-              }`}
-            >
-              {tasks.completed.length}
-            </span>
           </div>
         </button>
       </div>
@@ -479,9 +550,16 @@ export default function TasksPage() {
                 <div className='mb-4 flex items-start justify-between'>
                   <div className='flex-1'>
                     <div className='mb-3 flex items-center space-x-2'>
-                      <h3 className='text-lg font-semibold text-gray-900'>
-                        {task.title}
-                      </h3>
+                      <div className='flex items-center space-x-2'>
+                        {task.taskType === 'transfer' ? (
+                          <CircleDollarSign className='h-5 w-5 text-blue-600' />
+                        ) : (
+                          <ClipboardCheck className='h-5 w-5 text-emerald-600' />
+                        )}
+                        <h3 className='text-lg font-semibold text-gray-900'>
+                          {task.title}
+                        </h3>
+                      </div>
                       <span
                         className={`rounded-full px-3 py-1 text-xs ${getStatusColor(task.status)}`}
                       >
@@ -494,6 +572,15 @@ export default function TasksPage() {
                         <div className='text-sm text-gray-600'>ID</div>
                         <div className='font-medium text-gray-700'>
                           {task.id.substring(0, 7)}...
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className='text-sm text-gray-600'>
+                          {task.taskType === 'drop' ? 'Customer' : 'Pengirim'}
+                        </div>
+                        <div className='font-medium text-gray-700'>
+                          {task.customerName}
                         </div>
                       </div>
 
@@ -533,7 +620,11 @@ export default function TasksPage() {
                       <div className='md:col-span-2 lg:col-span-3'>
                         <div className='text-sm text-gray-600'>Alamat</div>
                         <div>
-                          {task.locations.length === 0 ? (
+                          {task.taskType === 'transfer' ? (
+                            <span className='font-medium text-gray-700'>
+                              {task.sourceAddress}
+                            </span>
+                          ) : task.locations.length === 0 ? (
                             <span className='font-medium text-gray-700'>
                               Lokasi tidak tersedia
                             </span>
@@ -570,18 +661,19 @@ export default function TasksPage() {
                         </div>
                       </div>
 
-                      {activeTab === 'completed' && (
-                        <div>
-                          <div className='text-sm text-gray-600'>
-                            Total Harga
+                      {activeTab === 'completed' &&
+                        task.taskType === 'drop' && (
+                          <div>
+                            <div className='text-sm text-gray-600'>
+                              Total Harga
+                            </div>
+                            <div className='font-medium text-gray-700'>
+                              {task.total_price
+                                ? `Rp ${task.total_price.toLocaleString('id-ID')}`
+                                : 'Tidak tersedia'}
+                            </div>
                           </div>
-                          <div className='font-medium text-gray-700'>
-                            {task.total_price
-                              ? `Rp ${task.total_price.toLocaleString('id-ID')}`
-                              : 'Tidak tersedia'}
-                          </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </div>
                 </div>
@@ -614,7 +706,8 @@ export default function TasksPage() {
                           window.open(`https://wa.me/${phone}`, '_blank');
                         }}
                       >
-                        Hubungi Customer
+                        Hubungi{' '}
+                        {task.taskType === 'drop' ? 'Customer' : 'Pengirim'}
                       </button>
                       <button
                         className='rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50'
