@@ -1,8 +1,4 @@
-export interface AppointmentLocationTransfer {
-  latitude: number;
-  longitude: number;
-}
-
+import { AppointmentLocation } from '@/types';
 export interface WasteTransferItems {
   waste_type_ids: string[];
   offering_weights: number[];
@@ -16,7 +12,7 @@ export interface CreateWasteTransferRequestParams {
   source_phone_number: string;
   destination_phone_number: string;
   image_url: string;
-  appointment_location: AppointmentLocationTransfer;
+  appointment_location: AppointmentLocation;
   appointment_date: string;
   appointment_start_time: string;
   appointment_end_time: string;
@@ -63,7 +59,7 @@ export interface CreateWasteTransferResponse {
   appointment_start_time: string;
   appointment_end_time: string;
   appointment_date: string;
-  appointment_location: AppointmentLocationTransfer;
+  appointment_location: AppointmentLocation;
   created_at: string;
   updated_at: string;
   distance: number;
@@ -83,7 +79,8 @@ export interface AssignCollectorToTransferResponse {
   appointment_date: string;
   appointment_start_time: string;
   appointment_end_time: string;
-  appointment_location: AppointmentLocationTransfer;
+  appointment_location: AppointmentLocation;
+  assigned_collector_id: string;
   created_at: string;
   updated_at: string;
   source_user: string; // Assuming UserResponse is a string ID
@@ -107,7 +104,7 @@ export interface UpdateTransferStatusResponse {
   appointment_date: string;
   appointment_start_time: string;
   appointment_end_time: string;
-  appointment_location: AppointmentLocationTransfer;
+  appointment_location: AppointmentLocation;
   created_at: string;
   updated_at: string;
   distance: number;
@@ -135,6 +132,28 @@ export interface GetWasteTransferRequestsParams {
   longitude?: number;
 }
 
+interface User {
+  address: string;
+  balance: number;
+  city: string;
+  created_at: string;
+  email: string;
+  id: string;
+  institution: string;
+  is_email_verified: boolean;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  phone_number: string;
+  points: number;
+  province: string;
+  role: string;
+  updated_at: string;
+  username: string;
+}
+
+// Updated main interface
 export interface WasteTransferRequest {
   id: string;
   source_user_id: string;
@@ -145,7 +164,7 @@ export interface WasteTransferRequest {
   image_url: string;
   total_weight: number;
   total_price: number;
-  appointment_location: AppointmentLocationTransfer;
+  appointment_location: AppointmentLocation;
   appointment_date: string;
   appointment_start_time: string;
   appointment_end_time: string;
@@ -155,12 +174,13 @@ export interface WasteTransferRequest {
   assigned_collector_id?: string;
   created_at: string;
   updated_at: string;
-  // Add other fields as needed
+  destination_user: User;
+  source_user: User;
+  distance: number; // Jarak dalam kilometer
 }
-
 export interface GetWasteTransferRequestsResponse {
   data: WasteTransferRequest[];
-  pagination: {
+  paging: {
     page: number;
     size: number;
     total: number;

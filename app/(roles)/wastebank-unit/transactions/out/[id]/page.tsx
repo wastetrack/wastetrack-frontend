@@ -12,9 +12,13 @@ import {
   CheckCircle,
   Package,
 } from 'lucide-react';
-import { wasteTypeAPI, wasteCategoryAPI, wasteTransferRequestAPI, wasteTransferItemOfferingsAPI } from '@/services/api/user';
-import { userListAPI } from '@/services/api/user/list';
-import { currentUserAPI } from '@/services/api/user';
+import {
+  currentUserAPI,
+  wasteTypeAPI,
+  wasteCategoryAPI,
+  wasteTransferRequestAPI,
+  wasteTransferItemOfferingsAPI,
+} from '@/services/api/user';
 import { decodeId, generateHashId } from '@/lib/id-utils';
 import type {
   WasteTransferRequest,
@@ -32,68 +36,77 @@ export default function TransactionOutDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { id: encodedId } = params as { id: string };
-  const [transaction, setTransaction] = useState<WasteTransferRequest | null>(null);
+  const [transaction, setTransaction] = useState<WasteTransferRequest | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [, setUserId] = useState<string | null>(null);
   const [wasteItems, setWasteItems] = useState<WasteItemWithDetails[]>([]);
   const [wasteItemsLoading, setWasteItemsLoading] = useState(false);
-  const [wasteTypesMap, setWasteTypesMap] = useState<{ [key: string]: WasteType }>({});
-  const [wasteCategoriesMap, setWasteCategoriesMap] = useState<{ [key: string]: WasteCategory }>({});
-  const [destinationUserName, setDestinationUserName] = useState<string>("-");
+  const [wasteTypesMap, setWasteTypesMap] = useState<{
+    [key: string]: WasteType;
+  }>({});
+  const [wasteCategoriesMap, setWasteCategoriesMap] = useState<{
+    [key: string]: WasteCategory;
+  }>({});
+  const [destinationUserName, setDestinationUserName] = useState<string>('-');
+  // const [destinationPhone, setDestinationPhone] = useState<string>('-');
+  const [destinationLocation, setDestinationLocation] = useState<string>('-');
 
   // Decode ID
   const realId = decodeId(encodedId);
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Get current user id
-        const uid = await currentUserAPI.getUserId();
-        setUserId(uid);
+  const fetchDetail = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Get current user id
+      const uid = await currentUserAPI.getUserId();
+      setUserId(uid);
 
-        // Fetch transaction detail
-        if (!realId) {
-          setError('ID transaksi tidak valid.');
-          setTransaction(null);
-          return;
-        }
-        const response =
-          await wasteTransferRequestAPI.getWasteTransferRequestById(realId);
-        const trx = response.data;
-
-        if (!trx || trx.source_user_id !== uid) {
-          setError(
-            'Transaksi tidak ditemukan atau Anda tidak berhak mengakses.'
-          );
-          setTransaction(null);
-        } else {
-          setTransaction(trx);
-          // Fetch destination user name
-          if (trx.destination_user_id) {
-            try {
-              const userListRes = await userListAPI.getUserList({ size: 1, page: 1 });
-              // Try to find the user by id
-              const foundUser = userListRes.data?.users?.find((u) => u.id === trx.destination_user_id);
-              setDestinationUserName(foundUser?.institution || trx.destination_user_id);
-            } catch {
-              setDestinationUserName(trx.destination_user_id);
-            }
-          }
-          await fetchWasteItems(trx.id);
-        }
-      } catch {
-        setError('Gagal memuat detail transaksi.');
+      // Fetch transaction detail
+      if (!realId) {
+        setError('ID transaksi tidak valid.');
         setTransaction(null);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
-    if (realId) fetchDetail();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realId]);
+      
+      const response = await wasteTransferRequestAPI.getWasteTransferRequestById(realId);
+
+      const institution = response.data.destination_user.institution;
+      // const destinationPhone = response.data.destination_user.phone_number;
+      const destinationLocation = [
+        response.data.source_user.address,
+        response.data.source_user.city,
+        response.data.source_user.province,
+      ]
+        .filter(Boolean)
+        .join(', ');
+
+      if (!response.data || response.data.source_user_id !== uid) {
+        setError('Transaksi tidak ditemukan atau Anda tidak berhak mengakses.');
+        setTransaction(null);
+      } else {
+        setTransaction(response.data);
+        // setDestinationPhone(destinationPhone || '-');
+        setDestinationLocation(destinationLocation || '-');
+        setDestinationUserName(institution || 'Tidak diketahui');
+        await fetchWasteItems(response.data.id);
+      }
+    } catch (error) {
+      console.error('Error fetching transaction detail:', error);
+      setError('Gagal memuat detail transaksi.');
+      setTransaction(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  if (realId) fetchDetail();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [realId]);
 
   const fetchWasteItems = async (transferFormId: string) => {
     setWasteItemsLoading(true);
@@ -135,10 +148,13 @@ export default function TransactionOutDetailPage() {
 
         const wasteTypeResults = await Promise.all(wasteTypePromises);
 
-        const wasteTypesData = wasteTypeResults.reduce((acc, result) => {
-          acc[result.id] = result.data;
-          return acc;
-        }, {} as Record<string, WasteType>);
+        const wasteTypesData = wasteTypeResults.reduce(
+          (acc, result) => {
+            acc[result.id] = result.data;
+            return acc;
+          },
+          {} as Record<string, WasteType>
+        );
 
         setWasteTypesMap(wasteTypesData);
 
@@ -172,10 +188,13 @@ export default function TransactionOutDetailPage() {
 
           const categoryResults = await Promise.all(categoryPromises);
 
-          const categoriesData = categoryResults.reduce((acc, result) => {
-            acc[result.id] = result.data;
-            return acc;
-          }, {} as Record<string, WasteCategory>);
+          const categoriesData = categoryResults.reduce(
+            (acc, result) => {
+              acc[result.id] = result.data;
+              return acc;
+            },
+            {} as Record<string, WasteCategory>
+          );
 
           setWasteCategoriesMap(categoriesData);
         }
@@ -406,16 +425,17 @@ export default function TransactionOutDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <p className='text-sm font-medium text-gray-500'>Nama Tujuan</p>
-                  <p className='text-gray-900'>
-                    {destinationUserName}
+                  <p className='text-sm font-medium text-gray-500'>
+                    Nama Tujuan
                   </p>
+                  <p className='text-gray-900'>{destinationUserName}</p>
                 </div>
                 <div>
                   <p className='text-sm font-medium text-gray-500'>
                     Telp. Tujuan
                   </p>
                   <p className='text-gray-900'>
+                    {/* {destinationPhone} */}
                     {transaction.destination_phone_number || '-'}
                   </p>
                 </div>
@@ -469,8 +489,7 @@ export default function TransactionOutDetailPage() {
                   <div>
                     <p className='text-sm font-medium text-gray-500'>Lokasi</p>
                     <p className='text-gray-900'>
-                      Lat: {transaction.appointment_location.latitude}, Lng:{' '}
-                      {transaction.appointment_location.longitude}
+                      {destinationLocation}
                     </p>
                   </div>
                 )}

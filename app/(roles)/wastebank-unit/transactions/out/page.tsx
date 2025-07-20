@@ -451,9 +451,6 @@ export default function TransactionsOutPage() {
                   Tipe Tujuan
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
-                  ID Tujuan
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
                   Telp. Tujuan
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
@@ -496,12 +493,14 @@ export default function TransactionsOutPage() {
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='text-sm text-gray-900'>
-                          {transaction.destination_user_id.substring(0, 7)}...
-                        </div>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm text-gray-900'>
-                          {transaction.destination_phone_number || '-'}
+                          <a
+                              href={`https://wa.me/${transaction.destination_phone_number?.replace(/^0/, '62')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-emerald-600 hover:underline"
+                            >
+                              {transaction.destination_phone_number}
+                            </a>
                         </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
@@ -528,7 +527,7 @@ export default function TransactionsOutPage() {
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='text-sm text-gray-900'>
-                          {transaction.total_weight || '-'} kg
+                          {transaction.total_weight || 0} kg
                         </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
