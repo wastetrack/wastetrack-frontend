@@ -116,9 +116,6 @@ export const wasteDropRequestAPI = {
       if (params?.longitude) {
         queryParams.append('longitude', params.longitude.toString());
       }
-      if (params?.radius) {
-        queryParams.append('radius', params.radius.toString());
-      }
 
       // Pagination parameters
       if (params?.page) {
@@ -224,7 +221,6 @@ export const wasteDropRequestAPI = {
   async getNearbyPickupRequests(
     latitude: number,
     longitude: number,
-    radius: number = 10, // default 10km
     params?: WasteDropRequestListParams
   ): Promise<WasteDropRequestListResponse> {
     return this.getWasteDropRequests({
@@ -233,7 +229,6 @@ export const wasteDropRequestAPI = {
       status: 'pending',
       latitude,
       longitude,
-      radius,
     });
   },
 };
