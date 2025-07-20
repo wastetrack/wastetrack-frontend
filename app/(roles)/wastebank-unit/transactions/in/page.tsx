@@ -14,6 +14,7 @@ import {
   Building2,
 } from 'lucide-react';
 import {
+  // userListAPI.
   wasteDropRequestAPI,
   currentUserAPI,
   wasteTransferRequestAPI,
@@ -239,7 +240,21 @@ export default function TransactionsInPage() {
       setLoading(true);
       setError(null);
 
+      // Ambil longitude & latitude dari user (bank sampah) yang login saat ini
+      let longitude: number | undefined = undefined;
+      let latitude: number | undefined = undefined;
+      try {
+        const userProfile = await currentUserAPI.getUserProfile();
+        longitude = userProfile?.location?.longitude;
+        latitude = userProfile?.location?.latitude;
+      } catch {
+        setError('Gagal mendapatkan lokasi bank sampah.');
+        return;
+      }
+
       const params = {
+        longitude,
+        latitude,
         page: 1,
         size: 100, // Fetch 100 items at once
         sort_by: 'created_at' as const,
@@ -658,15 +673,6 @@ export default function TransactionsInPage() {
           <div className='flex items-center justify-center space-x-2'>
             <Users className='h-4 w-4' />
             <span>Transaksi Nasabah</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                activeTab === 'customer'
-                  ? 'bg-emerald-100 text-emerald-600'
-                  : 'bg-gray-200 text-gray-600'
-              }`}
-            >
-              {filteredTransactions.length}
-            </span>
           </div>
         </button>
 
@@ -681,15 +687,6 @@ export default function TransactionsInPage() {
           <div className='flex items-center justify-center space-x-2'>
             <Building2 className='h-4 w-4' />
             <span>Bank Sampah/Industri</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                activeTab === 'wastebank'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-200 text-gray-600'
-              }`}
-            >
-              {filteredWasteTransferRequests.length}
-            </span>
           </div>
         </button>
       </div>
@@ -701,10 +698,10 @@ export default function TransactionsInPage() {
             <thead>
               <tr>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
-                  Tipe
+                  {activeTab === 'customer' ? 'Tipe ' : 'Tipe Asal'}
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
-                  {activeTab === 'customer' ? 'Customer ID' : 'Source ID'}
+                  {activeTab === 'customer' ? 'Jarak' : 'Telp. Pengirim'}
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
                   Tanggal Janji
@@ -719,7 +716,7 @@ export default function TransactionsInPage() {
                   Status
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
-                  Kolektor
+                  ID Kolektor
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
                   Aksi
@@ -761,7 +758,10 @@ export default function TransactionsInPage() {
                         </td>
                         <td className='whitespace-nowrap px-6 py-4'>
                           <div className='text-sm text-gray-900'>
-                            {customerTransaction.customer_id.substring(0, 7)}...
+                            {customerTransaction.delivery_type === 'dropoff'
+                              ? '-'
+                              : `${((customerTransaction.distance ?? 0) / 1000).toFixed(2)} km`}
+                            {/* {customerTransaction.customer_id.substring(0, 7)}... */}
                           </div>
                         </td>
                         <td className='whitespace-nowrap px-6 py-4'>
@@ -822,7 +822,6 @@ export default function TransactionsInPage() {
                       </tr>
                     );
                   } else {
-                    // NEW: Waste transfer transaction display
                     const transferTransaction =
                       transaction as WasteTransferRequest;
                     return (
@@ -831,12 +830,30 @@ export default function TransactionsInPage() {
                         className='hover:bg-gray-50'
                       >
                         <td className='whitespace-nowrap px-6 py-4'>
-                          {getFormTypeChip(transferTransaction.form_type)}
+                          {transferTransaction.form_type ===
+                          'waste_bank_request' ? (
+                            <span className='inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800'>
+                              Bank Sampah
+                            </span>
+                          ) : transferTransaction.form_type ===
+                            'industry_request' ? (
+                            <span className='inline-flex rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-800'>
+                              Industri
+                            </span>
+                          ) : (
+                            getFormTypeChip(transferTransaction.form_type)
+                          )}
                         </td>
                         <td className='whitespace-nowrap px-6 py-4'>
                           <div className='text-sm text-gray-900'>
-                            {transferTransaction.source_user_id.substring(0, 7)}
-                            ...
+                            <a
+                              href={`https://wa.me/${transferTransaction.source_phone_number?.replace(/^0/, '62')}`}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='text-emerald-600 hover:underline'
+                            >
+                              {transferTransaction.source_phone_number}
+                            </a>
                           </div>
                         </td>
                         <td className='whitespace-nowrap px-6 py-4'>
