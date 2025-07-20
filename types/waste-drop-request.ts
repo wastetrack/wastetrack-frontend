@@ -3,6 +3,48 @@ export interface AppointmentLocation {
   longitude: number;
 }
 
+interface Customer {
+  address: string;
+  balance: number;
+  city: string;
+  created_at: string;
+  email: string;
+  id: string;
+  is_email_verified: boolean;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  phone_number: string;
+  points: number;
+  province: string;
+  role: string;
+  updated_at: string;
+  username: string;
+}
+
+interface WasteBank {
+  address: string;
+  balance: number;
+  city: string;
+  created_at: string;
+  email: string;
+  id: string;
+  institution: string;
+  is_email_verified: boolean;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  phone_number: string;
+  points: number;
+  province: string;
+  role: string;
+  updated_at: string;
+  username: string;
+  waste_bank_id: string;
+}
+
 export interface WasteDropRequest {
   id: string;
   delivery_type: 'pickup' | 'dropoff';
@@ -17,8 +59,12 @@ export interface WasteDropRequest {
   appointment_start_time: string;
   appointment_end_time: string;
   notes?: string;
+  distance?: number;
   created_at: string;
   updated_at: string;
+
+  customer: Customer;
+  waste_bank: WasteBank;
 }
 
 // Query Parameters untuk GET requests
@@ -41,7 +87,7 @@ export interface WasteDropRequestListParams {
   // Location filtering
   latitude?: number;
   longitude?: number;
-  radius?: number; // dalam kilometer
+  // radius?: number; // dalam kilometer
 
   // Pagination
   page?: number;
