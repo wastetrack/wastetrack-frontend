@@ -58,55 +58,58 @@ export default function TransactionOutDetailPage() {
   const realId = decodeId(encodedId);
 
   useEffect(() => {
-  const fetchDetail = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Get current user id
-      const uid = await currentUserAPI.getUserId();
-      setUserId(uid);
+    const fetchDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Get current user id
+        const uid = await currentUserAPI.getUserId();
+        setUserId(uid);
 
-      // Fetch transaction detail
-      if (!realId) {
-        setError('ID transaksi tidak valid.');
+        // Fetch transaction detail
+        if (!realId) {
+          setError('ID transaksi tidak valid.');
+          setTransaction(null);
+          return;
+        }
+
+        const response =
+          await wasteTransferRequestAPI.getWasteTransferRequestById(realId);
+
+        const institution = response.data.destination_user.institution;
+        // const destinationPhone = response.data.destination_user.phone_number;
+        const destinationLocation = [
+          response.data.source_user.address,
+          response.data.source_user.city,
+          response.data.source_user.province,
+        ]
+          .filter(Boolean)
+          .join(', ');
+
+        if (!response.data || response.data.source_user_id !== uid) {
+          setError(
+            'Transaksi tidak ditemukan atau Anda tidak berhak mengakses.'
+          );
+          setTransaction(null);
+        } else {
+          setTransaction(response.data);
+          // setDestinationPhone(destinationPhone || '-');
+          setDestinationLocation(destinationLocation || '-');
+          setDestinationUserName(institution || 'Tidak diketahui');
+          await fetchWasteItems(response.data.id);
+        }
+      } catch (error) {
+        console.error('Error fetching transaction detail:', error);
+        setError('Gagal memuat detail transaksi.');
         setTransaction(null);
-        return;
+      } finally {
+        setLoading(false);
       }
-      
-      const response = await wasteTransferRequestAPI.getWasteTransferRequestById(realId);
+    };
 
-      const institution = response.data.destination_user.institution;
-      // const destinationPhone = response.data.destination_user.phone_number;
-      const destinationLocation = [
-        response.data.source_user.address,
-        response.data.source_user.city,
-        response.data.source_user.province,
-      ]
-        .filter(Boolean)
-        .join(', ');
-
-      if (!response.data || response.data.source_user_id !== uid) {
-        setError('Transaksi tidak ditemukan atau Anda tidak berhak mengakses.');
-        setTransaction(null);
-      } else {
-        setTransaction(response.data);
-        // setDestinationPhone(destinationPhone || '-');
-        setDestinationLocation(destinationLocation || '-');
-        setDestinationUserName(institution || 'Tidak diketahui');
-        await fetchWasteItems(response.data.id);
-      }
-    } catch (error) {
-      console.error('Error fetching transaction detail:', error);
-      setError('Gagal memuat detail transaksi.');
-      setTransaction(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  if (realId) fetchDetail();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [realId]);
+    if (realId) fetchDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realId]);
 
   const fetchWasteItems = async (transferFormId: string) => {
     setWasteItemsLoading(true);
@@ -344,7 +347,12 @@ export default function TransactionOutDetailPage() {
                   Total Harga
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
-                  Rp {totalPrice.toLocaleString('id-ID')}
+                  Rp{' '}
+                  {(
+                  transaction.status === 'completed'
+                    ? transaction.total_price
+                    : totalPrice
+                  ).toLocaleString('id-ID')}
                 </dd>
               </dl>
             </div>
@@ -451,9 +459,13 @@ export default function TransactionOutDetailPage() {
                   <p className='text-sm font-medium text-gray-500'>
                     Total Harga
                   </p>
-                  <p className='text-lg font-bold text-emerald-600'>
-                    Rp {totalPrice.toLocaleString('id-ID')}
-                  </p>
+                    <p className='text-lg font-bold text-emerald-600'>
+                    Rp{' '}
+                    {(transaction.status === 'completed'
+                      ? transaction.total_price
+                      : totalPrice
+                    ).toLocaleString('id-ID')}
+                    </p>
                 </div>
               </div>
             </div>
@@ -488,9 +500,7 @@ export default function TransactionOutDetailPage() {
                 {transaction.appointment_location && (
                   <div>
                     <p className='text-sm font-medium text-gray-500'>Lokasi</p>
-                    <p className='text-gray-900'>
-                      {destinationLocation}
-                    </p>
+                    <p className='text-gray-900'>{destinationLocation}</p>
                   </div>
                 )}
                 <div>
@@ -605,16 +615,20 @@ export default function TransactionOutDetailPage() {
                             Berat Ditawarkan
                           </p>
                           <p className='text-gray-900'>
-                            {item.offering_weight} kg
+                            {item.offering_weight.toFixed(2)} kg
                           </p>
                         </div>
                         <div>
                           <p className='text-sm font-medium text-gray-500'>
-                            Berat Diterima
+                            Berat Diterima (Tujuan)
                           </p>
                           <p className='text-gray-900'>
-                            {item.accepted_weight > 0
-                              ? `${item.accepted_weight} kg`
+                            {transaction.status === 'completed'
+                              ? item.verified_weight > 0
+                              ? `${item.verified_weight.toFixed(2)} kg`
+                              : 'Belum diverifikasi'
+                              : item.accepted_weight > 0
+                              ? `${item.accepted_weight.toFixed(2)} kg`
                               : 'Belum diterima'}
                           </p>
                         </div>
@@ -640,7 +654,7 @@ export default function TransactionOutDetailPage() {
                         </div>
                         <div>
                           <p className='text-sm font-medium text-gray-500'>
-                            Harga Diterima per Kg
+                            Harga Diterima per Kg (Tujuan)
                           </p>
                           <p className='text-gray-900'>
                             {item.accepted_price_per_kgs > 0
@@ -652,12 +666,14 @@ export default function TransactionOutDetailPage() {
                           <p className='text-sm font-medium text-gray-500'>
                             Subtotal
                           </p>
-                          <p className='font-medium text-emerald-600'>
+                            <p className='font-medium text-emerald-600'>
                             Rp{' '}
                             {(
-                              item.accepted_weight * item.accepted_price_per_kgs
+                              transaction.status === 'completed'
+                              ? item.verified_weight * item.accepted_price_per_kgs
+                              : item.accepted_weight * item.accepted_price_per_kgs
                             ).toLocaleString('id-ID')}
-                          </p>
+                            </p>
                         </div>
                       </div>
                     </div>
@@ -690,13 +706,22 @@ export default function TransactionOutDetailPage() {
                       Total Berat Diterima
                     </p>
                     <p className='text-sm text-emerald-600'>
-                      {totalAcceptedWeight.toFixed(2)} kg
+                      {transaction.status === 'completed'
+                      ? wasteItems
+                        .reduce((total, item) => total + item.verified_weight, 0)
+                        .toFixed(2)
+                      : totalAcceptedWeight.toFixed(2)}{' '}
+                      kg
                     </p>
                   </div>
                   <div className='text-right'>
                     <p className='font-medium text-emerald-800'>Total Nilai</p>
                     <p className='text-lg font-bold text-emerald-700'>
-                      Rp {totalPrice.toLocaleString('id-ID')}
+                      Rp{' '}
+                      {(transaction.status === 'completed'
+                      ? transaction.total_price
+                      : totalPrice
+                      ).toLocaleString('id-ID')}
                     </p>
                   </div>
                 </div>

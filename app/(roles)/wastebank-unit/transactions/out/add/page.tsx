@@ -170,7 +170,6 @@ export default function AddTransactionOutPage() {
         ...prev,
         appointment_date: today,
       }));
-
     } catch {
       setError('Gagal memuat data awal');
     } finally {
@@ -179,14 +178,12 @@ export default function AddTransactionOutPage() {
   };
 
   const fetchAvailableWasteTypes = async () => {
-
     if (!currentUserId || currentUserId.length < 10) {
       setAvailableWasteTypes([]);
       return;
     }
 
     try {
-
       const storagesRes = await storageAPI.getStorages({
         user_id: currentUserId,
       });
@@ -219,7 +216,6 @@ export default function AddTransactionOutPage() {
 
       const wasteItems: WasteItem[] = await Promise.all(
         storageItemsRes.data.map(async (storageItem) => {
-
           // Get waste type name
           let wasteTypeName = '';
           try {
@@ -1025,34 +1021,37 @@ export default function AddTransactionOutPage() {
                     </div>
 
                     <div>
-                        <label className='block text-sm font-medium text-gray-700'>
+                      <label className='block text-sm font-medium text-gray-700'>
                         Berat (kg)
-                        </label>
-                        <input
+                      </label>
+                      <input
                         type='number'
                         min='0.1'
                         max={item.max_available_weight || 999}
-                        step='0.1'
+                        step='0.001'
                         value={
                           typeof item.offering_weight === 'number'
-                          ? String(item.offering_weight).replace(/^0+(\d)/, '$1')
-                          : item.offering_weight
+                            ? String(item.offering_weight).replace(
+                                /^0+(\d)/,
+                                '$1'
+                              )
+                            : item.offering_weight
                         }
                         onChange={(e) => {
                           // Remove leading zeros except for "0." (decimal)
                           let val = e.target.value;
                           if (/^0+\d/.test(val) && !/^0\./.test(val)) {
-                          val = val.replace(/^0+/, '');
+                            val = val.replace(/^0+/, '');
                           }
                           updateWasteItem(
-                          index,
-                          'offering_weight',
-                          parseFloat(val) || 0
+                            index,
+                            'offering_weight',
+                            parseFloat(val) || 0
                           );
                         }}
                         className='mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500'
                         required
-                        />
+                      />
                       <p className='mt-1 text-xs text-gray-500'>
                         Maksimal: {item.max_available_weight || 0} kg (tersedia
                         di storage)

@@ -11,10 +11,7 @@ import {
   TrendingUp,
   Eye,
 } from 'lucide-react';
-import {
-  wasteTransferRequestAPI,
-  currentUserAPI,
-} from '@/services/api/user';
+import { wasteTransferRequestAPI, currentUserAPI } from '@/services/api/user';
 import { encodeId } from '@/lib/id-utils';
 import type {
   WasteTransferRequest,
@@ -136,6 +133,8 @@ export default function TransactionsOutPage() {
       const response: GetWasteTransferRequestsResponse =
         await wasteTransferRequestAPI.getWasteTransferRequests(params);
       setAllTransactions(response.data);
+
+      console.log('Fetched transactions:', response.data);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to fetch transactions'
@@ -494,13 +493,13 @@ export default function TransactionsOutPage() {
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='text-sm text-gray-900'>
                           <a
-                              href={`https://wa.me/${transaction.destination_phone_number?.replace(/^0/, '62')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-emerald-600 hover:underline"
-                            >
-                              {transaction.destination_phone_number}
-                            </a>
+                            href={`https://wa.me/${transaction.destination_phone_number?.replace(/^0/, '62')}`}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-emerald-600 hover:underline'
+                          >
+                            {transaction.destination_phone_number}
+                          </a>
                         </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
@@ -527,12 +526,17 @@ export default function TransactionsOutPage() {
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='text-sm text-gray-900'>
-                          {transaction.total_weight || 0} kg
+                          {transaction.total_weight !== undefined
+                            ? Number.isInteger(transaction.total_weight)
+                              ? `${transaction.total_weight} kg`
+                              : `${transaction.total_weight.toFixed(2)} kg`
+                            : '0 kg'}
                         </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='text-sm font-bold text-emerald-600'>
                           Rp {transaction.total_price?.toLocaleString('id-ID')}
+                          {/* Rp {transaction.acce} */}
                         </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
