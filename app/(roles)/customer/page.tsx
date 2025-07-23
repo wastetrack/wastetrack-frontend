@@ -36,13 +36,13 @@ export default function CustomerDashboard() {
   // Function to map WasteDropRequest status to Pickup status
   const mapStatusToPickupStatus = (
     status: WasteDropRequest['status']
-  ): 'pending' | 'in_progress' | 'completed' | 'cancelled' => {
+  ): 'pending' | 'collecting' | 'completed' | 'cancelled' => {
     switch (status) {
       case 'pending':
         return 'pending';
       case 'assigned':
       case 'collecting':
-        return 'in_progress';
+        return 'collecting';
       case 'completed':
         return 'completed';
       case 'cancelled':
@@ -79,7 +79,7 @@ export default function CustomerDashboard() {
   // Calculate pickup stats from waste drop requests
   const calculatePickupStats = (requests: WasteDropRequest[]) => {
     const pending = requests.filter((r) => r.status === 'pending').length;
-    const in_progress = requests.filter(
+    const collecting = requests.filter(
       (r) => r.status === 'assigned' || r.status === 'collecting'
     ).length;
     const completed = requests.filter((r) => r.status === 'completed').length;
@@ -89,7 +89,7 @@ export default function CustomerDashboard() {
       pending,
       completed,
       cancelled,
-      in_progress,
+      collecting,
     };
   };
 
