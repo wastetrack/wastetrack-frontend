@@ -2,16 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocation, type LocationType } from '@/lib/mapbox-utils';
-
-function LocationAddress({ location }: { location: LocationType }) {
-  const { formattedLocation, isLoading } = useLocation(location);
-  return (
-    <p className='font-medium text-gray-900'>
-      {isLoading ? 'Memuat alamat...' : formattedLocation}
-    </p>
-  );
-}
-
 import { useRouter, useParams } from 'next/navigation';
 import {
   Loader2,
@@ -47,6 +37,7 @@ import {
   WasteCategory,
   WastePrice,
 } from '@/types';
+import { showToast } from '@/components/ui';
 
 // Interface untuk waste item dengan detail lengkap (Drop Request)
 interface WasteItemWithDetails extends WasteDropRequestItem {
@@ -64,6 +55,15 @@ interface TransferItemWithDetails extends WasteTransferItemOffering {
 
 // Union type untuk transaction
 type Transaction = WasteDropRequest | WasteTransferRequest;
+
+function LocationAddress({ location }: { location: LocationType }) {
+  const { formattedLocation, isLoading } = useLocation(location);
+  return (
+    <p className='font-medium text-gray-900'>
+      {isLoading ? 'Memuat alamat...' : formattedLocation}
+    </p>
+  );
+}
 
 export default function TasksDetailPage() {
   const router = useRouter();
@@ -410,10 +410,12 @@ export default function TasksDetailPage() {
       setIsEditing(false);
 
       // Show success message
-      alert('Berat berhasil diperbarui dan transaksi telah diselesaikan!');
+      showToast.success(
+        'Berat berhasil diperbarui dan transaksi telah diselesaikan!'
+      );
     } catch (error) {
       console.error('Error submitting weights:', error);
-      alert('Gagal memperbarui berat. Silakan coba lagi.');
+      showToast.error('Gagal memperbarui berat. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
     }
@@ -904,7 +906,7 @@ export default function TasksDetailPage() {
                                         e.target.value
                                       )
                                     }
-                                    className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500'
+                                    className='mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500'
                                     placeholder='0.00'
                                   />
                                   <p className='mt-1 text-xs text-gray-500'>

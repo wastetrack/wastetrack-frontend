@@ -430,7 +430,7 @@ export default function TasksPage() {
       </div>
 
       {/* Search and Filter */}
-      <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
+      <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
         <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
           <div className='flex flex-1 items-center space-x-4'>
             <div className='relative max-w-md flex-1'>
