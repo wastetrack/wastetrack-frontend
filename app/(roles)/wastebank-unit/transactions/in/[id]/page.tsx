@@ -111,6 +111,10 @@ export default function TransactionInDetailPage() {
   const [appointmentAddress, setAppointmentAddress] = useState<string>('');
   const [addressLoading, setAddressLoading] = useState(false);
 
+  const handleItemsUpdate = (updatedItems: TransferItemWithDetails[]): void => {
+    setTransferItems(updatedItems);
+  };
+
   // Decode ID
   const realId = decodeId(encodedId);
 
@@ -558,8 +562,38 @@ export default function TransactionInDetailPage() {
     setUpdateSuccess(null);
 
     try {
+      // Jika status yang dipilih adalah 'cancelled', lewati validasi accepted_weight dan accepted_price_per_kgs
+      if (selectedStatus !== 'cancelled') {
+        // VALIDASI UNIVERSAL - selalu cek sebelum ada perubahan apapun
+        const invalidItems = transferItems.filter(
+          (item) =>
+            item.accepted_weight <= 0 || item.accepted_price_per_kgs <= 0
+        );
+
+        if (invalidItems.length > 0) {
+          const errorMessage =
+            'Berat dan harga per kg tidak boleh kosong atau 0';
+          setUpdateError(errorMessage);
+          showToast.error(errorMessage);
+          setUpdateLoading(false); // Reset loading state
+          return; // Stop execution jika ada item yang tidak valid
+        }
+      }
+
       // Update status untuk transfer request
       if (selectedStatus !== transferTransaction.status) {
+        // Tidak boleh update langsung dari 'pending' ke 'collecting'
+        if (
+          transferTransaction.status === 'pending' &&
+          selectedStatus === 'collecting'
+        ) {
+          const errorMessage =
+            'Status tidak dapat langsung diubah dari Pending ke Pengambilan. Silakan assign collector terlebih dahulu.';
+          setUpdateError(errorMessage);
+          showToast.error(errorMessage);
+          setUpdateLoading(false);
+          return;
+        }
         if (
           ['pending', 'assigned', 'collecting', 'cancelled'].includes(
             selectedStatus
@@ -572,6 +606,19 @@ export default function TransactionInDetailPage() {
             }
           );
         }
+      }
+
+      // Tidak boleh update status ke 'pending' jika status saat ini 'assigned'
+      if (
+        transferTransaction.status === 'assigned' &&
+        selectedStatus === 'pending'
+      ) {
+        const errorMessage =
+          'Status tidak dapat diubah kembali ke Pending setelah sudah Ditugaskan.';
+        setUpdateError(errorMessage);
+        showToast.error(errorMessage);
+        setUpdateLoading(false);
+        return;
       }
 
       // Assign collector if changed untuk transfer request
@@ -619,6 +666,71 @@ export default function TransactionInDetailPage() {
         error instanceof Error ? error.message : 'Gagal memperbarui transaksi';
       setUpdateError(errorMessage);
       showToast.error(errorMessage || 'Gagal memperbarui transaksi');
+      setTimeout(() => {
+        setUpdateError(null);
+      }, 5000);
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const handleCompleteTransferStatus = async () => {
+    if (!transaction || !realId || transactionType !== 'transfer') return;
+
+    const transferTransaction = transaction as WasteTransferRequest;
+    const allowedStatuses = ['assigned', 'collecting'];
+    if (!allowedStatuses.includes(transferTransaction.status)) {
+      setUpdateError(
+        `Transaksi harus dalam status "assigned" atau "collecting" untuk dapat diselesaikan. Status saat ini: ${transferTransaction.status}`
+      );
+      showToast.error(
+        `Status tidak valid untuk menyelesaikan transaksi: ${transferTransaction.status}`
+      );
+      return;
+    }
+
+    setUpdateLoading(true);
+    setUpdateError(null);
+    setUpdateSuccess(null);
+
+    try {
+      // Prepare items data from transferItems
+      const wasteTypeIds = transferItems.map((item) => item.waste_type_id);
+      const weights = transferItems.map((item) => item.accepted_weight);
+
+      const completeParams = {
+        items: {
+          waste_type_ids: wasteTypeIds,
+          weights: weights,
+        },
+      };
+
+      // Update status to completed with the required body
+      await wasteBankTransferRequestAPI.completeWasteTransferRequest(
+        realId,
+        completeParams
+      );
+
+      // Update local transaction state
+      setTransaction((prev) =>
+        prev && transactionType === 'transfer'
+          ? { ...prev, status: 'completed' }
+          : prev
+      );
+
+      setUpdateSuccess('Transaksi berhasil diselesaikan!');
+      showToast.success('Transaksi berhasil diselesaikan.');
+      setTimeout(() => {
+        setUpdateSuccess(null);
+        router.push('/wastebank-unit/transactions/in');
+      }, 1000);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Gagal menyelesaikan transaksi';
+      setUpdateError(errorMessage);
+      showToast.error(errorMessage || 'Gagal menyelesaikan transaksi');
       setTimeout(() => {
         setUpdateError(null);
       }, 5000);
@@ -686,11 +798,23 @@ export default function TransactionInDetailPage() {
       );
       return { totalPrice, totalWeight };
     } else if (transactionType === 'transfer') {
-      const totalPrice = transferItems.reduce((total, item) => {
-        return total + item.accepted_weight * item.accepted_price_per_kgs;
-      }, 0);
+      // Jika status sudah completed, gunakan total_price dari transaksi
+      let totalPrice = 0;
+      if (transaction && transaction.status === 'completed') {
+        totalPrice = (transaction as WasteTransferRequest).total_price || 0;
+      } else {
+        totalPrice = transferItems.reduce(
+          (total, item) =>
+            total +
+            (item.accepted_weight || 0) * (item.accepted_price_per_kgs || 0),
+          0
+        );
+      }
       const totalWeight = transferItems.reduce(
-        (total, item) => total + item.accepted_weight,
+        (total, item) =>
+          transaction && transaction.status === 'completed'
+            ? total + item.verified_weight
+            : total + item.accepted_weight,
         0
       );
       return { totalPrice, totalWeight };
@@ -798,6 +922,7 @@ export default function TransactionInDetailPage() {
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
                   Rp {totalPrice.toLocaleString('id-ID')}
+                  {/* Rp {transaction.total_price.toLocaleString('id-ID')} */}
                 </dd>
               </dl>
             </div>
@@ -921,6 +1046,7 @@ export default function TransactionInDetailPage() {
                   </p>
                   <p className='text-lg font-bold text-emerald-600'>
                     Rp {totalPrice.toLocaleString('id-ID')}
+                    {/* Rp {transaction.total_price.toLocaleString('id-ID')} */}
                   </p>
                 </div>
               </div>
@@ -963,7 +1089,13 @@ export default function TransactionInDetailPage() {
                           : appointmentAddress ||
                             `Lat: ${transaction.appointment_location.latitude}, Lng: ${transaction.appointment_location.longitude}`
                         : (transaction as WasteTransferRequest).source_user
-                            ?.address || '-'}
+                            ?.address +
+                            ', ' +
+                            (transaction as WasteTransferRequest).source_user
+                              ?.city +
+                            ', ' +
+                            (transaction as WasteTransferRequest).source_user
+                              ?.province || '-'}
                     </p>
                   </div>
                 )}
@@ -1174,21 +1306,84 @@ export default function TransactionInDetailPage() {
                         <div className='space-y-2'>
                           <div>
                             <p className='text-sm font-medium text-gray-500'>
-                              Berat Ditawarkan
+                              Berat Ditawarkan (Asal)
                             </p>
                             <p className='text-gray-900'>
-                              {item.offering_weight} kg
+                              {item.offering_weight.toFixed(2)} kg
                             </p>
                           </div>
                           <div>
                             <p className='text-sm font-medium text-gray-500'>
                               Berat Diterima
                             </p>
-                            <p className='text-gray-900'>
-                              {item.accepted_weight > 0
-                                ? `${item.accepted_weight} kg`
-                                : 'Belum diterima'}
-                            </p>
+                            {transaction.status === 'completed' ? (
+                              <p className='text-gray-900'>
+                                {item.verified_weight.toFixed(2)} kg{' '}
+                              </p>
+                            ) : (
+                              <input
+                                type='number'
+                                min='0.1'
+                                max={item.offering_weight}
+                                step='0.001'
+                                value={
+                                  typeof item.accepted_weight === 'number'
+                                    ? String(item.accepted_weight).replace(
+                                        /^0+(\d)/,
+                                        '$1'
+                                      )
+                                    : item.accepted_weight
+                                }
+                                onChange={(e) => {
+                                  let val = e.target.value;
+
+                                  // Hilangkan nol di depan kecuali 0. (desimal)
+                                  if (/^0+\d/.test(val) && !/^0\./.test(val)) {
+                                    val = val.replace(/^0+/, '');
+                                  }
+
+                                  let numValue = parseFloat(val) || 0;
+
+                                  // Cek dan batasi ke maksimum
+                                  const maxVal = parseFloat(
+                                    String(item.offering_weight)
+                                  );
+                                  if (numValue > maxVal) {
+                                    numValue = maxVal;
+                                    val = String(maxVal); // tampilkan langsung di input
+                                  }
+
+                                  const updatedItems = [...transferItems];
+                                  updatedItems[index] = {
+                                    ...item,
+                                    accepted_weight: numValue,
+                                  };
+                                  setTransferItems(updatedItems);
+                                  handleItemsUpdate(updatedItems);
+                                }}
+                                className={`mt-1 block w-full rounded-md border px-3 py-2 focus:outline-none ${
+                                  updateLoading ||
+                                  [
+                                    'assigned',
+                                    'cancelled',
+                                    'completed',
+                                  ].includes(transaction.status)
+                                    ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-500'
+                                    : 'border-gray-200 focus:border-emerald-500 focus:ring-emerald-500'
+                                }`}
+                                disabled={
+                                  updateLoading ||
+                                  [
+                                    'assigned',
+                                    'cancelled',
+                                    'completed',
+                                  ].includes(transaction.status)
+                                }
+                              />
+                            )}
+                            {transaction.status === 'completed' ? null : (
+                              <span className='text-xs text-gray-600'>kg</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1201,7 +1396,7 @@ export default function TransactionInDetailPage() {
                         <div className='space-y-2'>
                           <div>
                             <p className='text-sm font-medium text-gray-500'>
-                              Harga Ditawarkan per Kg
+                              Harga Ditawarkan per Kg (Asal)
                             </p>
                             <p className='text-gray-900'>
                               Rp{' '}
@@ -1214,11 +1409,79 @@ export default function TransactionInDetailPage() {
                             <p className='text-sm font-medium text-gray-500'>
                               Harga Diterima per Kg
                             </p>
-                            <p className='text-gray-900'>
-                              {item.accepted_price_per_kgs > 0
-                                ? `Rp ${item.accepted_price_per_kgs.toLocaleString('id-ID')}`
-                                : 'Belum ditentukan'}
-                            </p>
+                            {transaction.status === 'completed' ? (
+                              <p className='text-gray-900'>
+                                Rp{' '}
+                                {item.accepted_price_per_kgs.toLocaleString(
+                                  'id-ID'
+                                )}
+                              </p>
+                            ) : (
+                              <input
+                                type='number'
+                                min='0'
+                                step='0.01'
+                                max={item.offering_price_per_kgs}
+                                value={
+                                  typeof item.accepted_price_per_kgs ===
+                                  'number'
+                                    ? String(
+                                        item.accepted_price_per_kgs
+                                      ).replace(/^0+(\d)/, '$1')
+                                    : item.accepted_price_per_kgs
+                                }
+                                onChange={(e) => {
+                                  let val = e.target.value;
+
+                                  // Hapus nol di depan kecuali 0.xxx
+                                  if (/^0+\d/.test(val) && !/^0\./.test(val)) {
+                                    val = val.replace(/^0+/, '');
+                                  }
+
+                                  let numValue = parseFloat(val) || 0;
+
+                                  // Batas maksimum
+                                  const maxVal = item.offering_price_per_kgs;
+                                  if (numValue > maxVal) {
+                                    numValue = maxVal;
+                                    val = String(maxVal); // agar input langsung reflect
+                                  }
+
+                                  const updatedItems = [...transferItems];
+                                  updatedItems[index] = {
+                                    ...item,
+                                    accepted_price_per_kgs: numValue,
+                                  };
+                                  setTransferItems(updatedItems);
+                                  handleItemsUpdate(updatedItems);
+                                }}
+                                className={`mt-1 block w-full rounded-md border px-3 py-2 focus:outline-none ${
+                                  updateLoading ||
+                                  [
+                                    'assigned',
+                                    'collecting',
+                                    'cancelled',
+                                    'completed',
+                                  ].includes(transaction.status)
+                                    ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-500'
+                                    : 'border-gray-200 focus:border-emerald-500 focus:ring-emerald-500'
+                                }`}
+                                disabled={
+                                  updateLoading ||
+                                  [
+                                    'assigned',
+                                    'collecting',
+                                    'cancelled',
+                                    'completed',
+                                  ].includes(transaction.status)
+                                }
+                              />
+                            )}
+                            {transaction.status === 'completed' ? null : (
+                              <span className='text-xs text-gray-600'>
+                                Rp/kg
+                              </span>
+                            )}
                           </div>
                           <div>
                             <p className='text-sm font-medium text-gray-500'>
@@ -1226,10 +1489,15 @@ export default function TransactionInDetailPage() {
                             </p>
                             <p className='font-medium text-emerald-600'>
                               Rp{' '}
-                              {(
-                                item.accepted_weight *
-                                item.accepted_price_per_kgs
-                              ).toLocaleString('id-ID')}
+                              {transaction.status === 'completed'
+                                ? (
+                                    item.verified_weight *
+                                      item.accepted_price_per_kgs || 0
+                                  ).toLocaleString('id-ID')
+                                : (
+                                    item.accepted_weight *
+                                    item.accepted_price_per_kgs
+                                  ).toLocaleString('id-ID')}
                             </p>
                           </div>
                         </div>
@@ -1271,6 +1539,7 @@ export default function TransactionInDetailPage() {
                     <p className='font-medium text-emerald-800'>Total Nilai</p>
                     <p className='text-lg font-bold text-emerald-700'>
                       Rp {totalPrice.toLocaleString('id-ID')}
+                      {/* Rp {transaction.total_price.toLocaleString('id-ID')} */}
                     </p>
                   </div>
                 </div>
@@ -1328,7 +1597,20 @@ export default function TransactionInDetailPage() {
                             | 'cancelled'
                         )
                       }
-                      className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                      className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+                        transaction.status === 'cancelled' ||
+                        transaction.status === 'completed' ||
+                        transaction.status === 'pending' ||
+                        updateLoading
+                          ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-500'
+                          : 'border-gray-200 focus:border-emerald-500 focus:ring-emerald-500'
+                      }`}
+                      disabled={
+                        transaction.status === 'cancelled' ||
+                        transaction.status === 'completed' ||
+                        transaction.status === 'pending' ||
+                        updateLoading
+                      }
                     >
                       {isDropRequest && (
                         <>
@@ -1340,6 +1622,7 @@ export default function TransactionInDetailPage() {
                       )}
                       {isTransferRequest && (
                         <>
+                          <option value='pending'>Pending</option>
                           <option value='collecting'>Pengambilan</option>
                           <option value='cancelled'>Dibatalkan</option>
                         </>
@@ -1401,7 +1684,24 @@ export default function TransactionInDetailPage() {
                         id='collector-select'
                         value={selectedCollector}
                         onChange={(e) => setSelectedCollector(e.target.value)}
-                        className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                        className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+                          [
+                            'cancelled',
+                            'assigned',
+                            'collecting',
+                            'completed',
+                          ].includes(transaction.status) || updateLoading
+                            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-500'
+                            : 'border-gray-300 focus:border-emerald-500 focus:ring-emerald-500'
+                        }`}
+                        disabled={
+                          [
+                            'cancelled',
+                            'assigned',
+                            'collecting',
+                            'completed',
+                          ].includes(transaction.status) || updateLoading
+                        }
                       >
                         <option value=''>Pilih Collector</option>
                         {collectorsWithUser.map((collectorMgmt) => (
@@ -1423,14 +1723,24 @@ export default function TransactionInDetailPage() {
               <div className='mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3'>
                 <div className='flex items-start space-x-2'>
                   <div className='text-sm'>
-                    <p className='mt-1 text-blue-700'>
-                      Pastikan status transaksi masih{' '}
-                      <span className='font-semibold'>Pending</span> sebelum
-                      melakukan assign collector. Jika status sudah{' '}
-                      <span className='font-semibold'>Pengambilan</span> atau{' '}
-                      <span className='font-semibold'>Dibatalkan</span>,
-                      collector tidak dapat ditugaskan.
-                    </p>
+                    <ul className='list-disc space-y-1 pl-5 text-blue-700'>
+                      <li>
+                        Pastikan{' '}
+                        <span className='font-semibold'>Harga Diterima</span>{' '}
+                        dan{' '}
+                        <span className='font-semibold'>Berat Diterima</span>{' '}
+                        tidak 0 pada setiap item sebelum menyimpan perubahan
+                        atau menyelesaikan transaksi.
+                      </li>
+                      <li>
+                        Pastikan status transaksi masih{' '}
+                        <span className='font-semibold'>Pending</span> sebelum
+                        melakukan assign collector. Jika status sudah{' '}
+                        <span className='font-semibold'>Pengambilan</span> atau{' '}
+                        <span className='font-semibold'>Dibatalkan</span>,
+                        collector tidak dapat ditugaskan.
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -1467,6 +1777,73 @@ export default function TransactionInDetailPage() {
           </div>
         </div>
       )}
+
+      {isTransferRequest &&
+        transaction &&
+        ['collecting'].includes(transaction.status) && (
+          <div className='shadow-xs overflow-hidden rounded-lg border border-gray-200 bg-white'>
+            <div className='p-6'>
+              <div className='space-y-4'>
+                <div className='rounded-lg border border-blue-200 bg-blue-50 p-3'>
+                  <div className='flex items-start space-x-2'>
+                    <div className='text-sm'>
+                      <ul className='list-disc space-y-1 pl-5 text-blue-700'>
+                        <li>
+                          Apabila semua transaksi sudah selesai dan sesuai, dari
+                          mulai pengantaran dan persetujuan kedua belah pihak,
+                          silakan konfirmasi melalui tombol di bawah ini.
+                        </li>
+                        <li>
+                          <strong>
+                            Sebelum menekan tombol ini, Anda masih bisa merubah
+                            berat yang diterima berdasarkan kondisi riilnya.
+                          </strong>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {(() => {
+                  const hasInvalidItem = transferItems.some(
+                    (item) =>
+                      item.accepted_weight <= 0 ||
+                      item.accepted_price_per_kgs <= 0
+                  );
+
+                  return (
+                    <button
+                      onClick={() => {
+                        if (hasInvalidItem) {
+                          showToast.error(
+                            'Semua item harus memiliki berat dan harga per kg yang valid (lebih dari 0)'
+                          );
+                          return;
+                        }
+
+                        handleCompleteTransferStatus();
+                      }}
+                      disabled={updateLoading || hasInvalidItem}
+                      className='flex w-full items-center justify-center space-x-2 rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                    >
+                      {updateLoading ? (
+                        <>
+                          <Loader2 className='h-5 w-5 animate-spin text-white' />
+                          <span>Menyelesaikan...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className='h-5 w-5 text-white' />
+                          <span>Transaksi Selesai</span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
