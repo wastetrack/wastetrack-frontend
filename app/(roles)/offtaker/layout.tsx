@@ -1,32 +1,59 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar, BottomFooter, PageLayout } from '@/layouts';
+import { industryProfileAPI, IndustryProfile } from '@/services/api/offtaker';
+import { getTokenManager } from '@/lib/token-manager';
 
-interface WasteBankCentralLayoutProps {
+interface OfftakerLayoutProps {
   children: React.ReactNode;
 }
 
-// Mock user data - replace with actual auth data
-const mockUserData = {
-  email: 'wastebank-central@example.com',
-  profile: {
-    institution: 'Bank Sampah Pusat Surabaya',
-    institutionName: 'Bank Sampah Pusat Surabaya',
-  },
-};
+export default function OfftakerLayout({ children }: OfftakerLayoutProps) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [profile, setProfile] = useState<IndustryProfile | null>(null);
 
-export default function WasteBankCentralLayout({
-  children,
-}: WasteBankCentralLayoutProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const tokenManager = getTokenManager();
+        const userData = tokenManager.getCurrentUser();
+        if (!userData?.id) {
+          console.error('User ID not found');
+          return;
+        }
+        const response = await industryProfileAPI.getProfile(userData.id);
+        setProfile(response.data);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  // Create user data object for sidebar
+  const userData = profile?.user
+    ? {
+        email: profile.user.email || 'Email tidak tersedia',
+        profile: {
+          institution: profile.user.institution || 'Tidak tersedia',
+          institutionName: profile.user.institution || 'Tidak tersedia',
+        },
+      }
+    : {
+        email: 'Loading...',
+        profile: {
+          institution: 'Loading...',
+          institutionName: 'Loading...',
+        },
+      };
 
   return (
     <PageLayout>
       <div className='flex min-h-screen flex-col bg-gray-50'>
         <Sidebar
           role='industry'
-          userData={mockUserData}
+          userData={userData}
           isCollapsed={sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
         />
