@@ -11,16 +11,16 @@ import {
   Users,
   Loader2,
   LayoutDashboard,
-  Wallet,
+  // Wallet,
   CircleDollarSign,
   CreditCard,
   Warehouse,
-  FileText,
-  Truck,
+  // FileText,
+  // Truck,
   ShoppingCart,
-  Package,
+  // Package,
   ClipboardCheck,
-  Route,
+  // Route,
   ArrowUpCircle,
   ArrowDownCircle,
 } from 'lucide-react';
@@ -89,21 +89,21 @@ const Sidebar: React.FC<SidebarProps> = ({
           path: '/wastebank-unit/warehouses',
           icon: <Warehouse size={20} />,
         },
-        {
-          label: 'Gaji',
-          path: '/wastebank-unit/salaries',
-          icon: <Wallet size={20} />,
-        },
-        {
-          label: 'Permintaan Induk',
-          path: '/wastebank-unit/requests',
-          icon: <Truck size={20} />,
-        },
-        {
-          label: 'Laporan Unit',
-          path: '/wastebank-unit/reports',
-          icon: <FileText size={20} />,
-        },
+        // {
+        //   label: 'Gaji',
+        //   path: '/wastebank-unit/salaries',
+        //   icon: <Wallet size={20} />,
+        // },
+        // {
+        //   label: 'Permintaan Induk',
+        //   path: '/wastebank-unit/requests',
+        //   icon: <Truck size={20} />,
+        // },
+        // {
+        //   label: 'Laporan Unit',
+        //   path: '/wastebank-unit/reports',
+        //   icon: <FileText size={20} />,
+        // },
       ],
       waste_collector_unit: [
         {
@@ -117,16 +117,16 @@ const Sidebar: React.FC<SidebarProps> = ({
           path: '/collector-unit/tasks',
           icon: <ClipboardCheck size={20} />,
         },
-        {
-          label: 'Koleksi Harian',
-          path: '/collector-unit/collections',
-          icon: <Package size={20} />,
-        },
-        {
-          label: 'Rute Unit',
-          path: '/collector-unit/trips',
-          icon: <Route size={20} />,
-        },
+        // {
+        //   label: 'Koleksi Harian',
+        //   path: '/collector-unit/collections',
+        //   icon: <Package size={20} />,
+        // },
+        // {
+        //   label: 'Rute Unit',
+        //   path: '/collector-unit/trips',
+        //   icon: <Route size={20} />,
+        // },
       ],
       waste_bank_central: [
         {
@@ -166,21 +166,21 @@ const Sidebar: React.FC<SidebarProps> = ({
           path: '/wastebank-central/warehouses',
           icon: <Warehouse size={20} />,
         },
-        {
-          label: 'Gaji',
-          path: '/wastebank-central/salaries',
-          icon: <Wallet size={20} />,
-        },
-        {
-          label: 'Permintaan Offtaker',
-          path: '/wastebank-central/requests',
-          icon: <Truck size={20} />,
-        },
-        {
-          label: 'Laporan Unit',
-          path: '/wastebank-central/reports',
-          icon: <FileText size={20} />,
-        },
+        // {
+        //   label: 'Gaji',
+        //   path: '/wastebank-central/salaries',
+        //   icon: <Wallet size={20} />,
+        // },
+        // {
+        //   label: 'Permintaan Offtaker',
+        //   path: '/wastebank-central/requests',
+        //   icon: <Truck size={20} />,
+        // },
+        // {
+        //   label: 'Laporan Unit',
+        //   path: '/wastebank-central/reports',
+        //   icon: <FileText size={20} />,
+        // },
       ],
       waste_collector_central: [
         {
@@ -194,16 +194,16 @@ const Sidebar: React.FC<SidebarProps> = ({
           path: '/collector-central/tasks',
           icon: <ClipboardCheck size={20} />,
         },
-        {
-          label: 'Koleksi Harian',
-          path: '/collector-central/collections',
-          icon: <Package size={20} />,
-        },
-        {
-          label: 'Rute Unit',
-          path: '/collector-central/trips',
-          icon: <Route size={20} />,
-        },
+        // {
+        //   label: 'Koleksi Harian',
+        //   path: '/collector-central/collections',
+        //   icon: <Package size={20} />,
+        // },
+        // {
+        //   label: 'Rute Unit',
+        //   path: '/collector-central/trips',
+        //   icon: <Route size={20} />,
+        // },
       ],
       industry: [
         {
@@ -217,16 +217,16 @@ const Sidebar: React.FC<SidebarProps> = ({
           path: '/offtaker/transactions',
           icon: <ShoppingCart size={20} />,
         },
-        {
-          label: 'Pembayaran',
-          path: '/offtaker/payments',
-          icon: <CreditCard size={20} />,
-        },
-        {
-          label: 'Laporan',
-          path: '/offtaker/reports',
-          icon: <FileText size={20} />,
-        },
+        // {
+        //   label: 'Pembayaran',
+        //   path: '/offtaker/payments',
+        //   icon: <CreditCard size={20} />,
+        // },
+        // {
+        //   label: 'Laporan',
+        //   path: '/offtaker/reports',
+        //   icon: <FileText size={20} />,
+        // },
       ],
     };
     return menuConfigs[role] || [];

@@ -92,7 +92,7 @@ export interface WasteDropRequestSimpleResponse {
   assigned_collector_id?: string;
   total_price: number;
   image_url?: string;
-  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'assigned' | 'collecting' | 'completed' | 'cancelled';
   appointment_location?: LocationResponse;
   appointment_date?: string;
   appointment_start_time?: string;

@@ -27,12 +27,12 @@ export interface AssignCollectorItem {
 }
 
 export interface AssignCollectorParams {
-  assigned_collector_id: string;
+  assigned_collector_id: string | null; // null if no collector is assigned
   items: AssignCollectorItem[];
 }
 
 export interface WasteTransferStatusUpdateParams {
-  status: 'collecting' | 'cancelled';
+  status: 'collecting' | 'cancelled' | 'completed';
 }
 
 export interface CompleteTransferItems {

@@ -6,7 +6,7 @@ import {
   wasteBankProfileAPI,
   WasteBankProfile,
   UpdateWasteBankProfileRequest,
-} from '@/services/api/wastebank/profile';
+} from '@/services/api/wastebank';
 import { getTokenManager } from '@/lib/token-manager';
 import { showToast } from '@/components/ui/Toast';
 

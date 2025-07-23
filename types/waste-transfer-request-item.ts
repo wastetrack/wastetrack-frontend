@@ -9,6 +9,7 @@ export interface WasteTransferItemOffering {
   offering_price_per_kgs: number;
   accepted_weight: number;
   accepted_price_per_kgs: number;
+  verified_weight: number;
 }
 
 export interface WasteTransferItemOfferingsListParams {

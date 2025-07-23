@@ -32,7 +32,7 @@ export interface Stats {
 export type PickupStatus =
   | 'pending'
   | 'completed'
-  | 'in_progress'
+  | 'collecting'
   | 'assigned'
   | 'cancelled';
 
@@ -51,14 +51,14 @@ export const PICKUP_STATUS_TEXT: Record<PickupStatus, string> = {
   pending: 'Menunggu',
   completed: 'Selesai',
   cancelled: 'Dibatalkan',
-  in_progress: 'Proses',
+  collecting: 'Pengumpulan',
   assigned: 'Ditugaskan',
 };
 
 export const PICKUP_STATUS_STYLES: Record<PickupStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
   completed: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-  in_progress: 'bg-orange-100 text-orange-800 border border-orange-200',
+  collecting: 'bg-orange-100 text-orange-800 border border-orange-200',
   assigned: 'bg-blue-100 text-blue-800 border border-blue-200',
   cancelled: 'bg-red-100 text-red-800 border border-red-200',
 };

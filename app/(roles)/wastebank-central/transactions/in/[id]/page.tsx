@@ -538,7 +538,7 @@ export default function TransactionInDetailPage() {
       showToast.success('Transaksi berhasil diperbarui.');
       setTimeout(() => {
         setUpdateSuccess(null);
-        router.push('/wastebank-unit/transactions/in');
+        router.push('/wastebank-central/transactions/in');
       }, 1000);
     } catch (error) {
       const errorMessage =
@@ -659,7 +659,7 @@ export default function TransactionInDetailPage() {
       showToast.success('Transaksi berhasil diperbarui.');
       setTimeout(() => {
         setUpdateSuccess(null);
-        router.push('/wastebank-unit/transactions/in');
+        router.push('/wastebank-central/transactions/in');
       }, 1000);
     } catch (error) {
       const errorMessage =
@@ -722,7 +722,7 @@ export default function TransactionInDetailPage() {
       showToast.success('Transaksi berhasil diselesaikan.');
       setTimeout(() => {
         setUpdateSuccess(null);
-        router.push('/wastebank-unit/transactions/in');
+        router.push('/wastebank-central/transactions/in');
       }, 1000);
     } catch (error) {
       const errorMessage =

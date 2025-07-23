@@ -63,7 +63,7 @@ export default function TransactionsOutPage() {
   const handleViewDetail = (transactionId: string) => {
     const encoded = encodeId(transactionId);
     // TODO: Implement navigation to detail page if needed
-    router.push(`/wastebank-unit/transactions/out/${encoded}`);
+    router.push(`/wastebank-central/transactions/out/${encoded}`);
   };
 
   const todayStats: TransactionStats = useMemo(() => {
@@ -264,7 +264,7 @@ export default function TransactionsOutPage() {
         <div className='mt-4 sm:mt-0'>
           <button
             className='rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white transition-colors hover:bg-emerald-700'
-            onClick={() => router.push('/wastebank-unit/transactions/out/add')}
+            onClick={() => router.push('/wastebank-central/transactions/out/add')}
           >
             <Plus size={20} className='mr-2 inline' />
             Transaksi Baru

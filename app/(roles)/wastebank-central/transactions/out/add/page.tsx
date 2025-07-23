@@ -560,7 +560,7 @@ export default function AddTransactionOutPage() {
 
       // Redirect after success
       setTimeout(() => {
-        router.push('/wastebank-unit/transactions/out');
+        router.push('/wastebank-central/transactions/out');
       }, 2000);
     } catch (error) {
       console.error('Submit error:', error);
