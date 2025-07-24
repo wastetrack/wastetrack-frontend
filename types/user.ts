@@ -8,6 +8,9 @@ export interface UserListParams {
   role?: string;
   province?: string;
   institution?: string;
+  is_accepting_customer?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface UserListItem {
@@ -29,6 +32,7 @@ export interface UserListItem {
   is_email_verified: boolean;
   created_at: string;
   updated_at: string;
+  distance?: number; // Optional for distance calculations
 }
 
 export interface UserListResponse {

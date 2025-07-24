@@ -90,6 +90,21 @@ export const userListAPI = {
         queryParams.append('institution', params.institution);
       }
 
+      if (params.is_accepting_customer !== undefined) {
+        queryParams.append(
+          'is_accepting_customer',
+          params.is_accepting_customer.toString()
+        );
+      }
+
+      if (params.latitude !== undefined) {
+        queryParams.append('latitude', params.latitude.toString());
+      }
+
+      if (params.longitude !== undefined) {
+        queryParams.append('longitude', params.longitude.toString());
+      }
+
       const response = await authenticatedApiClient.get(
         `/api/users?${queryParams.toString()}`
       );
@@ -123,6 +138,21 @@ export const userListAPI = {
       if (params.province) queryParams.append('province', params.province);
       if (params.institution)
         queryParams.append('institution', params.institution);
+
+      if (params.is_accepting_customer !== undefined) {
+        queryParams.append(
+          'is_accepting_customer',
+          params.is_accepting_customer.toString()
+        );
+      }
+
+      if (params.latitude !== undefined) {
+        queryParams.append('latitude', params.latitude.toString());
+      }
+
+      if (params.longitude !== undefined) {
+        queryParams.append('longitude', params.longitude.toString());
+      }
 
       const response = await authenticatedApiClient.get(
         `/api/users?${queryParams.toString()}`
