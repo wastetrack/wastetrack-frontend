@@ -149,6 +149,8 @@ export default function TransactionInDetailPage() {
             await wasteDropRequestAPI.getWasteDropRequestById(realId);
           const foundDrop = dropRequest.data;
 
+          // console.log('Found drop request:', foundDrop);
+
           if (foundDrop) {
             setTransaction(foundDrop);
             setTransactionType('drop');
@@ -942,7 +944,11 @@ export default function TransactionInDetailPage() {
                   Status
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
-                  {status.text}
+                  <span
+                    className={`inline-flex rounded-full px-2 text-sm ${status.color}`}
+                  >
+                    {status.text}
+                  </span>
                 </dd>
               </dl>
             </div>
@@ -964,7 +970,12 @@ export default function TransactionInDetailPage() {
                 <dd className='text-lg font-medium text-gray-900'>
                   {transaction.appointment_date
                     ? new Date(transaction.appointment_date).toLocaleDateString(
-                        'id-ID'
+                        'id-ID',
+                        {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        }
                       )
                     : '-'}
                 </dd>
@@ -1221,7 +1232,14 @@ export default function TransactionInDetailPage() {
                             </p>
                             <p className='text-gray-900'>
                               {item.verified_weight > 0
-                                ? `${item.verified_weight} kg`
+                                ? item.verified_weight % 1 === 0
+                                  ? `${item.verified_weight} kg`
+                                  : `${item.verified_weight
+                                      .toLocaleString('id-ID', {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 2,
+                                      })
+                                      .replace('.', ',')} kg`
                                 : 'Belum diverifikasi'}
                             </p>
                           </div>
@@ -1309,7 +1327,14 @@ export default function TransactionInDetailPage() {
                               Berat Ditawarkan (Asal)
                             </p>
                             <p className='text-gray-900'>
-                              {item.offering_weight.toFixed(2)} kg
+                              {item.offering_weight % 1 === 0
+                                ? `${item.offering_weight} kg`
+                                : `${item.offering_weight
+                                    .toLocaleString('id-ID', {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 2,
+                                    })
+                                    .replace('.', ',')} kg`}
                             </p>
                           </div>
                           <div>
@@ -1318,31 +1343,69 @@ export default function TransactionInDetailPage() {
                             </p>
                             {transaction.status === 'completed' ? (
                               <p className='text-gray-900'>
-                                {item.verified_weight.toFixed(2)} kg{' '}
+                                {item.verified_weight % 1 === 0
+                                  ? `${item.verified_weight} kg`
+                                  : `${item.verified_weight.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg`}
                               </p>
                             ) : (
                               <input
-                                type='number'
-                                min='0.1'
-                                max={item.offering_weight}
-                                step='0.001'
+                                type='text'
                                 value={
                                   typeof item.accepted_weight === 'number'
-                                    ? String(item.accepted_weight).replace(
-                                        /^0+(\d)/,
-                                        '$1'
-                                      )
-                                    : item.accepted_weight
+                                    ? String(item.accepted_weight)
+                                        .replace('.', ',')
+                                        .replace(/^0+(\d)/, '$1')
+                                    : String(
+                                        item.accepted_weight || ''
+                                      ).replace('.', ',')
                                 }
                                 onChange={(e) => {
                                   let val = e.target.value;
 
-                                  // Hilangkan nol di depan kecuali 0. (desimal)
-                                  if (/^0+\d/.test(val) && !/^0\./.test(val)) {
+                                  // Hanya izinkan angka dan koma
+                                  val = val.replace(/[^0-9,]/g, '');
+
+                                  // Batasi hanya satu koma
+                                  const commaCount = (val.match(/,/g) || [])
+                                    .length;
+                                  if (commaCount > 1) {
+                                    // Ambil posisi koma pertama dan hapus koma lainnya
+                                    const firstCommaIndex = val.indexOf(',');
+                                    val =
+                                      val.slice(0, firstCommaIndex + 1) +
+                                      val
+                                        .slice(firstCommaIndex + 1)
+                                        .replace(/,/g, '');
+                                  }
+
+                                  // Hilangkan nol di depan kecuali untuk desimal (0,xxx)
+                                  if (
+                                    /^0+\d/.test(val) &&
+                                    !val.startsWith('0,')
+                                  ) {
                                     val = val.replace(/^0+/, '');
                                   }
 
-                                  let numValue = parseFloat(val) || 0;
+                                  // Jika kosong atau hanya koma, set ke 0
+                                  if (val === '' || val === ',') {
+                                    const updatedItems = [...transferItems];
+                                    updatedItems[index] = {
+                                      ...item,
+                                      accepted_weight: 0,
+                                    };
+                                    setTransferItems(updatedItems);
+                                    handleItemsUpdate(updatedItems);
+                                    return;
+                                  }
+
+                                  // Konversi koma ke titik untuk parsing numerik
+                                  const numericVal = val.replace(',', '.');
+                                  let numValue = parseFloat(numericVal);
+
+                                  // Jika parsing gagal, gunakan nilai sebelumnya
+                                  if (isNaN(numValue)) {
+                                    return;
+                                  }
 
                                   // Cek dan batasi ke maksimum
                                   const maxVal = parseFloat(
@@ -1350,7 +1413,14 @@ export default function TransactionInDetailPage() {
                                   );
                                   if (numValue > maxVal) {
                                     numValue = maxVal;
-                                    val = String(maxVal); // tampilkan langsung di input
+                                    // Update val untuk ditampilkan dengan benar
+                                    val = String(maxVal).replace('.', ',');
+                                  }
+
+                                  // Validasi minimum (opsional, sesuaikan dengan kebutuhan)
+                                  if (numValue < 0.001 && numValue > 0) {
+                                    numValue = 0.001;
+                                    val = '0,001';
                                   }
 
                                   const updatedItems = [...transferItems];
@@ -1361,6 +1431,23 @@ export default function TransactionInDetailPage() {
                                   setTransferItems(updatedItems);
                                   handleItemsUpdate(updatedItems);
                                 }}
+                                onBlur={(e) => {
+                                  // Normalisasi tampilan saat focus hilang
+                                  let val = e.target.value;
+                                  if (val.endsWith(',')) {
+                                    // Jika diakhiri koma, hapus koma
+                                    val = val.slice(0, -1);
+                                    const numValue = parseFloat(val) || 0;
+                                    const updatedItems = [...transferItems];
+                                    updatedItems[index] = {
+                                      ...item,
+                                      accepted_weight: numValue,
+                                    };
+                                    setTransferItems(updatedItems);
+                                    handleItemsUpdate(updatedItems);
+                                  }
+                                }}
+                                placeholder='0,000'
                                 className={`mt-1 block w-full rounded-md border px-3 py-2 focus:outline-none ${
                                   updateLoading ||
                                   [
@@ -1532,7 +1619,14 @@ export default function TransactionInDetailPage() {
                       Total Berat {isDropRequest ? 'Terverifikasi' : 'Diterima'}
                     </p>
                     <p className='text-sm text-emerald-600'>
-                      {totalWeight.toFixed(2)} kg
+                      {Number.isInteger(totalWeight)
+                        ? `${totalWeight} kg`
+                        : `${totalWeight
+                            .toLocaleString('id-ID', {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            })
+                            .replace('.', ',')} kg`}
                     </p>
                   </div>
                   <div className='text-right'>

@@ -348,8 +348,7 @@ export default function TransactionOutDetailPage() {
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
                   Rp{' '}
-                  {(
-                  transaction.status === 'completed'
+                  {(transaction.status === 'completed'
                     ? transaction.total_price
                     : totalPrice
                   ).toLocaleString('id-ID')}
@@ -372,7 +371,9 @@ export default function TransactionOutDetailPage() {
                   Status
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
-                  {status.text}
+                    <span className={`inline-flex rounded-full px-2 text-sm ${status.color}`}>
+                    {status.text}
+                    </span>
                 </dd>
               </dl>
             </div>
@@ -392,9 +393,14 @@ export default function TransactionOutDetailPage() {
                   Tanggal Janji
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
-                  {transaction.appointment_date
+                    {transaction.appointment_date
                     ? new Date(transaction.appointment_date).toLocaleDateString(
-                        'id-ID'
+                      'id-ID',
+                      {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      }
                       )
                     : '-'}
                 </dd>
@@ -459,13 +465,13 @@ export default function TransactionOutDetailPage() {
                   <p className='text-sm font-medium text-gray-500'>
                     Total Harga
                   </p>
-                    <p className='text-lg font-bold text-emerald-600'>
+                  <p className='text-lg font-bold text-emerald-600'>
                     Rp{' '}
                     {(transaction.status === 'completed'
                       ? transaction.total_price
                       : totalPrice
                     ).toLocaleString('id-ID')}
-                    </p>
+                  </p>
                 </div>
               </div>
             </div>
@@ -615,7 +621,11 @@ export default function TransactionOutDetailPage() {
                             Berat Ditawarkan
                           </p>
                           <p className='text-gray-900'>
-                            {item.offering_weight.toFixed(2)} kg
+                            {item.offering_weight.toLocaleString('id-ID', {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            })}{' '}
+                            kg
                           </p>
                         </div>
                         <div>
@@ -625,11 +635,11 @@ export default function TransactionOutDetailPage() {
                           <p className='text-gray-900'>
                             {transaction.status === 'completed'
                               ? item.verified_weight > 0
-                              ? `${item.verified_weight.toFixed(2)} kg`
-                              : 'Belum diverifikasi'
+                                ? `${item.verified_weight.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg`
+                                : 'Belum diverifikasi'
                               : item.accepted_weight > 0
-                              ? `${item.accepted_weight.toFixed(2)} kg`
-                              : 'Belum diterima'}
+                                ? `${item.accepted_weight.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg`
+                                : 'Belum diterima'}
                           </p>
                         </div>
                       </div>
@@ -666,14 +676,19 @@ export default function TransactionOutDetailPage() {
                           <p className='text-sm font-medium text-gray-500'>
                             Subtotal
                           </p>
-                            <p className='font-medium text-emerald-600'>
+                          <p className='font-medium text-emerald-600'>
                             Rp{' '}
-                            {(
-                              transaction.status === 'completed'
-                              ? item.verified_weight * item.accepted_price_per_kgs
-                              : item.accepted_weight * item.accepted_price_per_kgs
+                            {(transaction.status === 'completed'
+                              ? Math.floor(
+                                  item.verified_weight *
+                                    item.accepted_price_per_kgs
+                                )
+                              : Math.floor(
+                                  item.accepted_weight *
+                                    item.accepted_price_per_kgs
+                                )
                             ).toLocaleString('id-ID')}
-                            </p>
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -706,11 +721,16 @@ export default function TransactionOutDetailPage() {
                       Total Berat Diterima
                     </p>
                     <p className='text-sm text-emerald-600'>
-                      {transaction.status === 'completed'
-                      ? wasteItems
-                        .reduce((total, item) => total + item.verified_weight, 0)
-                        .toFixed(2)
-                      : totalAcceptedWeight.toFixed(2)}{' '}
+                      {(() => {
+                        const value =
+                          transaction.status === 'completed'
+                            ? wasteItems.reduce((total, item) => total + item.verified_weight, 0)
+                            : totalAcceptedWeight;
+                        const formatted = value % 1 === 0
+                          ? value.toLocaleString('id-ID', { maximumFractionDigits: 2, minimumFractionDigits: 0 })
+                          : value.toFixed(2).replace('.', ',');
+                        return formatted;
+                      })()}{' '}
                       kg
                     </p>
                   </div>
@@ -719,8 +739,8 @@ export default function TransactionOutDetailPage() {
                     <p className='text-lg font-bold text-emerald-700'>
                       Rp{' '}
                       {(transaction.status === 'completed'
-                      ? transaction.total_price
-                      : totalPrice
+                        ? transaction.total_price
+                        : totalPrice
                       ).toLocaleString('id-ID')}
                     </p>
                   </div>

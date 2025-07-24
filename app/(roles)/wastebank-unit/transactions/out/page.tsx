@@ -526,10 +526,8 @@ export default function TransactionsOutPage() {
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='text-sm text-gray-900'>
-                          {transaction.total_weight !== undefined
-                            ? Number.isInteger(transaction.total_weight)
-                              ? `${transaction.total_weight} kg`
-                              : `${transaction.total_weight.toFixed(2)} kg`
+                            {transaction.total_weight !== undefined
+                            ? `${transaction.total_weight.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg`
                             : '0 kg'}
                         </div>
                       </td>

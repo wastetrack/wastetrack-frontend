@@ -521,14 +521,18 @@ export default function SchedulePage() {
         let response;
         try {
           response = await userListAPI.getUserList({
-            role: 'waste_bank_unit',
+            // role: 'waste_bank_central',
+            is_accepting_customer: true,
+            latitude: formData.coordinates?.lat || 0,
+            longitude: formData.coordinates?.lng || 0,
             size: 50,
           });
         } catch {
-          // Fallback to authenticated method if public fails
-          // console.log('Public API failed, trying authenticated API...');
           response = await userListAPI.getUserList({
-            role: 'waste_bank_unit',
+            // role: 'waste_bank_central',
+            is_accepting_customer: true,
+            latitude: formData.coordinates?.lat || 0,
+            longitude: formData.coordinates?.lng || 0,
             size: 50,
           });
         }
@@ -543,7 +547,6 @@ export default function SchedulePage() {
           rawBanks = response;
         }
 
-        // Map API response to expected frontend structure
         const mappedBanks: WasteBank[] = rawBanks.map((bank) => {
           const typedBank = bank as {
             id?: string;
@@ -556,6 +559,7 @@ export default function SchedulePage() {
             city?: string;
             province?: string;
             coordinates?: Coordinates;
+            distance?: number;
             location?: { coordinates?: Coordinates; address?: string };
             [key: string]: unknown;
           };
@@ -570,11 +574,12 @@ export default function SchedulePage() {
               },
             },
             role: typedBank.role || 'waste_bank_unit',
-            distance: null,
-            // Keep original data for additional fields if needed
+            distance: typedBank.distance || null,
             originalData: typedBank,
           };
         });
+
+        // console.log('Mapped Banks:', mappedBanks);
 
         // Calculate distance if user coordinates are available
         let finalBanks = mappedBanks;
@@ -1638,13 +1643,24 @@ export default function SchedulePage() {
                 <div className='flex justify-center p-6'>
                   <Loader2 className='h-8 w-8 animate-spin text-emerald-500' />
                 </div>
+              ) : wasteBanks.length === 0 ? (
+                <div className='flex flex-col items-center justify-center p-8'>
+                  <Building2 className='mb-4 h-12 w-12 text-gray-400' />
+                  <p className='mb-2 text-center text-gray-600'>
+                    Tidak ada bank sampah yang tersedia di sekitar lokasi Anda.
+                  </p>
+                  <p className='mb-4 text-center text-sm text-gray-400'>
+                    Silakan coba ganti lokasi, atau hubungi admin untuk
+                    informasi lebih lanjut.
+                  </p>
+                </div>
               ) : (
                 <div className='divide-y divide-gray-200 border-b border-gray-200'>
                   {wasteBanks.map((bank) => (
                     <label
                       key={bank.id}
                       className={`group flex cursor-pointer items-start p-2 transition-all duration-300 hover:bg-emerald-100/60 sm:p-4
-                        ${formData.wasteBankId === bank.id ? 'bg-emerald-100' : ''}`}
+                    ${formData.wasteBankId === bank.id ? 'bg-emerald-100' : ''}`}
                     >
                       <input
                         type='radio'
@@ -1671,16 +1687,37 @@ export default function SchedulePage() {
                                 {bank.originalData &&
                                   (bank.originalData.city ||
                                     bank.originalData.province) && (
-                                    <div className='flex items-center gap-2'>
-                                      <p className='text-xs text-gray-500'>
-                                        {bank.originalData.city}
-                                        {bank.originalData.city &&
-                                        bank.originalData.province
-                                          ? ', '
-                                          : ''}
-                                        {bank.originalData.province}
-                                      </p>
-                                    </div>
+                                    <>
+                                      <div className='flex items-center gap-2'>
+                                        <p className='text-xs text-gray-500'>
+                                          {bank.originalData.city}
+                                          {bank.originalData.city &&
+                                          bank.originalData.province
+                                            ? ', '
+                                            : ''}
+                                          {bank.originalData.province}
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <p className='text-xs text-gray-500'>
+                                          {typeof bank.originalData.distance ===
+                                          'number'
+                                            ? (
+                                                bank.originalData.distance /
+                                                1000
+                                              ).toFixed(2)
+                                            : typeof bank.originalData
+                                                  .distance === 'string'
+                                              ? (
+                                                  parseFloat(
+                                                    bank.originalData.distance
+                                                  ) / 1000
+                                                ).toFixed(2)
+                                              : ''}{' '}
+                                          km
+                                        </p>
+                                      </div>
+                                    </>
                                   )}
                               </div>
                               <div className='mt-2 items-center gap-4'>
