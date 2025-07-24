@@ -663,7 +663,11 @@ export default function TransactionInDetailPage() {
                   Status
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
-                  {status.text}
+                  <span
+                    className={`inline-flex rounded-full px-2 text-sm ${status.color}`}
+                  >
+                    {status.text}
+                  </span>
                 </dd>
               </dl>
             </div>
@@ -685,7 +689,12 @@ export default function TransactionInDetailPage() {
                 <dd className='text-lg font-medium text-gray-900'>
                   {transaction.appointment_date
                     ? new Date(transaction.appointment_date).toLocaleDateString(
-                        'id-ID'
+                        'id-ID',
+                        {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        }
                       )
                     : '-'}
                 </dd>
@@ -897,7 +906,13 @@ export default function TransactionInDetailPage() {
                           Berat Ditawarkan (Asal)
                         </p>
                         <p className='text-gray-900'>
-                          {item.offering_weight} kg
+                          {item.offering_weight
+                            .toLocaleString('id-ID', {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            })
+                            .replace(/\./g, ',')}{' '}
+                          kg
                         </p>
                       </div>
                       <div>
@@ -906,7 +921,13 @@ export default function TransactionInDetailPage() {
                         </p>
                         {transaction.status === 'completed' ? (
                           <p className='mt-1 text-gray-900'>
-                            {item.verified_weight} kg
+                            {item.verified_weight
+                              .toLocaleString('id-ID', {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 2,
+                              })
+                              .replace(/\./g, ',')}{' '}
+                            kg
                           </p>
                         ) : (
                           <input
@@ -1089,7 +1110,13 @@ export default function TransactionInDetailPage() {
                     Total Berat Diterima
                   </p>
                   <p className='text-sm text-emerald-600'>
-                    {totalWeight.toFixed(2)} kg
+                    {totalWeight
+                      .toLocaleString('id-ID', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })
+                      .replace(/\./g, ',')}{' '}
+                    kg
                   </p>
                 </div>
                 <div className='text-right'>

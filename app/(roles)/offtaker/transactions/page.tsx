@@ -306,17 +306,24 @@ export default function TransactionsInPage() {
   };
 
   // Format form type for waste transfer requests
-  const getFormTypeChip = (formType: string) => {
-    if (formType === 'waste_bank_request') {
-      return (
-        <span className='inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800'>
-          Bank Sampah
-        </span>
+  const getFormTypeChip = (
+    formType: string,
+    transaction?: WasteTransferRequest
+  ) => {
+    if (formType === 'industry_request') {
+      const sourceUser = userList.find(
+        (u) => u.id === transaction?.source_user_id
       );
-    } else if (formType === 'industry_request') {
+      const isInduk = sourceUser?.role === 'waste_bank_central';
       return (
-        <span className='inline-flex rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-800'>
-          Bank Sampah
+        <span
+          className={`inline-flex rounded-full px-2 py-1 text-xs ${
+            isInduk
+              ? 'bg-green-100 text-green-800'
+              : 'bg-purple-100 text-purple-800'
+          }`}
+        >
+          {isInduk ? 'Bank Sampah Induk' : 'Bank Sampah Unit'}
         </span>
       );
     }
@@ -603,7 +610,10 @@ export default function TransactionsInPage() {
                       className='hover:bg-gray-50'
                     >
                       <td className='whitespace-nowrap px-6 py-4'>
-                        {getFormTypeChip(transferTransaction.form_type)}
+                        {getFormTypeChip(
+                          transferTransaction.form_type,
+                          transferTransaction
+                        )}
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='text-sm text-gray-900'>
