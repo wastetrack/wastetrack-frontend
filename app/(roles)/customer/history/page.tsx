@@ -680,8 +680,8 @@ export default function HistoryPage() {
       </div>
 
       {/* Search & Filter */}
-      <div className='rounded-lg sm:bg-white sm:p-4 sm:shadow-sm'>
-        <div className='mb-2 rounded-xl sm:mb-8 sm:bg-white sm:p-3 sm:p-4 sm:shadow-lg'>
+      <div>
+        <div className='mb-2 rounded-xl sm:mb-8 sm:bg-white sm:p-3 sm:p-4 sm:shadow-sm'>
           <div className='flex items-center gap-2'>
             {/* Search Input */}
             <div className='relative flex-1'>
