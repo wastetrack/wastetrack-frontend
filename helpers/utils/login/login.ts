@@ -206,10 +206,7 @@ export const loginFunctions = {
 
       // Handle too many sessions
       if (error.response?.data?.errors === 'Too many active sessions') {
-        showToast.error('Terlalu Banyak Sesi', {
-          description:
-            'Anda telah mencapai batas maksimal sesi aktif (5 sesi). Silakan logout dari perangkat lain.',
-        });
+        showToast.error('Terlalu Banyak Sesi');
         return { success: false, tooManySessions: true };
       }
 

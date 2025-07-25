@@ -1,4 +1,4 @@
-import { refreshAPI } from '@/services/api/auth';
+import { refreshAPI, logoutAPI } from '@/services/api/auth';
 import { cookieUtils } from './cookie-utils';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { jwtDecode } from 'jwt-decode';
@@ -150,27 +150,7 @@ export class TokenManager {
     }
   }
 
-  // Get current user
-  getCurrentUser() {
-    if (typeof window === 'undefined') return null;
-
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
-  }
-
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    if (typeof window === 'undefined') return false;
-
-    const refreshToken = cookieUtils.get('refresh_token');
-    const user = this.getCurrentUser();
-    return !!(refreshToken && user);
-  }
-
-  // Logout
-  logout(router?: AppRouterInstance) {
-    if (typeof window === 'undefined') return;
-
+  private performFrontendLogout(router?: AppRouterInstance) {
     // Clear all tokens and data
     sessionStorage.removeItem('access_token');
     localStorage.removeItem('user');
@@ -191,6 +171,58 @@ export class TokenManager {
       router.push('/login');
     } else {
       window.location.href = '/login';
+    }
+  }
+
+  // Get current user
+  getCurrentUser() {
+    if (typeof window === 'undefined') return null;
+
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  }
+
+  // Check if user is authenticated
+  isAuthenticated(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    const refreshToken = cookieUtils.get('refresh_token');
+    const user = this.getCurrentUser();
+    return !!(refreshToken && user);
+  }
+
+  async logout(router?: AppRouterInstance) {
+    if (typeof window === 'undefined') return;
+
+    let backendLogoutSuccess = false;
+
+    try {
+      const refreshToken =
+        cookieUtils.get('refresh_token') ||
+        localStorage.getItem('refresh_token');
+      const accessToken = sessionStorage.getItem('access_token');
+
+      if (refreshToken && accessToken) {
+        try {
+          const result = await logoutAPI(refreshToken);
+          backendLogoutSuccess = result.success;
+
+          if (backendLogoutSuccess) {
+            console.log('Backend logout successful - refresh token revoked');
+          } else {
+            console.log('Backend logout failed:', result.reason);
+          }
+        } catch (error) {
+          console.log('Backend logout error:', error);
+        }
+      } else {
+        console.log('Missing tokens for backend logout');
+      }
+    } catch (error) {
+      console.error('Error during logout process:', error);
+    } finally {
+      // Always perform frontend cleanup
+      this.performFrontendLogout(router);
     }
   }
 

@@ -14,8 +14,8 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { RegisterFormProps, InstitutionSuggestion } from '@/types';
-import { getCurrentLocation } from '@/helpers/utils/register/register';
 import PickLocation from '@/components/ui/PickLocation';
+import { SavedLocationPayload } from '@/types';
 import { ROLES, ROLE_DESCRIPTIONS } from '@/constants';
 import { Alert } from '@/components/ui';
 import { userListAPI } from '@/services/api/user';
@@ -30,7 +30,7 @@ export default function RegisterForm({
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(false);
+  // const [locationLoading, setLocationLoading] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
   // Institution autocomplete state
@@ -324,50 +324,6 @@ export default function RegisterForm({
     return !getFieldError(fieldName, value, isRequired);
   };
 
-  const handleGetLocation = async () => {
-    setLocationLoading(true);
-    try {
-      const locationData = await getCurrentLocation();
-
-      // Update selectedLocation state
-      setSelectedLocation({
-        address: locationData.address || formData.address,
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-      });
-
-      onFormDataChange({
-        ...formData,
-        location: {
-          latitude: locationData.latitude,
-          longitude: locationData.longitude,
-        },
-        address: locationData.address || formData.address,
-        city: locationData.city || formData.city,
-        province: locationData.province || formData.province,
-      });
-    } catch (error) {
-      console.error('Error getting location:', error);
-
-      const errorMessage =
-        error instanceof Error ? error.message : 'Error mendapatkan lokasi';
-
-      if (errorMessage.includes('ditolak')) {
-        await Alert.warning({
-          title: 'Akses Lokasi Ditolak',
-          text: 'Untuk melanjutkan pendaftaran, kami memerlukan akses lokasi Anda. Silakan izinkan akses lokasi di browser.',
-        });
-      } else {
-        await Alert.error({
-          title: 'Gagal Mendapatkan Lokasi',
-          text: errorMessage,
-        });
-      }
-    } finally {
-      setLocationLoading(false);
-    }
-  };
-
   const convertToPickLocationFormat = (
     location: { address: string; latitude: number; longitude: number } | null
   ): { latitude: number; longitude: number } | null => {
@@ -378,14 +334,10 @@ export default function RegisterForm({
     };
   };
 
-  const handleSaveLocationFromPicker = (payload: {
-    latitude: number;
-    longitude: number;
-    address: string;
-    updatedAt: string;
-  }) => {
-    // console.log('=== LOCATION PICKER SAVE ===');
-    // console.log('Raw address:', payload.address);
+  const handleSaveLocationFromPicker = (payload: SavedLocationPayload) => {
+    console.log('=== LOCATION PICKER SAVE ===');
+    console.log('Raw address:', payload.address);
+    console.log('Parsed components:', payload.addressComponents);
 
     const locationData = {
       address: payload.address,
@@ -395,12 +347,14 @@ export default function RegisterForm({
 
     setSelectedLocation(locationData);
 
-    // Extract dengan logic sederhana
-    const extractedCity = extractCityFromAddress(payload.address);
-    const extractedProvince = extractProvinceFromAddress(payload.address);
+    const cityFromPicker =
+      payload.city || payload.addressComponents?.kota || '';
+    const provinceFromPicker =
+      payload.province || payload.addressComponents?.provinsi || '';
 
-    // console.log('Extracted city:', extractedCity);
-    // console.log('Extracted province:', extractedProvince);
+    console.log('Using parsed data:');
+    console.log('City:', cityFromPicker);
+    console.log('Province:', provinceFromPicker);
 
     onFormDataChange({
       ...formData,
@@ -409,70 +363,22 @@ export default function RegisterForm({
         longitude: payload.longitude,
       },
       address: payload.address,
-      city: extractedCity,
-      province: extractedProvince,
+      city: cityFromPicker,
+      province: provinceFromPicker,
+      // district: payload.district || payload.addressComponents?.kecamatan || '',
+      // postalCode: payload.postalCode || payload.addressComponents?.kodePos || '',
     });
 
     setShowLocationPicker(false);
-    // console.log('=== DONE ===');
+    console.log('=== DONE ===');
   };
 
   const handleCancelLocationPicker = () => {
-    // console.log('Location picker dibatalkan');
     setShowLocationPicker(false);
   };
 
   const handleOpenLocationPicker = () => {
-    // console.log(
-    //   'Membuka location picker. Current selectedLocation:',
-    //   selectedLocation
-    // );
     setShowLocationPicker(true);
-  };
-
-  // Helper functions untuk extract city/province dari address
-  const extractCityFromAddress = (address: string): string => {
-    if (!address) return formData.city;
-
-    const parts = address.split(',').map((part) => part.trim());
-    // console.log('Address parts:', parts);
-
-    if (parts.length < 2) return formData.city;
-
-    // Jika ada "Indonesia" di akhir
-    if (parts[parts.length - 1].toLowerCase().includes('indonesia')) {
-      // City = ketiga dari belakang (sebelum province)
-      const city = parts[parts.length - 3];
-      // console.log('Extracted city (with Indonesia):', city);
-      return city || formData.city;
-    } else {
-      // City = kedua dari belakang (sebelum province)
-      const city = parts[parts.length - 2];
-      // console.log('Extracted city (without Indonesia):', city);
-      return city || formData.city;
-    }
-  };
-
-  const extractProvinceFromAddress = (address: string): string => {
-    if (!address) return formData.province;
-
-    const parts = address.split(',').map((part) => part.trim());
-    // console.log('Address parts for province:', parts);
-
-    if (parts.length < 2) return formData.province;
-
-    // Jika ada "Indonesia" di akhir
-    if (parts[parts.length - 1].toLowerCase().includes('indonesia')) {
-      // Province = kedua dari belakang (sebelum Indonesia)
-      const province = parts[parts.length - 2];
-      // console.log('Extracted province (with Indonesia):', province);
-      return province || formData.province;
-    } else {
-      // Province = terakhir
-      const province = parts[parts.length - 1];
-      // console.log('Extracted province (without Indonesia):', province);
-      return province || formData.province;
-    }
   };
 
   const handleNextStep = (e?: React.FormEvent) => {
@@ -660,6 +566,8 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('email')}
                   placeholder='Masukkan email Anda'
+                  autoComplete='email'
+                  inputMode='email'
                   className={`shadow-xs w-full rounded-lg border border-gray-200 bg-white p-3 pl-9 text-sm text-gray-800 transition-all duration-200 placeholder:text-xs placeholder:text-gray-400 sm:p-3 sm:pl-10 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('email') &&
                     !isFieldValid('email', formData.email)
@@ -670,6 +578,8 @@ export default function RegisterForm({
                         : 'border-gray-200'
                   }`}
                   required
+                  spellCheck={false}
+                  autoCapitalize='none'
                 />
                 {touchedFields.has('email') &&
                   isFieldValid('email', formData.email) && (
@@ -1170,7 +1080,7 @@ export default function RegisterForm({
             <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
               <div>
                 <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
-                  Kota <span className='text-red-500'>*</span>
+                  Kota/Kabupaten <span className='text-red-500'>*</span>
                 </label>
                 <input
                   type='text'
@@ -1179,7 +1089,7 @@ export default function RegisterForm({
                   onChange={handleChange}
                   onBlur={() => handleBlur('city')}
                   onKeyDown={handleKeyDown}
-                  placeholder='Masukkan kota Anda'
+                  placeholder='Masukkan kota/kabupaten Anda'
                   className={`w-full rounded-lg border bg-white p-3 text-sm text-gray-800 placeholder:text-xs placeholder:text-gray-400 sm:text-base sm:placeholder:text-sm ${
                     touchedFields.has('city') &&
                     !isFieldValid('city', formData.city)
@@ -1246,18 +1156,6 @@ export default function RegisterForm({
               <div className='flex items-center justify-between'>
                 <button
                   type='button'
-                  onClick={handleGetLocation}
-                  disabled={locationLoading}
-                  className='flex hidden items-center p-0 text-xs text-emerald-600 hover:text-emerald-500 focus:outline-none focus:ring-0 disabled:opacity-50 sm:text-sm'
-                >
-                  <MapPin className='mr-2 h-4 w-4' />
-                  {locationLoading
-                    ? 'Mendapatkan Lokasi...'
-                    : 'Dapatkan Lokasi Saat Ini'}
-                </button>
-
-                <button
-                  type='button'
                   onClick={handleOpenLocationPicker}
                   className='flex items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-600 hover:bg-blue-100 focus:outline-none focus:ring-0'
                 >
@@ -1298,6 +1196,52 @@ export default function RegisterForm({
                 </div>
               )}
             </div>
+
+            {/* Is Acceptance Customer */}
+            {formData.role === 'waste_bank_central' && (
+              <div>
+                <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
+                  Apakah Bank Sampah menerim sampah dari nasabah?{' '}
+                  <span className='text-red-500'>*</span>
+                </label>
+                <div className='mt-2 flex items-center space-x-8'>
+                  <label className='flex items-center gap-2 text-sm font-medium text-gray-700'>
+                    <input
+                      type='radio'
+                      name='is_accepting_customer'
+                      value='true'
+                      checked={formData.is_accepting_customer === true}
+                      onChange={() =>
+                        onFormDataChange({
+                          ...formData,
+                          is_accepting_customer: true,
+                        })
+                      }
+                      className='h-4 w-4 accent-emerald-600'
+                      required
+                    />
+                    <span>Iya</span>
+                  </label>
+                  <label className='flex items-center gap-2 text-sm font-medium text-gray-700'>
+                    <input
+                      type='radio'
+                      name='is_accepting_customer'
+                      value='false'
+                      checked={formData.is_accepting_customer === false}
+                      onChange={() =>
+                        onFormDataChange({
+                          ...formData,
+                          is_accepting_customer: false,
+                        })
+                      }
+                      className='h-4 w-4 accent-emerald-600'
+                      required
+                    />
+                    <span>Tidak</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </>
         )}
 
