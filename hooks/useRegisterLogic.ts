@@ -30,6 +30,7 @@ export function useRegisterLogic() {
       latitude: 0,
       longitude: 0,
     },
+    is_accepting_customer: true
   });
 
   const handleFormDataChange = (newFormData: FormData) => {
