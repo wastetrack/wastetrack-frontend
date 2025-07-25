@@ -156,28 +156,28 @@ interface ExtendedWasteCategory extends WasteCategory {
 }
 
 // Haversine formula to calculate distance (in kilometers) between two lat/lng points
-function calculateDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const toRad = (value: number) => (value * Math.PI) / 180;
-  const R = 6371; // Earth's radius in kilometers
+// function calculateDistance(
+//   lat1: number,
+//   lng1: number,
+//   lat2: number,
+//   lng2: number
+// ): number {
+//   const toRad = (value: number) => (value * Math.PI) / 180;
+//   const R = 6371; // Earth's radius in kilometers
 
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
+//   const dLat = toRad(lat2 - lat1);
+//   const dLng = toRad(lng2 - lng1);
 
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+//   const a =
+//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+//     Math.cos(toRad(lat1)) *
+//       Math.cos(toRad(lat2)) *
+//       Math.sin(dLng / 2) *
+//       Math.sin(dLng / 2);
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c;
+// }
 
 // Mock getCurrentLocation function (replace with your actual implementation)
 const getCurrentLocation = (options: {
@@ -214,47 +214,6 @@ const getCurrentLocation = (options: {
     }
   );
 };
-
-// Mock PickLocation component (replace with your actual component)
-// const PickLocation: React.FC<{
-//   initialLocation?: { latitude: number; longitude: number } | null;
-//   onSaveLocation: (locationData: LocationData) => void;
-//   onCancel: () => void;
-//   pageTitle: string;
-//   useFirebase: boolean;
-//   allowBack: boolean;
-// }> = ({ onSaveLocation, onCancel }) => {
-//   return (
-//     <div className='fixed inset-0 z-50 bg-white'>
-//       <div className='p-4'>
-//         <h2 className='mb-4 text-lg font-semibold'>Pick Location</h2>
-//         <p className='mb-4 text-gray-500'>
-//           Location picker component placeholder
-//         </p>
-//         <div className='flex gap-2'>
-//           <button
-//             onClick={() =>
-//               onSaveLocation({
-//                 address: 'Sample Address',
-//                 latitude: -6.2,
-//                 longitude: 106.8,
-//               })
-//             }
-//             className='rounded bg-emerald-500 px-4 py-2 text-white'
-//           >
-//             Save Location
-//           </button>
-//           <button
-//             onClick={onCancel}
-//             className='rounded bg-gray-500 px-4 py-2 text-white'
-//           >
-//             Cancel
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -516,35 +475,71 @@ export default function SchedulePage() {
     const fetchWasteBanks = async () => {
       try {
         setLoadingWasteBanks(true);
+        let rawBanks: unknown[] = [];
 
-        // Try the public method first (no authentication required)
-        let response;
-        try {
-          response = await userListAPI.getUserList({
-            // role: 'waste_bank_central',
-            is_accepting_customer: true,
-            latitude: formData.coordinates?.lat || 0,
-            longitude: formData.coordinates?.lng || 0,
-            size: 50,
-          });
-        } catch {
-          response = await userListAPI.getUserList({
-            // role: 'waste_bank_central',
-            is_accepting_customer: true,
-            latitude: formData.coordinates?.lat || 0,
-            longitude: formData.coordinates?.lng || 0,
-            size: 50,
-          });
+        // ✅ Helper function dipindah ke atas agar bisa diakses
+        function extractBanksFromResponse(response: unknown): unknown[] {
+          if (!response) return [];
+
+          // Use type assertions to safely access properties
+          if (
+            typeof response === 'object' &&
+            response !== null &&
+            'data' in response &&
+            typeof (response as { data: unknown }).data === 'object' &&
+            (response as { data: { users?: unknown[] } }).data &&
+            Array.isArray(
+              (response as { data: { users?: unknown[] } }).data.users
+            )
+          ) {
+            return (response as { data: { users: unknown[] } }).data.users;
+          } else if (
+            typeof response === 'object' &&
+            response !== null &&
+            'data' in response &&
+            Array.isArray((response as { data: unknown[] }).data)
+          ) {
+            return (response as { data: unknown[] }).data;
+          } else if (Array.isArray(response)) {
+            return response;
+          }
+
+          return [];
         }
 
-        // Handle different response structures and map to expected format
-        let rawBanks: unknown[] = [];
-        if (response?.data?.users) {
-          rawBanks = response.data.users;
-        } else if (Array.isArray(response?.data)) {
-          rawBanks = response.data;
-        } else if (Array.isArray(response)) {
-          rawBanks = response;
+        try {
+          const [centralResult, unitResult] = await Promise.allSettled([
+            // Central: only accepting customers
+            userListAPI.getUserList({
+              role: 'waste_bank_central',
+              is_accepting_customer: true, // ✅ Required for central
+              latitude: formData.coordinates?.lat || 0,
+              longitude: formData.coordinates?.lng || 0,
+              size: 25,
+            }),
+            // Unit: all units (always accepting)
+            userListAPI.getUserList({
+              role: 'waste_bank_unit',
+              // No is_accepting_customer - all units accept
+              latitude: formData.coordinates?.lat || 0,
+              longitude: formData.coordinates?.lng || 0,
+              size: 25,
+            }),
+          ]);
+
+          // Extract data from both responses
+          const centralBanks = extractBanksFromResponse(
+            centralResult.status === 'fulfilled' ? centralResult.value : null
+          );
+          const unitBanks = extractBanksFromResponse(
+            unitResult.status === 'fulfilled' ? unitResult.value : null
+          );
+
+          // Combine without sorting (sorting will be done after distance calculation)
+          rawBanks = [...centralBanks, ...unitBanks].slice(0, 50);
+        } catch (error) {
+          console.error('Error fetching waste banks:', error);
+          rawBanks = [];
         }
 
         const mappedBanks: WasteBank[] = rawBanks.map((bank) => {
@@ -579,38 +574,19 @@ export default function SchedulePage() {
           };
         });
 
-        // console.log('Mapped Banks:', mappedBanks);
+        console.log('mappedBanks:', mappedBanks);
 
         // Calculate distance if user coordinates are available
-        let finalBanks = mappedBanks;
-        if (formData.coordinates && mappedBanks.length > 0) {
-          finalBanks = mappedBanks.map((bank) => {
-            // If bank has coordinates in original data, calculate distance
-            const bankCoords =
-              bank.originalData?.coordinates ||
-              bank.originalData?.location?.coordinates;
-            if (bankCoords && bankCoords.lat && bankCoords.lng) {
-              const distance = calculateDistance(
-                formData.coordinates!.lat,
-                formData.coordinates!.lng,
-                typeof bankCoords.lat === 'string'
-                  ? parseFloat(bankCoords.lat)
-                  : bankCoords.lat,
-                typeof bankCoords.lng === 'string'
-                  ? parseFloat(bankCoords.lng)
-                  : bankCoords.lng
-              );
-              return { ...bank, distance };
-            }
-            return { ...bank, distance: null };
-          });
-
-          // Sort by distance
-          finalBanks.sort((a, b) => {
+        const finalBanks = mappedBanks
+          .sort((a, b) => {
             const aDistance = a.distance ?? Number.POSITIVE_INFINITY;
             const bDistance = b.distance ?? Number.POSITIVE_INFINITY;
             return aDistance - bDistance;
-          });
+          })
+          .slice(0, 50);
+
+        if (isMounted) {
+          setWasteBanks(finalBanks);
         }
 
         if (isMounted) {
