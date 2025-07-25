@@ -8,11 +8,11 @@ export const logoutAPI = async (refreshToken: string) => {
   try {
     const tokenManager = getTokenManager();
     const validAccessToken = await tokenManager.getValidAccessToken();
-    
+
     if (!validAccessToken) {
       return { success: false, reason: 'no_valid_access_token' };
     }
-    
+
     const response = await axios.post(
       `${API_BASE_URL}/api/auth/logout`,
       { refresh_token: refreshToken },
@@ -20,7 +20,7 @@ export const logoutAPI = async (refreshToken: string) => {
         timeout: 5000,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${validAccessToken}`,
+          Authorization: `Bearer ${validAccessToken}`,
         },
       }
     );
@@ -29,12 +29,12 @@ export const logoutAPI = async (refreshToken: string) => {
     return { success: true, data: response.data };
   } catch (error) {
     console.error('❌ Backend logout failed:', error);
-    
+
     if (axios.isAxiosError(error)) {
       console.error('Response status:', error.response?.status);
       console.error('Response data:', error.response?.data);
     }
-    
+
     return { success: false, error };
   }
 };

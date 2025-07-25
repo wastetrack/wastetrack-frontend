@@ -197,7 +197,9 @@ export class TokenManager {
     let backendLogoutSuccess = false;
 
     try {
-      const refreshToken = cookieUtils.get('refresh_token') || localStorage.getItem('refresh_token');
+      const refreshToken =
+        cookieUtils.get('refresh_token') ||
+        localStorage.getItem('refresh_token');
       const accessToken = sessionStorage.getItem('access_token');
 
       if (refreshToken && accessToken) {
