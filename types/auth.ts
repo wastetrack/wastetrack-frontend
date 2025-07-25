@@ -51,6 +51,7 @@ export interface FormData {
     latitude: number;
     longitude: number;
   };
+  is_accepting_customer: boolean; // Indicates if the user accepts customer requests
 }
 
 export interface RegisterFormProps {
