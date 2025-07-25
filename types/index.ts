@@ -12,3 +12,4 @@ export * from './waste-transfer-request-item';
 export * from './storage';
 export * from './storage-item';
 export * from './collector';
+export * from './location';
