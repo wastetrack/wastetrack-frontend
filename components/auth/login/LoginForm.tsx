@@ -62,7 +62,8 @@ function LoginFormContent() {
     if (email || password) {
       // Pastikan kita berada di browser sebelum melakukan replace
       if (typeof window !== 'undefined') {
-        router.replace('/login');
+        // router.replace('/login');
+        console.log('Cleaning URL to remove sensitive data');
         // Alert.error({
         //   title: 'Peringatan Keamanan! 🚨',
         //   text: 'Kredensial login tidak boleh muncul di URL. Halaman telah dibersihkan untuk keamanan Anda.',
@@ -111,7 +112,6 @@ function LoginFormContent() {
     try {
       // Pastikan router dioper ke fungsi handleLogin
       const result = await loginFunctions.handleLogin(formData, router);
-
       if (result.success) {
         setFormData({ email: '', password: '' });
         // Router push sudah ditangani di dalam loginFunctions
@@ -133,10 +133,6 @@ function LoginFormContent() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      // Alert.error({
-      //   title: 'Error',
-      //   text: 'Terjadi kesalahan yang tidak terduga saat login',
-      // });
       setFormData((prev) => ({ ...prev, password: '' }));
     } finally {
       setLoading(false);
@@ -182,12 +178,7 @@ function LoginFormContent() {
       </div>
 
       {/* Make sure form doesn't submit to URL */}
-      <form
-        onSubmit={handleSubmit}
-        className='space-y-4 sm:space-y-5'
-        method='post'
-        action='#'
-      >
+      <form className='space-y-4 sm:space-y-5'>
         <div>
           <label
             htmlFor='email'
@@ -262,7 +253,8 @@ function LoginFormContent() {
         </div>
 
         <button
-          type='submit'
+          type='button'
+          onClick={handleSubmit}
           disabled={loading}
           className='mt-4 w-full transform rounded-lg bg-emerald-600 p-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 sm:text-base'
         >

@@ -35,6 +35,10 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (error.config?.url?.includes('/api/auth/login')) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       // Try to refresh token one more time
       const tokenManager = getTokenManager();
@@ -46,7 +50,8 @@ apiClient.interceptors.response.use(
         return apiClient.request(error.config);
       } else {
         // If refresh fails, logout
-        tokenManager.logout();
+        // tokenManager.logout();
+        console.log('Would logout, but disabled for login debugging');
       }
     }
     return Promise.reject(error);
@@ -57,15 +62,12 @@ export const loginAPI = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
       const response = await apiClient.post('/api/auth/login', credentials);
-
-      const tokenManager = getTokenManager();
-      tokenManager.storeTokens(response.data.data);
-
+      // const tokenManager = getTokenManager();
+      // tokenManager.storeTokens(response.data.data);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log('Login Error:', error.response?.data);
-
+        // console.log('Login Error:', error.response?.data);
         // Check for too many sessions error
         if (error.response?.data?.errors === 'Too many active sessions') {
           throw new Error('Too many active sessions');
