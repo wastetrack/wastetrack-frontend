@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import mapboxgl, { Map, Marker, LngLatLike } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-
-// --- Komponen Ikon & UI ---
 import {
   MapPin,
   Loader2,
@@ -17,31 +15,19 @@ import {
   X,
   CheckCircle,
 } from 'lucide-react';
-
-// --- Atur Access Token Mapbox ---
-// Pastikan variabel lingkungan NEXT_PUBLIC_MAPBOX_TOKEN sudah diatur di .env.local
+import { INDONESIA_CITIES, INDONESIA_PROVINCES } from '@/constants';
+import {
+  PickLocationProps,
+  LocationType,
+  SavedLocationPayload,
+  NominatimGeocodingData,
+  NominatimAddress,
+  MapboxGeocodingData,
+  NominatimResult,
+  GooglePlacesResult,
+} from '@/types';
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
-// --- Definisi Tipe ---
-type LocationType = {
-  latitude: number;
-  longitude: number;
-};
-
-type SavedLocationPayload = LocationType & {
-  address: string;
-  updatedAt: string;
-};
-
-type PickLocationProps = {
-  initialLocation?: LocationType | null;
-  onSaveLocation?: (location: SavedLocationPayload) => Promise<void> | void;
-  onCancel?: () => void;
-  pageTitle?: string;
-  allowBack?: boolean;
-};
-
-// --- Komponen Bantuan (Tooltip) ---
 const HelpTooltip = ({
   title,
   content,
@@ -87,6 +73,15 @@ const PickLocation: React.FC<PickLocationProps> = ({
   const markerRef = useRef<Marker | null>(null);
   const router = useRouter();
 
+  const [addressComponents, setAddressComponents] = useState({
+    kota: '',
+    provinsi: '',
+    kecamatan: '',
+    kelurahan: '',
+    kodePos: '',
+    fullAddress: '',
+  });
+
   // Debug log untuk melihat props yang diterima
   useEffect(() => {
     console.log('PickLocation props:', {
@@ -98,22 +93,71 @@ const PickLocation: React.FC<PickLocationProps> = ({
     });
   }, [initialLocation, pageTitle, allowBack, onSaveLocation, onCancel]);
 
-  // Fungsi untuk mengambil alamat menggunakan Mapbox Geocoding API
   const fetchAddressFromCoordinates = useCallback(
     async (lat: number, lng: number) => {
       console.log('Fetching address for:', { lat, lng });
       try {
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&language=id`
-        );
-        if (!response.ok) throw new Error('Gagal mengambil data alamat.');
-        const data = await response.json();
-        const feature = data.features[0];
-        const newAddress = feature
-          ? feature.place_name
-          : 'Alamat tidak ditemukan';
-        console.log('Address found:', newAddress);
-        setAddress(newAddress);
+        const providers = [
+          {
+            name: 'nominatim',
+            fetch: async () => {
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?` +
+                  `format=json&lat=${lat}&lon=${lng}&addressdetails=1&zoom=18&accept-language=id`,
+                { headers: { 'User-Agent': 'WasteTrack-App/1.0' } }
+              );
+              if (!response.ok) throw new Error('Nominatim request failed');
+              const data = await response.json();
+              return {
+                address: data.display_name,
+                components: data,
+                source: 'nominatim',
+              };
+            },
+          },
+          {
+            name: 'mapbox',
+            fetch: async () => {
+              const response = await fetch(
+                `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?` +
+                  `access_token=${mapboxgl.accessToken}&language=id&country=id&types=address,poi,place`
+              );
+              if (!response.ok) throw new Error('Mapbox request failed');
+              const data = await response.json();
+              const feature = data.features[0];
+              return {
+                address: feature?.place_name,
+                components: feature,
+                source: 'mapbox',
+              };
+            },
+          },
+        ];
+
+        for (const provider of providers) {
+          try {
+            const result = await provider.fetch();
+            if (result.address && result.address.length > 20) {
+              console.log(`Address from ${provider.name}:`, result.address);
+              setAddress(result.address);
+
+              // Parse komponen alamat dengan parser yang cerdas
+              const parsedComponents = parseIndonesianAddress(
+                result.address,
+                result.components
+              );
+              setAddressComponents(parsedComponents);
+              console.log('Parsed components:', parsedComponents);
+
+              return;
+            }
+          } catch (err) {
+            console.warn(`${provider.name} failed:`, err);
+            continue;
+          }
+        }
+
+        setAddress('Alamat tidak ditemukan');
       } catch (err) {
         console.error('Error fetching address:', err);
         setAddress('Gagal memuat detail alamat');
@@ -122,7 +166,207 @@ const PickLocation: React.FC<PickLocationProps> = ({
     []
   );
 
-  // Inisialisasi Peta Mapbox
+  const parseIndonesianAddress = (
+    fullAddress: string,
+    geocodingData?: NominatimGeocodingData | MapboxGeocodingData
+  ) => {
+    console.log('Parsing address:', fullAddress);
+
+    const result = {
+      kota: '',
+      provinsi: '',
+      kecamatan: '',
+      kelurahan: '',
+      kodePos: '',
+      fullAddress: fullAddress,
+    };
+    // Daftar kota/kabupaten utama
+    const kotaIndonesia = INDONESIA_CITIES;
+
+    // Daftar provinsi Indonesia
+    const provinsiIndonesia = INDONESIA_PROVINCES;
+
+    try {
+      // ✅ Step 1: Extract kode pos (paling mudah dan akurat)
+      const postalMatch = fullAddress.match(/\b\d{5}\b/);
+      if (postalMatch) {
+        result.kodePos = postalMatch[0];
+        console.log('✅ Found postal code:', result.kodePos);
+      }
+
+      // ✅ Step 2: DIRECT MATCHING - Cari kota dari daftar yang PASTI BENAR
+      const lowerAddress = fullAddress.toLowerCase();
+
+      // Cari kota dengan exact matching
+      for (const kota of kotaIndonesia) {
+        const lowerKota = kota.toLowerCase();
+
+        // Cek berbagai format kemungkinan
+        if (
+          lowerAddress.includes(`, ${lowerKota},`) || // ", Surabaya,"
+          lowerAddress.includes(`, ${lowerKota} `) || // ", Surabaya "
+          lowerAddress.includes(`${lowerKota},`) || // "Surabaya,"
+          lowerAddress.includes(`kota ${lowerKota}`) || // "Kota Surabaya"
+          lowerAddress.includes(`kabupaten ${lowerKota}`) || // "Kabupaten Malang"
+          lowerAddress.includes(`kab. ${lowerKota}`) || // "Kab. Sidoarjo"
+          lowerAddress.includes(`kab ${lowerKota}`) || // "Kab Gresik"
+          lowerAddress.endsWith(lowerKota)
+        ) {
+          // "...Surabaya"
+
+          result.kota = kota;
+          console.log('✅ Found city match:', kota);
+          break; // Stop setelah ketemu yang pertama
+        }
+      }
+
+      // ✅ Step 3: DIRECT MATCHING - Cari provinsi dari daftar yang PASTI BENAR
+      for (const provinsi of provinsiIndonesia) {
+        const lowerProvinsi = provinsi.toLowerCase();
+
+        if (lowerAddress.includes(lowerProvinsi)) {
+          result.provinsi = provinsi;
+          console.log('✅ Found province match:', provinsi);
+          break; // Stop setelah ketemu yang pertama
+        }
+      }
+
+      // ✅ Step 4: Fallback - Ambil detail dari structured data (hanya jika belum ketemu)
+      if (geocodingData && (!result.kota || !result.provinsi)) {
+        console.log('🔄 Using structured data as fallback...');
+
+        if (geocodingData.address) {
+          // Nominatim structure
+          const addr = geocodingData.address as NominatimAddress;
+
+          // Hanya ambil kota dari structured data jika masih kosong DAN ada di daftar kita
+          if (!result.kota) {
+            const cityFromData =
+              addr.city || addr.town || addr.village || addr.municipality || '';
+            if (cityFromData) {
+              const matchedCity = kotaIndonesia.find(
+                (kota) =>
+                  kota.toLowerCase() === cityFromData.toLowerCase() ||
+                  kota.toLowerCase().includes(cityFromData.toLowerCase()) ||
+                  cityFromData.toLowerCase().includes(kota.toLowerCase())
+              );
+              if (matchedCity) {
+                result.kota = matchedCity;
+                console.log('✅ Found city from structured data:', matchedCity);
+              }
+            }
+          }
+
+          // Hanya ambil provinsi dari structured data jika masih kosong DAN ada di daftar kita
+          if (!result.provinsi) {
+            const provFromData = addr.state || addr.province || '';
+            if (provFromData) {
+              const matchedProv = provinsiIndonesia.find(
+                (prov) =>
+                  prov.toLowerCase() === provFromData.toLowerCase() ||
+                  prov.toLowerCase().includes(provFromData.toLowerCase()) ||
+                  provFromData.toLowerCase().includes(prov.toLowerCase())
+              );
+              if (matchedProv) {
+                result.provinsi = matchedProv;
+                console.log(
+                  '✅ Found province from structured data:',
+                  matchedProv
+                );
+              }
+            }
+          }
+
+          // Ambil detail lainnya (ini aman karena bukan kota/provinsi)
+          if (!result.kecamatan) {
+            result.kecamatan = addr.suburb || addr.subdistrict || '';
+          }
+          if (!result.kelurahan) {
+            result.kelurahan = addr.neighbourhood || addr.hamlet || '';
+          }
+          if (!result.kodePos) {
+            result.kodePos = addr.postcode || '';
+          }
+        } else if (geocodingData.context) {
+          // Mapbox structure
+          interface MapboxContext {
+            id: string;
+            text: string;
+            [key: string]: unknown;
+          }
+
+          const context: MapboxContext[] = Array.isArray(geocodingData.context)
+            ? geocodingData.context
+            : [];
+
+          context.forEach((ctx: MapboxContext) => {
+            if (ctx.id.includes('place') && !result.kota) {
+              // Hanya ambil jika ada di daftar kota kita
+              const matchedCity = kotaIndonesia.find(
+                (kota) =>
+                  kota.toLowerCase() === ctx.text.toLowerCase() ||
+                  kota.toLowerCase().includes(ctx.text.toLowerCase()) ||
+                  ctx.text.toLowerCase().includes(kota.toLowerCase())
+              );
+              if (matchedCity) {
+                result.kota = matchedCity;
+                console.log('✅ Found city from Mapbox context:', matchedCity);
+              }
+            } else if (ctx.id.includes('region') && !result.provinsi) {
+              // Hanya ambil jika ada di daftar provinsi kita
+              const matchedProv = provinsiIndonesia.find(
+                (prov) =>
+                  prov.toLowerCase() === ctx.text.toLowerCase() ||
+                  prov.toLowerCase().includes(ctx.text.toLowerCase()) ||
+                  ctx.text.toLowerCase().includes(prov.toLowerCase())
+              );
+              if (matchedProv) {
+                result.provinsi = matchedProv;
+                console.log(
+                  '✅ Found province from Mapbox context:',
+                  matchedProv
+                );
+              }
+            } else if (ctx.id.includes('district') && !result.kecamatan) {
+              result.kecamatan = ctx.text;
+            } else if (ctx.id.includes('postcode') && !result.kodePos) {
+              result.kodePos = ctx.text;
+            }
+          });
+        }
+      }
+
+      // ✅ Final validation - Pastikan hasil adalah kota/provinsi yang valid
+      if (result.kota && !kotaIndonesia.includes(result.kota)) {
+        console.log('❌ Invalid city detected, clearing:', result.kota);
+        result.kota = '';
+      }
+
+      if (result.provinsi && !provinsiIndonesia.includes(result.provinsi)) {
+        console.log('❌ Invalid province detected, clearing:', result.provinsi);
+        result.provinsi = '';
+      }
+
+      // Bersihkan string kosong dan trim
+      (Object.keys(result) as (keyof typeof result)[]).forEach((key) => {
+        if (typeof result[key] === 'string') {
+          result[key] = result[key].trim();
+        }
+      });
+
+      console.log('🎯 Final parsed result:', {
+        kota: result.kota,
+        provinsi: result.provinsi,
+        kodePos: result.kodePos,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('❌ Error parsing address:', error);
+      return result;
+    }
+  };
+
   const initializeMap = useCallback(
     (lat: number, lng: number) => {
       console.log('Initializing map with:', { lat, lng });
@@ -280,15 +524,6 @@ const PickLocation: React.FC<PickLocationProps> = ({
       }
 
       const data = await response.json();
-      type NominatimResult = {
-        display_name: string;
-        lon: string;
-        lat: string;
-        importance?: number;
-        category?: string;
-        type?: string;
-        address?: Record<string, unknown>;
-      };
       return (data as NominatimResult[]).map((item) => ({
         place_name: item.display_name,
         center: [parseFloat(item.lon), parseFloat(item.lat)],
@@ -362,18 +597,6 @@ const PickLocation: React.FC<PickLocationProps> = ({
       }
 
       const data = await response.json();
-      type GooglePlacesResult = {
-        name: string;
-        formatted_address: string;
-        geometry: {
-          location: {
-            lat: number;
-            lng: number;
-          };
-        };
-        rating?: number;
-        types?: string[];
-      };
       return (data.results || []).map((item: GooglePlacesResult) => ({
         place_name: `${item.name}, ${item.formatted_address}`,
         center: [item.geometry.location.lng, item.geometry.location.lat],
@@ -397,6 +620,15 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
     setIsSearching(true);
     setError(null);
+
+    setAddressComponents({
+      kota: '',
+      provinsi: '',
+      kecamatan: '',
+      kelurahan: '',
+      kodePos: '',
+      fullAddress: '',
+    });
 
     try {
       const proximity = location
@@ -453,6 +685,13 @@ const PickLocation: React.FC<PickLocationProps> = ({
       setLocation(newLocation);
       setAddress(bestResult.place_name);
 
+      const parsedFromSearch = parseIndonesianAddress(
+        bestResult.place_name,
+        bestResult
+      );
+      console.log('🎯 Parsed from search result:', parsedFromSearch);
+      setAddressComponents(parsedFromSearch);
+
       // Update map and marker with smooth animation
       if (mapRef.current && markerRef.current) {
         const newLngLat: LngLatLike = [newLng, newLat];
@@ -495,8 +734,6 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
   // Fungsi simpan lokasi
   const handleSaveLocation = async () => {
-    console.log('Save location clicked. Current location:', location);
-
     if (!location) {
       setError('Lokasi belum dipilih pada peta.');
       return;
@@ -510,17 +747,16 @@ const PickLocation: React.FC<PickLocationProps> = ({
         ...location,
         address: address || 'Alamat tidak tersedia',
         updatedAt: new Date().toISOString(),
+        addressComponents: addressComponents,
       };
 
-      console.log('Saving location payload:', payload);
+      console.log('Saving location with parsed components:', payload);
 
       if (onSaveLocation) {
         await onSaveLocation(payload);
-        console.log('onSaveLocation callback completed');
       }
 
       setSaveSuccess(true);
-
       setTimeout(() => {
         if (onCancel) {
           onCancel();
