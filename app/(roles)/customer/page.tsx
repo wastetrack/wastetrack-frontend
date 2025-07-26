@@ -176,7 +176,7 @@ export default function CustomerDashboard() {
           userId,
           {
             sort_by: 'created_at',
-            sort_order: 'desc',
+            order_dir: 'desc',
             size: 5,
           }
         );
@@ -254,13 +254,11 @@ export default function CustomerDashboard() {
       {/* Recent Pickups Component */}
       {loadingPickups ? (
         <div className='rounded-lg bg-white p-6 shadow-sm'>
-          <h2 className='mb-4 text-lg font-semibold'>Pengambilan Terbaru</h2>
+          <h2 className='mb-4 text-lg font-semibold'>Riwayat Terbaru</h2>
           <div className='flex items-center justify-center py-8'>
             <div className='text-center'>
               <div className='mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-b-2 border-emerald-600'></div>
-              <p className='text-sm text-gray-500'>
-                Memuat data pengambilan...
-              </p>
+              <p className='text-sm text-gray-500'>Memuat data riwayat...</p>
             </div>
           </div>
         </div>
