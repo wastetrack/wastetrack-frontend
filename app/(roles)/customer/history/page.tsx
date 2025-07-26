@@ -22,11 +22,13 @@ import {
   customerProfileAPI,
   type CustomerProfile,
 } from '@/services/api/customer';
-import { wasteDropRequestAPI } from '@/services/api/user';
-import { wasteDropRequestItemAPI } from '@/services/api/user';
-import { wasteTypeAPI } from '@/services/api/user';
-import { userListAPI } from '@/services/api/user';
-import { currentUserAPI } from '@/services/api/user';
+import {
+  currentUserAPI,
+  userListAPI,
+  wasteDropRequestAPI,
+  wasteDropRequestItemAPI,
+  wasteTypeAPI,
+} from '@/services/api/user';
 import {
   WasteDropRequest,
   WasteDropRequestListParams,
@@ -152,8 +154,8 @@ export default function HistoryPage() {
   });
 
   const [tempFilters, setTempFilters] = useState(filters);
-
   const [showFilters, setShowFilters] = useState(false);
+  const [isClosingModal, setIsClosingModal] = useState(false);
   const [summaryStats, setSummaryStats] = useState({
     total: 0,
     completed: 0,
@@ -162,22 +164,6 @@ export default function HistoryPage() {
     collecting: 0,
     cancelled: 0,
   });
-
-  // Function to filter requests based on search query (only bank name)
-  const filteredRequests = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return requests;
-    }
-
-    const query = searchQuery.toLowerCase().trim();
-
-    return requests.filter((request) => {
-      // Search only by waste bank institution name
-      const wasteBankName =
-        wasteBanks[request.waste_bank_id]?.institution?.toLowerCase() || '';
-      return wasteBankName.includes(query);
-    });
-  }, [requests, searchQuery, wasteBanks]);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -192,92 +178,36 @@ export default function HistoryPage() {
     getCurrentUser();
   }, []);
 
-  const fetchCustomerProfile = useCallback(async () => {
-    if (!currentUserId) return;
+  const fetchWasteBankInfo = useCallback(async (wasteBankIds: string[]) => {
+    // Check existing waste banks to avoid refetch
+    const existingIds = Object.keys(wasteBanks);
+    const newWasteBankIds = wasteBankIds.filter(
+      (id) => id && !existingIds.includes(id)
+    );
+
+    if (newWasteBankIds.length === 0) {
+      return;
+    }
 
     try {
-      const response = await customerProfileAPI.getProfile(currentUserId);
-      if (response.data) {
-        setCustomerProfile(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch customer profile:', error);
-      // Don't set error state here, as this is not critical for the page functionality
-    }
-  }, [currentUserId]);
+      const response = await userListAPI.getFlatUserList({
+        page: 1,
+        size: 100,
+      });
 
-  // Function to fetch waste bank information
-  const fetchWasteBankInfo = useCallback(
-    async (wasteBankIds: string[]) => {
-      const newWasteBankIds = wasteBankIds.filter(
-        (id) => id && !wasteBanks[id]
-      );
+      const users = response.data || [];
+      const foundWasteBanks: Record<string, UserListItem> = {};
 
-      if (newWasteBankIds.length === 0) {
-        return;
-      }
+      users.forEach((user: UserListItem) => {
+        if (newWasteBankIds.includes(user.id)) {
+          foundWasteBanks[user.id] = user;
+        }
+      });
 
-      try {
-        // Fetch user list to find waste banks
-        const response = await userListAPI.getFlatUserList({
-          page: 1,
-          size: 100, // Get enough results to find our waste banks
-        });
-
-        // Response structure: { data: [UserListItem...] }
-        const users = response.data || [];
-
-        // console.log('Fetched waste banks:', users);
-        const foundWasteBanks: Record<string, UserListItem> = {};
-
-        // Find waste banks by ID
-        users.forEach((user: UserListItem) => {
-          if (newWasteBankIds.includes(user.id)) {
-            // console.log(
-            //   'Found matching waste bank:',
-            //   user.id,
-            //   user.institution
-            // );
-            foundWasteBanks[user.id] = user;
-          }
-        });
-
-        // console.log('Found waste banks:', foundWasteBanks);
-
-        // Create fallback entries for missing ones
-        newWasteBankIds.forEach((id) => {
-          if (!foundWasteBanks[id]) {
-            foundWasteBanks[id] = {
-              id,
-              username: '',
-              email: '',
-              role: '',
-              phone_number: '',
-              institution: 'Bank Sampah',
-              address: '',
-              city: '',
-              province: '',
-              points: 0,
-              balance: 0,
-              location: { latitude: 0, longitude: 0 },
-              is_email_verified: false,
-              created_at: '',
-              updated_at: '',
-            };
-          }
-        });
-
-        setWasteBanks((prev) => ({
-          ...prev,
-          ...foundWasteBanks,
-        }));
-      } catch (error) {
-        console.error('Failed to fetch waste bank info:', error);
-
-        // Create fallback entries for failed fetches
-        const fallbackWasteBanks: Record<string, UserListItem> = {};
-        newWasteBankIds.forEach((id) => {
-          fallbackWasteBanks[id] = {
+      // Create fallback entries for missing ones
+      newWasteBankIds.forEach((id) => {
+        if (!foundWasteBanks[id]) {
+          foundWasteBanks[id] = {
             id,
             username: '',
             email: '',
@@ -294,22 +224,183 @@ export default function HistoryPage() {
             created_at: '',
             updated_at: '',
           };
-        });
+        }
+      });
 
-        setWasteBanks((prev) => ({
-          ...prev,
-          ...fallbackWasteBanks,
-        }));
+      setWasteBanks((prev) => ({
+        ...prev,
+        ...foundWasteBanks,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch waste bank info:', error);
+      // Create fallback entries
+      const fallbackWasteBanks: Record<string, UserListItem> = {};
+      newWasteBankIds.forEach((id) => {
+        fallbackWasteBanks[id] = {
+          id,
+          username: '',
+          email: '',
+          role: '',
+          phone_number: '',
+          institution: 'Bank Sampah',
+          address: '',
+          city: '',
+          province: '',
+          points: 0,
+          balance: 0,
+          location: { latitude: 0, longitude: 0 },
+          is_email_verified: false,
+          created_at: '',
+          updated_at: '',
+        };
+      });
+
+      setWasteBanks((prev) => ({
+        ...prev,
+        ...fallbackWasteBanks,
+      }));
+    }
+  }, []);
+
+  const fetchRequestsBase = useCallback(
+    async (page: number = 1, isRefresh = false) => {
+      if (!currentUserId) return;
+
+      try {
+        // console.log('🔄 API Call: fetchRequests', {
+        //   page,
+        //   isRefresh,
+        //   currentUserId,
+        // });
+
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
+
+        const params: WasteDropRequestListParams = {
+          customer_id: currentUserId,
+          page,
+          size: pageSize,
+          sort_by: 'created_at',
+          order_dir: 'desc',
+        };
+
+        if (filters.status !== 'all') params.status = filters.status;
+        if (filters.delivery_type !== 'all')
+          params.delivery_type = filters.delivery_type;
+        if (filters.appointment_date_from)
+          params.date_from = filters.appointment_date_from;
+        if (filters.appointment_date_to)
+          params.date_to = filters.appointment_date_to;
+
+        const response = await wasteDropRequestAPI.getCustomerWasteDropRequests(
+          currentUserId,
+          params
+        );
+
+        const requestsData = response.data || [];
+        const paginationInfo =
+          (response.paging as { total_item?: number; total_page?: number }) ||
+          {};
+        const totalItems = paginationInfo.total_item || 0;
+        const totalPagesFromAPI = paginationInfo.total_page || 1;
+
+        setRequests(requestsData);
+        setTotalCount(totalItems);
+        setTotalPages(totalPagesFromAPI);
+        setCurrentPage(page);
+
+        // Fetch waste bank information
+        const uniqueWasteBankIds = [
+          ...new Set(
+            requestsData
+              .map((r: WasteDropRequest) => r.waste_bank_id)
+              .filter((id) => id)
+          ),
+        ];
+
+        if (uniqueWasteBankIds.length > 0) {
+          fetchWasteBankInfo(uniqueWasteBankIds);
+        }
+
+        setSummaryStats({
+          total: totalItems,
+          completed: requestsData.filter((r) => r.status === 'completed')
+            .length,
+          pending: requestsData.filter((r) => r.status === 'pending').length,
+          assigned: requestsData.filter((r) => r.status === 'assigned').length,
+          collecting: requestsData.filter((r) => r.status === 'collecting')
+            .length,
+          cancelled: requestsData.filter((r) => r.status === 'cancelled')
+            .length,
+        });
+      } catch (error) {
+        console.error('Failed to fetch requests:', error);
+        setError(
+          error instanceof Error ? error.message : 'Gagal memuat riwayat'
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
     },
-    [wasteBanks]
+    [currentUserId, filters, pageSize, fetchWasteBankInfo]
   );
 
-  // Function to fetch items for a specific request
+  const fetchCustomerProfile = useCallback(async () => {
+    if (!currentUserId) return;
+
+    try {
+      const response = await customerProfileAPI.getProfile(currentUserId);
+      if (response.data) {
+        setCustomerProfile(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch customer profile:', error);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const userId = await currentUserAPI.getUserId();
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error('Failed to get current user:', error);
+        setError('Gagal memuat informasi pengguna. Silakan login kembali.');
+      }
+    };
+    getCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (currentUserId) {
+      // console.log('🚀 Initial load/filter change - calling API');
+      fetchRequestsBase(1);
+      fetchCustomerProfile();
+    }
+  }, [currentUserId, filters]);
+
+  const filteredRequests = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return requests;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return requests.filter((request) => {
+      const wasteBankName =
+        wasteBanks[request.waste_bank_id]?.institution?.toLowerCase() || '';
+      return wasteBankName.includes(query);
+    });
+  }, [requests, searchQuery, wasteBanks]);
+
   const fetchRequestItems = useCallback(
     async (requestId: string) => {
       if (requestItems[requestId] || loadingItems.has(requestId)) {
-        return; // Already loaded or loading
+        return;
       }
 
       setLoadingItems((prev) => new Set(prev).add(requestId));
@@ -319,7 +410,7 @@ export default function HistoryPage() {
           {
             request_id: requestId,
             page: 1,
-            size: 100, // Get all items for the request
+            size: 100,
           }
         );
 
@@ -328,7 +419,7 @@ export default function HistoryPage() {
           [requestId]: response.data,
         }));
 
-        // Fetch waste types for items that don't have cached data
+        // Fetch waste types
         const uniqueWasteTypeIds = [
           ...new Set(response.data.map((item) => item.waste_type_id)),
         ];
@@ -337,7 +428,6 @@ export default function HistoryPage() {
         );
 
         if (newWasteTypeIds.length > 0) {
-          // Fetch waste types concurrently
           const wasteTypePromises = newWasteTypeIds.map(async (wasteTypeId) => {
             try {
               const wasteTypeResponse =
@@ -361,7 +451,6 @@ export default function HistoryPage() {
           });
 
           const wasteTypeResults = await Promise.all(wasteTypePromises);
-
           const newWasteTypesData = wasteTypeResults.reduce(
             (acc, result) => {
               acc[result.id] = result.data;
@@ -388,7 +477,6 @@ export default function HistoryPage() {
     [requestItems, loadingItems, wasteTypes]
   );
 
-  // Toggle expanded request
   const toggleRequestExpansion = useCallback(
     (requestId: string) => {
       const newExpanded = new Set(expandedRequests);
@@ -397,7 +485,6 @@ export default function HistoryPage() {
         newExpanded.delete(requestId);
       } else {
         newExpanded.add(requestId);
-        // Fetch items when expanding
         fetchRequestItems(requestId);
       }
 
@@ -406,125 +493,49 @@ export default function HistoryPage() {
     [expandedRequests, fetchRequestItems]
   );
 
-  const fetchRequests = useCallback(
-    async (page: number = 1, isRefresh = false) => {
-      if (!currentUserId) return;
-
-      try {
-        if (isRefresh) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-        setError(null);
-
-        const params: WasteDropRequestListParams = {
-          customer_id: currentUserId,
-          page,
-          size: pageSize,
-          sort_by: 'created_at',
-          sort_order: 'desc',
-        };
-
-        if (filters.status !== 'all') params.status = filters.status;
-        if (filters.delivery_type !== 'all')
-          params.delivery_type = filters.delivery_type;
-
-        if (filters.appointment_date_from)
-          params.date_from = filters.appointment_date_from;
-        if (filters.appointment_date_to)
-          params.date_to = filters.appointment_date_to;
-
-        const response = await wasteDropRequestAPI.getCustomerWasteDropRequests(
-          currentUserId,
-          params
-        );
-
-        const requestsData = response.data || [];
-        const paginationInfo =
-          (response.paging as { total_item?: number; total_page?: number }) ||
-          {};
-        const totalItems = paginationInfo.total_item || 0;
-        const totalPagesFromAPI = paginationInfo.total_page || 1;
-
-        setRequests(requestsData);
-        setTotalCount(totalItems);
-        setTotalPages(totalPagesFromAPI);
-        setCurrentPage(page);
-
-        // Fetch waste bank information for the requests
-        const uniqueWasteBankIds = [
-          ...new Set(
-            requestsData
-              .map((r: WasteDropRequest) => r.waste_bank_id)
-              .filter((id) => id)
-          ),
-        ];
-
-        if (uniqueWasteBankIds.length > 0) {
-          fetchWasteBankInfo(uniqueWasteBankIds);
-        }
-
-        setSummaryStats({
-          total: totalItems,
-          completed: requestsData.filter((r) => r.status === 'completed')
-            .length,
-          pending: requestsData.filter((r) => r.status === 'pending').length,
-          assigned: requestsData.filter((r) => r.status === 'assigned').length,
-          collecting: requestsData.filter((r) => r.status === 'collecting')
-            .length,
-          cancelled: requestsData.filter((r) => r.status === 'cancelled')
-            .length,
-        });
-      } catch (error) {
-        // console.error('❌ Failed to fetch requests:', error);
-        setError(
-          error instanceof Error ? error.message : 'Gagal memuat riwayat'
-        );
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [currentUserId, filters, pageSize, searchQuery, fetchWasteBankInfo]
-  );
-
-  useEffect(() => {
-    if (currentUserId) {
-      fetchRequests(1);
-      fetchCustomerProfile(); // Fetch balance info
-    }
-  }, [currentUserId, filters, fetchRequests, fetchCustomerProfile]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (currentUserId) {
-        fetchRequests(1);
-      }
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, fetchRequests, currentUserId]);
-
   const handlePageChange = (page: number) => {
-    fetchRequests(page);
+    fetchRequestsBase(page);
   };
 
+  useEffect(() => {
+    document.body.style.overflow = showFilters ? 'hidden' : 'auto';
+  }, [showFilters]);
+
   const handleOpenFilters = () => {
-    setTempFilters(filters); // Set temp filters to current filters
+    setTempFilters(filters);
     setShowFilters(true);
+    setIsClosingModal(false);
+  };
+
+  const handleCloseFilters = () => {
+    if (isClosingModal) return;
+
+    setIsClosingModal(true);
+    setTimeout(() => {
+      setShowFilters(false);
+      setIsClosingModal(false);
+    }, 300);
   };
 
   const handleSaveFilters = () => {
-    setFilters(tempFilters); // Apply temp filters to actual filters
-    setCurrentPage(1); // Reset to first page
-    setShowFilters(false);
+    setFilters(tempFilters);
+    setCurrentPage(1);
+    handleCloseFilters();
   };
 
   const handleTempFilterChange = (key: string, value: string) => {
     setTempFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Component for rendering items
+  // ✅ DEBUGGING: Log setiap render (hapus di production)
+  // console.log('🔄 HistoryPage render:', {
+  //   requestsLength: requests.length,
+  //   searchQuery,
+  //   filtersStatus: filters.status,
+  //   currentUserId,
+  //   timestamp: new Date().toISOString(),
+  // });
+
   const renderRequestItems = (requestId: string) => {
     const items = requestItems[requestId] || [];
     const isLoading = loadingItems.has(requestId);
@@ -561,19 +572,19 @@ export default function HistoryPage() {
             >
               <div className='flex items-start justify-between'>
                 <div className='flex flex-1 items-start gap-2'>
-                  <Package className='mt-0.5 h-4 w-4 text-gray-400' />
                   <div className='flex-1'>
                     <p className='text-xs font-medium text-gray-800'>
                       {wasteTypeName}
                     </p>
                     {wasteTypeDescription && (
-                      <p className='mt-0.5 text-xs text-gray-500'>
+                      <p className='mt-0.5 hidden text-xs text-gray-500'>
                         {wasteTypeDescription}
                       </p>
                     )}
                     <div className='mt-1 flex items-center gap-3 text-xs text-gray-500'>
                       <span className='flex items-center gap-1 text-[9px]'>
-                        Qty: {item.quantity} kantong
+                        <Package className='h-3 w-3' />
+                        {item.quantity} kantong
                       </span>
                       {item.verified_weight > 0 && (
                         <span className='flex items-center gap-1 text-[9px]'>
@@ -619,7 +630,7 @@ export default function HistoryPage() {
         </h3>
         <p className='mb-4 text-gray-600'>{error}</p>
         <button
-          onClick={() => fetchRequests(1)}
+          onClick={() => fetchRequestsBase(1)}
           className='rounded-lg bg-emerald-500 px-4 py-2 text-white hover:bg-emerald-600'
         >
           Coba Lagi
@@ -628,7 +639,6 @@ export default function HistoryPage() {
     );
   }
 
-  // Determine which requests to display
   const requestsToDisplay = searchQuery.trim() ? filteredRequests : requests;
 
   return (
@@ -637,13 +647,15 @@ export default function HistoryPage() {
       <div>
         <div className='rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-700 p-4 text-center text-white'>
           <h1 className='mb-2 text-lg font-bold sm:text-2xl'>
-            Tabungan dan Riwayat Penyetoran
+            Riwayat Penyetoran
           </h1>
           <p className='sm:text-md text-sm text-emerald-50'>
             Lihat riwayat penyetoran sampah dan status permintaan Anda.
           </p>
         </div>
       </div>
+
+      {/* Summary Stats */}
       <div className='mb-6 grid grid-cols-2 gap-4 md:grid-cols-4'>
         <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
           <h3 className='mb-1 text-xs font-medium text-gray-600 sm:text-sm'>
@@ -657,7 +669,7 @@ export default function HistoryPage() {
           <h3 className='mb-1 text-xs font-medium text-gray-600 sm:text-sm'>
             Total Setor
           </h3>
-          <p className='text-xl font-bold text-blue-600 sm:text-2xl'>
+          <p className='text-xl font-bold text-amber-500 sm:text-2xl'>
             {summaryStats.total}
           </p>
         </div>
@@ -665,7 +677,7 @@ export default function HistoryPage() {
           <h3 className='mb-1 text-xs font-medium text-gray-600 sm:text-sm'>
             Selesai
           </h3>
-          <p className='text-xl font-bold text-green-600 sm:text-2xl'>
+          <p className='text-xl font-bold text-emerald-600 sm:text-2xl'>
             {summaryStats.completed}
           </p>
         </div>
@@ -673,7 +685,7 @@ export default function HistoryPage() {
           <h3 className='mb-1 text-xs font-medium text-gray-600 sm:text-sm'>
             Batal
           </h3>
-          <p className='text-xl font-bold text-red-600 sm:text-2xl'>
+          <p className='text-xl font-bold text-red-500 sm:text-2xl'>
             {summaryStats.cancelled}
           </p>
         </div>
@@ -681,9 +693,8 @@ export default function HistoryPage() {
 
       {/* Search & Filter */}
       <div>
-        <div className='mb-2 rounded-xl sm:mb-8 sm:bg-white sm:p-3 sm:p-4 sm:shadow-sm'>
+        <div className='sm:shadow-xs mb-2 rounded-xl sm:mb-8 sm:bg-white sm:p-3 sm:p-4'>
           <div className='flex items-center gap-2'>
-            {/* Search Input */}
             <div className='relative flex-1'>
               <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 sm:h-5 sm:w-5' />
               <input
@@ -694,8 +705,6 @@ export default function HistoryPage() {
                 className='w-full rounded-lg border border-gray-200 bg-white py-3 pl-9 pr-4 text-sm transition-all placeholder:text-xs focus:border-transparent focus:ring-2 focus:ring-emerald-500 sm:py-2.5 sm:pl-10 sm:text-base'
               />
             </div>
-
-            {/* Filter Button */}
             <button
               onClick={handleOpenFilters}
               className='flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-700 transition-colors hover:bg-emerald-100 sm:p-2.5'
@@ -707,29 +716,37 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* Bottom Filter Modal */}
+        {/* Filter Modal - sama seperti sebelumnya */}
         {showFilters && (
           <div
-            className='animate-fadeIn fixed inset-0 z-50 flex items-end justify-center bg-black/60'
-            style={{ animationDuration: '0.2s' }}
+            className={`fixed inset-0 z-50 flex items-end justify-center ${
+              isClosingModal
+                ? 'animate-fadeOut bg-black/0'
+                : 'animate-fadeIn bg-black/60'
+            }`}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                handleCloseFilters();
+              }
+            }}
           >
             <div
-              className={`max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white ${showFilters ? 'animate-slideUp' : 'animate-slideDown'}`}
-              style={{ animationDuration: '0.3s' }}
+              className={`max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white ${
+                isClosingModal ? 'animate-slideDown' : 'animate-slideUp'
+              }`}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className='p-6'>
-                {/* Modal Header with Title */}
                 <div className='mb-6 flex items-center justify-between'>
                   <h2 className='text-xl font-bold'>Filter</h2>
                   <button
-                    onClick={() => setShowFilters(false)}
+                    onClick={handleCloseFilters}
                     className='p-2 text-gray-500'
                   >
                     <X className='h-5 w-5' />
                   </button>
                 </div>
 
-                {/* Filter Status */}
                 <div className='mb-4'>
                   <h3 className='mb-2 text-left text-sm font-medium sm:text-lg'>
                     Status
@@ -750,7 +767,6 @@ export default function HistoryPage() {
                   </select>
                 </div>
 
-                {/* Filter Jenis Layanan */}
                 <div className='mb-4'>
                   <h3 className='mb-2 text-left text-sm font-medium sm:text-lg'>
                     Jenis Layanan
@@ -768,24 +784,12 @@ export default function HistoryPage() {
                   </select>
                 </div>
 
-                {/* Action Buttons */}
                 <div className='flex flex-col gap-3 border-t border-gray-100 pt-4'>
                   <button
                     onClick={handleSaveFilters}
                     className='w-full rounded-lg bg-emerald-600 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-700'
                   >
                     Simpan
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTempFilters({
-                        status: 'all',
-                        delivery_type: 'all',
-                      });
-                    }}
-                    className='hidden w-full rounded-lg border border-gray-300 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50'
-                  >
-                    Reset Filter
                   </button>
                 </div>
               </div>
@@ -794,7 +798,7 @@ export default function HistoryPage() {
         )}
       </div>
 
-      {/* Request List & Pagination */}
+      {/* Request List */}
       <div className='shadow-xs rounded-lg border border-gray-200 bg-white'>
         {requestsToDisplay.length === 0 ? (
           <div className='px-4 py-8 text-center sm:py-12'>
@@ -807,14 +811,6 @@ export default function HistoryPage() {
                 ? `Tidak ditemukan bank sampah yang sesuai dengan pencarian "${searchQuery}"`
                 : 'Anda belum melakukan penyetoran sampah.'}
             </p>
-            {searchQuery.trim() && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className='mt-4 rounded-lg bg-emerald-500 px-4 py-2 text-white hover:bg-emerald-600'
-              >
-                Hapus Pencarian
-              </button>
-            )}
           </div>
         ) : (
           <div className='divide-y divide-gray-200'>
@@ -831,9 +827,8 @@ export default function HistoryPage() {
                   className='transition-colors hover:bg-gray-50'
                 >
                   <div className='p-3 sm:p-6'>
-                    {/* Mobile Layout - Stack */}
+                    {/* Mobile Layout */}
                     <div className='flex flex-col gap-3 sm:hidden'>
-                      {/* Header */}
                       <div className='flex items-center justify-between'>
                         <div className='flex items-center gap-2'>
                           <div
@@ -859,7 +854,6 @@ export default function HistoryPage() {
                         </span>
                       </div>
 
-                      {/* Content */}
                       <div className='space-y-2 text-xs text-gray-600'>
                         {request.waste_bank_id && (
                           <div className='flex items-center gap-2'>
@@ -888,7 +882,6 @@ export default function HistoryPage() {
                         )}
                       </div>
 
-                      {/* Footer */}
                       <div className='flex items-center justify-between pt-2'>
                         <div className='text-[9px] text-gray-400'>
                           {getRelativeTime(request.created_at)}
@@ -924,7 +917,7 @@ export default function HistoryPage() {
                       )}
                     </div>
 
-                    {/* Desktop Layout - Horizontal */}
+                    {/* Desktop Layout */}
                     <div className='hidden items-start justify-between sm:flex'>
                       <div className='flex flex-1 items-start gap-4'>
                         <div
@@ -1098,7 +1091,11 @@ export default function HistoryPage() {
                       <button
                         key={i}
                         onClick={() => handlePageChange(i)}
-                        className={`rounded px-3 py-1 text-sm transition-colors ${i === currentPage ? 'bg-emerald-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                        className={`rounded px-3 py-1 text-sm transition-colors ${
+                          i === currentPage
+                            ? 'bg-emerald-500 text-white'
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
                       >
                         {i}
                       </button>
