@@ -43,15 +43,9 @@ const Header: React.FC<HeaderProps> = ({
     setNotifications([
       {
         id: 1,
-        title: 'Pickup Scheduled',
-        message: 'Your pickup is scheduled for tomorrow',
+        title: 'Selamat Datang!',
+        message: 'Terima kasih telah menggunakan WasteTrack.',
         type: 'info',
-      },
-      {
-        id: 2,
-        title: 'New Reward',
-        message: "You've earned 50 points!",
-        type: 'success',
       },
     ]);
   }, []);
@@ -150,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* Notifications Dropdown */}
             {isNotificationOpen && (
-              <div className='absolute right-0 mt-2 w-64 rounded-lg border border-gray-100 bg-white py-2 shadow-lg sm:w-80'>
+              <div className='w-68 absolute right-0 mt-2 rounded-lg border border-gray-100 bg-white py-2 shadow-lg sm:w-80'>
                 <div className='border-b border-gray-100 px-4 py-2'>
                   <h3 className='text-md font-semibold text-gray-700 sm:text-lg'>
                     Notifikasi
@@ -188,7 +182,7 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* Profile Dropdown */}
             {isProfileOpen && (
-              <div className='absolute right-0 w-52 rounded-lg border border-gray-100 bg-white py-2 shadow-lg sm:w-72'>
+              <div className='absolute right-0 w-60 rounded-lg border border-gray-100 bg-white py-2 shadow-lg sm:w-72'>
                 <div className='border-b border-gray-100 px-4 py-2'>
                   <p className='text-md font-semibold text-gray-700 sm:text-lg'>
                     Akun Saya
@@ -203,7 +197,7 @@ const Header: React.FC<HeaderProps> = ({
                 </button>
                 <button
                   onClick={handleSettingNavigation}
-                  className='flex w-full items-center gap-2 bg-white px-4 py-2 text-left hover:bg-gray-50'
+                  className='flex hidden w-full items-center gap-2 bg-white px-4 py-2 text-left hover:bg-gray-50'
                 >
                   <Settings className='h-4 w-4 text-gray-600' />
                   <span className='text-sm text-gray-700'>Pengaturan</span>

@@ -242,6 +242,7 @@ export default function CollectorsPage() {
     const encodedId = encodeId(collectorId);
     router.push(`/wastebank-unit/collectors/${encodedId}`);
   };
+  
   const handleDeleteCollector = async (id: string) => {
     const alert = await Alert.confirm({
       title: 'Konfirmasi Hapus Kolektor',

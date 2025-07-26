@@ -95,7 +95,7 @@ export interface WasteDropRequestListParams {
 
   // Sorting
   sort_by?: 'created_at' | 'appointment_date' | 'status' | 'total_price';
-  sort_order?: 'asc' | 'desc';
+  order_dir?: 'asc' | 'desc';
 
   // Date range filtering
   date_from?: string; // YYYY-MM-DD
