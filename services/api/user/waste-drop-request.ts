@@ -129,8 +129,8 @@ export const wasteDropRequestAPI = {
       if (params?.sort_by) {
         queryParams.append('sort_by', params.sort_by);
       }
-      if (params?.sort_order) {
-        queryParams.append('sort_order', params.sort_order);
+      if (params?.order_dir) {
+        queryParams.append('order_dir', params.order_dir);
       }
 
       const queryString = queryParams.toString();
