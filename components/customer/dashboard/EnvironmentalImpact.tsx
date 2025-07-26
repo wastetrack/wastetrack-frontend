@@ -55,7 +55,8 @@ export default function EnvironmentalImpact({
           <div>
             <p className='text-xs text-gray-600'>Sampah</p>
             <p className='text-md font-bold text-emerald-600 sm:text-emerald-700'>
-              {waste.total || 0} ktg
+              {waste.total || 0}{' '}
+              <span className='text-[10px] font-medium'>kantong</span>
             </p>
           </div>
         </div>
