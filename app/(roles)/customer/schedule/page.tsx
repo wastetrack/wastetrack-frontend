@@ -20,6 +20,7 @@ import {
   Navigation,
   Minus,
   Plus,
+  Clock,
   X,
 } from 'lucide-react';
 import {
@@ -103,6 +104,14 @@ interface WasteBank {
     coordinates?: Coordinates;
     location?: { coordinates?: Coordinates; address?: string };
     [key: string]: unknown;
+    waste_bank_profile?: {
+      id?: string;
+      open_time?: string;
+      close_time?: string;
+      total_waste_weight?: number;
+      total_workers?: number;
+      user_id?: string;
+    };
   };
 }
 
@@ -574,7 +583,7 @@ export default function SchedulePage() {
           };
         });
 
-        console.log('mappedBanks:', mappedBanks);
+        // console.log('mappedBanks:', mappedBanks);
 
         // Calculate distance if user coordinates are available
         const finalBanks = mappedBanks
@@ -764,13 +773,84 @@ export default function SchedulePage() {
     fetchSchedules();
   }, []);
 
-  // Time slots with 2-hour intervals
-  const timeSlots: TimeSlot[] = [
-    { time: '08:00-10:00', available: true },
-    { time: '10:00-12:00', available: true },
-    { time: '13:00-15:00', available: true },
-    { time: '15:00-17:00', available: true },
-  ];
+  // Helper function to generate dynamic time slots
+  const generateTimeSlots = (
+    openHour: string,
+    closeHour: string
+  ): TimeSlot[] => {
+    const slots: TimeSlot[] = [];
+
+    // Parse open and close hours (format: "HH:MM:SS+TZ" or "HH:MM:SS")
+    const parseTime = (timeStr: string): number => {
+      const timePart = timeStr.split('+')[0]; // Remove timezone if exists
+      const [hours, minutes] = timePart.split(':').map(Number);
+      return hours + minutes / 60; // Convert to decimal hours
+    };
+
+    const openTime = parseTime(openHour);
+    const closeTime = parseTime(closeHour);
+
+    // Generate 2-hour slots starting from open time
+    for (let start = openTime; start + 2 <= closeTime; start += 2) {
+      const startHour = Math.floor(start);
+      const startMinute = Math.round((start % 1) * 60);
+      const endHour = Math.floor(start + 2);
+      const endMinute = Math.round(((start + 2) % 1) * 60);
+
+      const formatTime = (hour: number, minute: number): string => {
+        return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      };
+
+      const timeRange = `${formatTime(startHour, startMinute)}-${formatTime(endHour, endMinute)}`;
+
+      slots.push({
+        time: timeRange,
+        available: true,
+      });
+    }
+
+    return slots;
+  };
+
+  // Function to get time slots for selected bank
+  const getTimeSlotsForSelectedBank = (): TimeSlot[] => {
+    if (!formData.wasteBankId) {
+      return []; // No bank selected
+    }
+
+    const selectedBank = wasteBanks.find(
+      (bank) => bank.id === formData.wasteBankId
+    );
+    console.log('Selected Bank', selectedBank);
+
+    if (
+      !selectedBank?.originalData?.waste_bank_profile?.open_time ||
+      !selectedBank?.originalData?.waste_bank_profile.close_time
+    ) {
+      // Fallback to default slots if bank doesn't have operating hours
+      return [
+        { time: '08:00-10:00', available: true },
+        { time: '10:00-12:00', available: true },
+        { time: '13:00-15:00', available: true },
+        { time: '15:00-17:00', available: true },
+      ];
+    }
+
+    return generateTimeSlots(
+      selectedBank.originalData.waste_bank_profile.open_time,
+      selectedBank.originalData.waste_bank_profile.close_time
+    );
+  };
+
+  // Clear selected time when bank changes
+  useEffect(() => {
+    if (formData.wasteBankId) {
+      setFormData((prev) => ({
+        ...prev,
+        time: '',
+      }));
+    }
+  }, [formData.wasteBankId]);
 
   // Fixed handleGetLocation function for SchedulePickup.tsx
   const handleGetLocation = (): void => {
@@ -1755,25 +1835,82 @@ export default function SchedulePage() {
 
             {/* Time selection */}
             <div className='sm:shadow-xs overflow-hidden rounded-xl sm:border sm:border-gray-200 sm:bg-white'>
-              <div className='pb-4 sm:border-b sm:border-gray-100 sm:p-6'>
+              <div className='sm:border-b sm:border-gray-100 sm:p-6'>
                 <div className='text-center'>
                   <h2 className='text-lg font-semibold text-gray-800 sm:text-xl'>
                     Pilih Waktu
                   </h2>
                   <p className='mt-1 text-sm text-gray-500'>
-                    Pilih waktu penjemputan yang Anda inginkan
+                    Pilih waktu{' '}
+                    {formData.deliveryType === 'pickup'
+                      ? 'penjemputan'
+                      : 'pengantaran'}{' '}
+                    yang Anda inginkan
                   </p>
                 </div>
               </div>
-              <div className='sm:p-6'>
-                <div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
-                  {timeSlots.map(({ time, available }) => (
-                    <button
-                      key={time}
-                      type='button'
-                      disabled={!available}
-                      onClick={() => setFormData({ ...formData, time })}
-                      className={`rounded-md p-3 text-xs font-medium transition-colors sm:text-sm 
+
+              {(() => {
+                const availableTimeSlots = getTimeSlotsForSelectedBank();
+                const selectedBank = wasteBanks.find(
+                  (bank) => bank.id === formData.wasteBankId
+                );
+
+                return (
+                  <div className='sm:p-6'>
+                    {availableTimeSlots.length === 0 ? (
+                      <div className='py-8 text-center'>
+                        <div className='flex flex-col items-center'>
+                          <div className='mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100'>
+                            <Clock className='h-6 w-6 text-gray-400' />
+                          </div>
+                          <p className='mb-2 text-sm text-gray-500'>
+                            {!formData.wasteBankId
+                              ? 'Pilih bank sampah terlebih dahulu untuk melihat jam operasional'
+                              : 'Bank sampah belum mengatur jam operasional'}
+                          </p>
+                          {!formData.wasteBankId && (
+                            <button
+                              type='button'
+                              onClick={() =>
+                                setStep(
+                                  formData.deliveryType === 'pickup' ? 3 : 2
+                                )
+                              }
+                              className='text-sm text-emerald-600 underline hover:text-emerald-700'
+                            >
+                              Pilih Bank Sampah
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        {selectedBank?.originalData?.waste_bank_profile
+                          ?.open_time &&
+                          selectedBank?.originalData?.waste_bank_profile
+                            .close_time && (
+                            <div className='mb-4 text-center'>
+                              <p className='text-sm text-gray-500'>
+                                Jam operasional:{' '}
+                                {selectedBank.originalData.waste_bank_profile.open_time
+                                  .split('+')[0]
+                                  .slice(0, 5)}{' '}
+                                -{' '}
+                                {selectedBank.originalData.waste_bank_profile.close_time
+                                  .split('+')[0]
+                                  .slice(0, 5)}
+                              </p>
+                            </div>
+                          )}
+                        <div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
+                          {availableTimeSlots.map(({ time, available }) => (
+                            <button
+                              key={time}
+                              type='button'
+                              disabled={!available}
+                              onClick={() => setFormData({ ...formData, time })}
+                              className={`rounded-md p-3 text-xs font-medium transition-colors sm:text-sm 
                         ${
                           formData.time === time
                             ? 'bg-emerald-500 text-white'
@@ -1781,12 +1918,23 @@ export default function SchedulePage() {
                               ? 'border border-gray-200 bg-white text-gray-700 hover:bg-emerald-100'
                               : 'cursor-not-allowed border border-gray-200 bg-white text-gray-400'
                         }`}
-                    >
-                      {time}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                            >
+                              {time}
+                            </button>
+                          ))}
+                        </div>
+                        {availableTimeSlots.length > 0 && (
+                          <div className='mt-4 hidden text-center'>
+                            <p className='text-xs text-gray-500'>
+                              Setiap slot waktu berlangsung selama 2 jam
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
