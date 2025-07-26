@@ -23,6 +23,8 @@ export default function RecentPickups({
     });
   };
 
+  // console.log('Data recentPickups:', recentPickups);
+
   const getStatusText = (status: PickupStatus): string => {
     return PICKUP_STATUS_TEXT[status] || status;
   };
@@ -36,17 +38,19 @@ export default function RecentPickups({
   };
 
   return (
-    <div className='pt-4 sm:rounded-xl sm:bg-white sm:p-4 sm:shadow-sm'>
+    <div className='sm:rounded-xl sm:bg-white sm:p-4 sm:pt-4 sm:shadow-sm'>
       <h2 className='mb-2 text-lg font-semibold text-gray-800'>
-        Pengambilan Terbaru
+        Riwayat Terbaru
       </h2>
 
       {displayedPickups.length > 0 ? (
         <div className='space-y-2'>
           {displayedPickups.map((pickup) => (
-            <div
+            <button
               key={pickup.id}
-              className='shadow-xs flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3 transition-colors hover:border-emerald-100 sm:shadow-sm'
+              type='button'
+              onClick={onViewAllPickups}
+              className='shadow-xs flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white p-3 transition-colors hover:border-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-200 sm:shadow-sm'
             >
               <div className='flex gap-3'>
                 <div className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50'>
@@ -58,6 +62,7 @@ export default function RecentPickups({
                       ? 'Penjemputan'
                       : 'Antar sendiri'}
                   </p>
+                  <p className='text-xs text-gray-500'></p>
                   <p className='text-xs text-gray-500'>
                     {formatDate(pickup)} • {pickup.time}
                   </p>
@@ -66,7 +71,7 @@ export default function RecentPickups({
               <span className={getStatusStyle(pickup.status)}>
                 {getStatusText(pickup.status)}
               </span>
-            </div>
+            </button>
           ))}
         </div>
       ) : (
