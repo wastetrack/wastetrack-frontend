@@ -5,7 +5,7 @@ import {
   Camera,
   Calendar,
   ShoppingBag,
-  Wallet,
+  History,
   LucideIcon,
 } from 'lucide-react';
 
@@ -32,7 +32,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
     { id: 'detect', icon: Camera, label: 'Deteksi' },
     { id: 'schedule', icon: Calendar, label: 'Setor' },
     { id: 'marketplace', icon: ShoppingBag, label: 'Toko' },
-    { id: 'history', icon: Wallet, label: 'Tabungan' },
+    { id: 'history', icon: History, label: 'Riwayat' }, // History cocok untuk "Riwayat" transaksi/keuangan
   ];
 
   const handleNavigation = (tabId: string): void => {
