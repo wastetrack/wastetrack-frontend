@@ -658,12 +658,15 @@ export default function PricesPage() {
                       )}
                     </td>
                     <td className='whitespace-nowrap px-6 py-4 text-sm text-gray-500'>
-                        {item.lastUpdated
-                        ? new Date(item.lastUpdated).toLocaleDateString('id-ID', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          })
+                      {item.lastUpdated
+                        ? new Date(item.lastUpdated).toLocaleDateString(
+                            'id-ID',
+                            {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            }
+                          )
                         : '-'}
                     </td>
                     <td className='whitespace-nowrap px-6 py-4 text-right text-sm font-medium'>

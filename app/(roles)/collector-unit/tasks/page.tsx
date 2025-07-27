@@ -178,6 +178,7 @@ export default function TasksPage() {
           assigned_collector_id: user.id,
           page: 1,
           size: 50,
+          order_dir: 'desc' as const,
         });
 
         // Fetch transfer requests - ambil list dulu untuk filter berdasarkan assigned_collector_id
@@ -185,6 +186,7 @@ export default function TasksPage() {
           await wasteTransferRequestAPI.getWasteTransferRequests({
             page: 1,
             size: 50,
+            order_dir: 'asc' as const,
           });
 
         // Filter transfer requests yang assigned ke collector ini
@@ -433,7 +435,7 @@ export default function TasksPage() {
       <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
         <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
           <div className='flex flex-1 items-center space-x-4'>
-            <div className='relative max-w-md flex-1'>
+            <div className='relative flex-1'>
               <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
                 <Search className='h-5 w-5 text-gray-400' />
               </div>
@@ -442,7 +444,7 @@ export default function TasksPage() {
                 placeholder='Cari tugas...'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className='block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
+                className='w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
               />
             </div>
             <div className='relative'>

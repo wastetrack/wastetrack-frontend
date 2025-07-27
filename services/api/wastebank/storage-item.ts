@@ -1,9 +1,13 @@
 import axios from 'axios';
 import { getTokenManager } from '@/lib/token-manager';
 import {
-  UpdateWasteDropRequestStatusResponse,
-  CompleteWasteDropRequestParams,
-  CompleteWasteDropRequestResponse,
+  CreateStorageItemParams,
+  CreateStorageItemResponse,
+  UpdateStorageItemParams,
+  UpdateStorageItemResponse,
+  DeductWeightParams,
+  DeductWeightResponse,
+  DeleteStorageItemResponse,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -57,18 +61,21 @@ authenticatedApiClient.interceptors.response.use(
   }
 );
 
-export const wasteCollectorDropRequestAPI = {
+export const wasteBankStorageItemsAPI = {
   /**
-   * Complete waste drop request by collector
-   * PUT /api/waste-collector/waste-drop-requests/:id/complete
+   * Create or add weight to storage item
+   * POST /api/waste-bank/storage-items
+   *
+   * Note: Jika sudah ada kombinasi storage_id + waste_type_id di database,
+   * maka weight_kgs akan ditambahkan ke data existing.
+   * Response weight_kgs bisa berbeda dari request jika data sudah ada sebelumnya.
    */
-  async completeWasteDropRequest(
-    id: string,
-    params: CompleteWasteDropRequestParams
-  ): Promise<CompleteWasteDropRequestResponse> {
+  async createStorageItem(
+    params: CreateStorageItemParams
+  ): Promise<CreateStorageItemResponse> {
     try {
-      const response = await authenticatedApiClient.put(
-        `/api/waste-collector/waste-drop-requests/${id}/complete`,
+      const response = await authenticatedApiClient.post(
+        '/api/waste-bank/storage-items',
         params
       );
       return response.data;
@@ -77,7 +84,7 @@ export const wasteCollectorDropRequestAPI = {
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
-          'Failed to complete waste drop request';
+          'Failed to create storage item';
 
         throw new Error(errorMessage);
       }
@@ -86,16 +93,17 @@ export const wasteCollectorDropRequestAPI = {
   },
 
   /**
-   * Update waste drop request status
-   * PUT /api/waste-collector/waste-drop-requests/:id?status=
+   * Update storage item
+   * PUT /api/waste-bank/storage-items/:id
    */
-  async updateWasteDropRequestStatus(
+  async updateStorageItem(
     id: string,
-    status: 'assigned' | 'collecting' | 'cancelled'
-  ): Promise<UpdateWasteDropRequestStatusResponse> {
+    params: UpdateStorageItemParams
+  ): Promise<UpdateStorageItemResponse> {
     try {
       const response = await authenticatedApiClient.put(
-        `/api/waste-collector/waste-drop-requests/${id}?status=${status}`
+        `/api/waste-bank/storage-items/${id}`,
+        params
       );
       return response.data;
     } catch (error) {
@@ -103,7 +111,57 @@ export const wasteCollectorDropRequestAPI = {
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
-          'Failed to update waste drop request status';
+          'Failed to update storage item';
+
+        throw new Error(errorMessage);
+      }
+      throw new Error('Network error occurred. Please try again.');
+    }
+  },
+
+  /**
+   * Deduct weight from storage item
+   * PUT /api/waste-bank/storage-items/:id/deduct-weight
+   */
+  async deductWeight(
+    id: string,
+    params: DeductWeightParams
+  ): Promise<DeductWeightResponse> {
+    try {
+      const response = await authenticatedApiClient.put(
+        `/api/waste-bank/storage-items/${id}/deduct-weight`,
+        params
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          'Failed to deduct weight from storage item';
+
+        throw new Error(errorMessage);
+      }
+      throw new Error('Network error occurred. Please try again.');
+    }
+  },
+
+  /**
+   * Delete storage item
+   * DELETE /api/waste-bank/storage-items/:id
+   */
+  async deleteStorageItem(id: string): Promise<DeleteStorageItemResponse> {
+    try {
+      const response = await authenticatedApiClient.delete(
+        `/api/waste-bank/storage-items/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          'Failed to delete storage item';
 
         throw new Error(errorMessage);
       }

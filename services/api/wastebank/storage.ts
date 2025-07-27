@@ -1,10 +1,6 @@
 import axios from 'axios';
 import { getTokenManager } from '@/lib/token-manager';
-import {
-  UpdateWasteDropRequestStatusResponse,
-  CompleteWasteDropRequestParams,
-  CompleteWasteDropRequestResponse,
-} from '@/types';
+import { UpdateStorageParams, UpdateStorageResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -57,18 +53,18 @@ authenticatedApiClient.interceptors.response.use(
   }
 );
 
-export const wasteCollectorDropRequestAPI = {
+export const wasteBankStorageAPI = {
   /**
-   * Complete waste drop request by collector
-   * PUT /api/waste-collector/waste-drop-requests/:id/complete
+   * Update storage by ID
+   * PUT /api/waste-bank/storages/:id
    */
-  async completeWasteDropRequest(
+  async updateStorage(
     id: string,
-    params: CompleteWasteDropRequestParams
-  ): Promise<CompleteWasteDropRequestResponse> {
+    params: UpdateStorageParams
+  ): Promise<UpdateStorageResponse> {
     try {
       const response = await authenticatedApiClient.put(
-        `/api/waste-collector/waste-drop-requests/${id}/complete`,
+        `/api/waste-bank/storages/${id}`,
         params
       );
       return response.data;
@@ -77,33 +73,7 @@ export const wasteCollectorDropRequestAPI = {
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
-          'Failed to complete waste drop request';
-
-        throw new Error(errorMessage);
-      }
-      throw new Error('Network error occurred. Please try again.');
-    }
-  },
-
-  /**
-   * Update waste drop request status
-   * PUT /api/waste-collector/waste-drop-requests/:id?status=
-   */
-  async updateWasteDropRequestStatus(
-    id: string,
-    status: 'assigned' | 'collecting' | 'cancelled'
-  ): Promise<UpdateWasteDropRequestStatusResponse> {
-    try {
-      const response = await authenticatedApiClient.put(
-        `/api/waste-collector/waste-drop-requests/${id}?status=${status}`
-      );
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage =
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          'Failed to update waste drop request status';
+          'Failed to update storage';
 
         throw new Error(errorMessage);
       }

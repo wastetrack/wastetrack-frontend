@@ -973,19 +973,8 @@ export default function SchedulePage() {
   };
 
   const formatPhoneNumber = (value: string): string => {
-    if (!value) return value;
-
-    const phoneNumber = value.replace(/[^\d]/g, '').slice(0, 13); // Limit to 15 digits
-    const length = phoneNumber.length;
-
-    if (length <= 4) return phoneNumber;
-    if (length <= 8) {
-      return `${phoneNumber.slice(0, 4)}-${phoneNumber.slice(4)}`;
-    }
-    if (length <= 12) {
-      return `${phoneNumber.slice(0, 4)}-${phoneNumber.slice(4, 8)}-${phoneNumber.slice(8)}`;
-    }
-    return `${phoneNumber.slice(0, 4)}-${phoneNumber.slice(4, 8)}-${phoneNumber.slice(8, 12)}-${phoneNumber.slice(12)}`;
+    // Only allow digits, max 13 characters, no formatting
+    return value.replace(/[^\d]/g, '').slice(0, 13);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -1619,8 +1608,8 @@ export default function SchedulePage() {
                   value={formData.phone}
                   onChange={handlePhoneChange}
                   className='w-full rounded-lg border border-gray-200 p-3 text-sm placeholder:text-xs'
-                  placeholder='No. Telp. (contoh: 0812-3456-7890)'
-                  pattern='[0-9]{4}-[0-9]{4}-[0-9]{4}(-[0-9]{1,4})?'
+                  placeholder='No. Telp. (contoh: 081234567890)'
+                  // pattern='[0-9]{4}-[0-9]{4}-[0-9]{4}(-[0-9]{1,4})?'
                   required
                 />
 
@@ -2221,8 +2210,8 @@ export default function SchedulePage() {
                           value={formData.phone}
                           onChange={handlePhoneChange}
                           className='mt-1 w-full rounded-lg border border-gray-200 p-3 text-sm placeholder:text-xs'
-                          placeholder='No. Telp. (contoh: 0812-3456-7890)'
-                          pattern='[0-9]{4}-[0-9]{4}-[0-9]{4}(-[0-9]{1,4})?'
+                          placeholder='No. Telp. (contoh: 081234567890)'
+                          // pattern='[0-9]{4}-[0-9]{4}-[0-9]{4}(-[0-9]{1,4})?'
                           required
                         />
                       </div>
