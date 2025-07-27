@@ -75,12 +75,12 @@ const Sidebar: React.FC<SidebarProps> = ({
             {
               label: 'Transaksi Masuk',
               path: '/wastebank-unit/transactions/in',
-              icon: <ArrowUpCircle size={18} />,
+              icon: <ArrowDownCircle size={18} />,
             },
             {
               label: 'Transaksi Keluar',
               path: '/wastebank-unit/transactions/out',
-              icon: <ArrowDownCircle size={18} />,
+              icon: <ArrowUpCircle size={18} />,
             },
           ],
         },
@@ -152,12 +152,12 @@ const Sidebar: React.FC<SidebarProps> = ({
             {
               label: 'Transaksi Masuk',
               path: '/wastebank-central/transactions/in',
-              icon: <ArrowUpCircle size={18} />,
+              icon: <ArrowDownCircle size={18} />,
             },
             {
               label: 'Transaksi Keluar',
               path: '/wastebank-central/transactions/out',
-              icon: <ArrowDownCircle size={18} />,
+              icon: <ArrowUpCircle size={18} />,
             },
           ],
         },
