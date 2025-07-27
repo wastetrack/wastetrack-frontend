@@ -584,7 +584,7 @@ export default function TransactionsInPage() {
       {/* Filter Section */}
       <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
         <div className='mb-4 flex flex-col items-center gap-4 sm:flex-row'>
-          <div className='hidden flex items-center gap-2'>
+          <div className='flex hidden items-center gap-2'>
             <span className='text-sm font-medium text-gray-700'>
               Filter Tanggal:
             </span>
