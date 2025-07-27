@@ -11,6 +11,9 @@ import {
   Lock,
   Unlock,
   Trash2,
+  CheckCircle,
+  XCircle,
+  Users,
 } from 'lucide-react';
 import {
   getCollectorManagements,
@@ -242,7 +245,7 @@ export default function CollectorsPage() {
     const encodedId = encodeId(collectorId);
     router.push(`/wastebank-unit/collectors/${encodedId}`);
   };
-  
+
   const handleDeleteCollector = async (id: string) => {
     const alert = await Alert.confirm({
       title: 'Konfirmasi Hapus Kolektor',
@@ -312,21 +315,70 @@ export default function CollectorsPage() {
       </div>
 
       {/* Stats Summary */}
-      <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
         <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
-          <div className='text-center'>
-            <div className='text-2xl font-bold text-emerald-600'>
-              {(collectors || []).filter((c) => c.status === 'active').length}
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
+                <Users className='h-5 w-5' />
+              </div>
             </div>
-            <div className='text-sm text-gray-600'>Kolektor Aktif</div>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Total Kolektor
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {(collectors || []).length}
+                </dd>
+              </dl>
+            </div>
           </div>
         </div>
+
         <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
-          <div className='text-center'>
-            <div className='text-2xl font-bold text-red-600'>
-              {(collectors || []).filter((c) => c.status === 'inactive').length}
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
+                <CheckCircle className='h-5 w-5' />
+              </div>
             </div>
-            <div className='text-sm text-gray-600'>Kolektor Tidak Aktif</div>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Kolektor Aktif
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {
+                    (collectors || []).filter((c) => c.status === 'active')
+                      .length
+                  }
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-white'>
+                <XCircle className='h-5 w-5' />
+              </div>
+            </div>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Kolektor Tidak Aktif
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {
+                    (collectors || []).filter((c) => c.status === 'inactive')
+                      .length
+                  }
+                </dd>
+              </dl>
+            </div>
           </div>
         </div>
       </div>
@@ -437,7 +489,18 @@ export default function CollectorsPage() {
                     </td>
                     <td className='whitespace-nowrap px-6 py-4'>
                       <div className='text-sm text-gray-900'>
-                        {collector.phone_number || 'Tidak tersedia'}
+                        {collector.phone_number ? (
+                          <a
+                            href={`https://wa.me/${collector.phone_number.replace(/[^0-9]/g, '')}`}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-emerald-600 hover:text-emerald-800'
+                          >
+                            {collector.phone_number}
+                          </a>
+                        ) : (
+                          'Tidak tersedia'
+                        )}
                       </div>
                     </td>
                     <td className='whitespace-nowrap px-6 py-4'>

@@ -3,10 +3,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  CircleDollarSign,
+  CreditCard,
   Loader2,
   AlertCircle,
-  Calendar,
   Plus,
   TrendingUp,
   Eye,
@@ -49,7 +48,7 @@ export default function TransactionsOutPage() {
 
   const [pagination, setPagination] = useState<ClientPagination>({
     currentPage: 1,
-    itemsPerPage: 5,
+    itemsPerPage: 10,
     totalItems: 0,
     totalPages: 1,
   });
@@ -129,6 +128,7 @@ export default function TransactionsOutPage() {
         page: 1,
         size: 100,
         source_user_id: userId,
+        order_dir: 'asc' as const,
       };
       const response: GetWasteTransferRequestsResponse =
         await wasteTransferRequestAPI.getWasteTransferRequests(params);
@@ -250,7 +250,7 @@ export default function TransactionsOutPage() {
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex items-center gap-4'>
           <div className='shadow-xs rounded-xl border border-zinc-200 bg-white p-4'>
-            <CircleDollarSign className='text-emerald-600' size={28} />
+            <CreditCard className='text-emerald-600' size={28} />
           </div>
           <div>
             <h1 className='text-2xl font-bold text-gray-900'>
@@ -292,13 +292,13 @@ export default function TransactionsOutPage() {
           <div className='flex items-center'>
             <div className='flex-shrink-0'>
               <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
-                <CircleDollarSign className='h-5 w-5' />
+                <CreditCard className='h-5 w-5' />
               </div>
             </div>
             <div className='ml-5 w-0 flex-1'>
               <dl>
                 <dt className='truncate text-sm font-medium text-gray-500'>
-                  Total Transaksi Sukses
+                  Total Transaksi Selesai
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
                   {todayStats.totalTransactions}
@@ -330,7 +330,7 @@ export default function TransactionsOutPage() {
           <div className='flex items-center'>
             <div className='flex-shrink-0'>
               <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
-                <CircleDollarSign className='h-5 w-5' />
+                <CreditCard className='h-5 w-5' />
               </div>
             </div>
             <div className='ml-5 w-0 flex-1'>
@@ -372,8 +372,7 @@ export default function TransactionsOutPage() {
       {/* Filter Section */}
       <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
         <div className='mb-4 flex flex-col items-center gap-4 sm:flex-row'>
-          <div className='flex items-center gap-2'>
-            <Calendar className='text-gray-400' size={20} />
+          <div className='flex hidden items-center gap-2'>
             <span className='text-sm font-medium text-gray-700'>
               Filter Tanggal:
             </span>
@@ -418,7 +417,7 @@ export default function TransactionsOutPage() {
             <button
               onClick={handleShowAll}
               disabled={loading}
-              className='rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:opacity-50'
+              className='rounded-lg border border-emerald-600 bg-white px-4 py-2 text-sm text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50'
             >
               Tampilkan Semua
             </button>
@@ -526,7 +525,7 @@ export default function TransactionsOutPage() {
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='text-sm text-gray-900'>
-                            {transaction.total_weight !== undefined
+                          {transaction.total_weight !== undefined
                             ? `${transaction.total_weight.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg`
                             : '0 kg'}
                         </div>

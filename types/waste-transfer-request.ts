@@ -130,6 +130,7 @@ export interface GetWasteTransferRequestsParams {
   size?: number;
   latitude?: number;
   longitude?: number;
+  order_dir?: 'asc' | 'desc';
 }
 
 interface User {

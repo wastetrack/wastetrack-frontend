@@ -179,7 +179,10 @@ export default function CollectorDetailPage() {
                   Sampah Terkumpul
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
-                  {profile.total_waste_weight || 0} kg
+                  {(profile.total_waste_weight || 0).toLocaleString('id-ID', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  })}{' '}
                 </dd>
               </dl>
             </div>

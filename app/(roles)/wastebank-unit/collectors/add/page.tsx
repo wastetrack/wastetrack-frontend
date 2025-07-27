@@ -403,6 +403,12 @@ export default function AddCollectorPage() {
       {/* Header */}
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex items-center gap-4'>
+          <button
+            onClick={() => router.back()}
+            className='flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-gray-50'
+          >
+            <ArrowLeft size={20} className='mr-2 inline' />
+          </button>
           <div className='shadow-xs rounded-xl border border-zinc-200 bg-white p-4'>
             <UserPlus className='text-emerald-600' size={28} />
           </div>
@@ -418,7 +424,7 @@ export default function AddCollectorPage() {
         <div className='mt-4 sm:mt-0'>
           <button
             onClick={() => router.back()}
-            className='rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'
+            className='hidden rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'
           >
             <ArrowLeft size={20} className='mr-2 inline' />
             Kembali
@@ -427,7 +433,7 @@ export default function AddCollectorPage() {
       </div>
 
       {/* Form Container */}
-      <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-sm'>
+      <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
         {/* Error Message */}
         {error && (
           <div className='mb-6 rounded-lg border border-red-100 bg-red-50 p-3 text-center text-sm text-red-600'>
@@ -436,8 +442,7 @@ export default function AddCollectorPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleFormSubmit} className='space-y-5'>
-          {/* Role Display (disabled) */}
+        <form onSubmit={handleFormSubmit} className='space-y-6'>
           <div>
             <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
               Role Kolektor
@@ -452,9 +457,6 @@ export default function AddCollectorPage() {
               disabled
               className='w-full rounded-lg border border-gray-200 bg-gray-100 p-3 text-sm text-gray-600 sm:text-base'
             />
-            <p className='mt-1 text-center text-sm text-gray-400'>
-              Role otomatis disesuaikan dengan bank sampah Anda
-            </p>
           </div>
 
           {/* Institution Display (disabled) */}
@@ -473,9 +475,6 @@ export default function AddCollectorPage() {
                 className='w-full rounded-lg border border-gray-200 bg-gray-100 p-3 pl-10 text-sm text-gray-600 sm:text-base'
               />
             </div>
-            <p className='mt-1 text-center text-sm text-gray-400'>
-              Kolektor akan terdaftar di institusi yang sama dengan Anda
-            </p>
           </div>
 
           {/* Email */}

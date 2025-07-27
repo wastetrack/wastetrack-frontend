@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   CreditCard,
   Plus,
-  Calendar,
   TrendingUp,
   Loader2,
   AlertCircle,
@@ -61,7 +60,6 @@ export default function TransactionsInPage() {
 
   // NEW: Tab state
   const [activeTab, setActiveTab] = useState<TabType>('customer');
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
@@ -72,7 +70,7 @@ export default function TransactionsInPage() {
   // Client-side pagination state
   const [pagination, setPagination] = useState<ClientPagination>({
     currentPage: 1,
-    itemsPerPage: 5,
+    itemsPerPage: 10,
     totalItems: 0,
     totalPages: 1,
   });
@@ -100,7 +98,6 @@ export default function TransactionsInPage() {
     if (activeTab === 'customer') {
       router.push(`/wastebank-unit/transactions/in/${encoded}`);
     } else {
-      // TODO: Add waste transfer detail route if needed
       router.push(`/wastebank-unit/transactions/in/${encoded}`);
     }
   };
@@ -198,7 +195,6 @@ export default function TransactionsInPage() {
         });
       }
 
-      // Filter by form_type (equivalent to delivery_type)
       if (selectedType) {
         filtered = filtered.filter(
           (transaction) => transaction.form_type === selectedType
@@ -256,9 +252,8 @@ export default function TransactionsInPage() {
         longitude,
         latitude,
         page: 1,
-        size: 100, // Fetch 100 items at once
-        sort_by: 'created_at' as const,
-        sort_order: 'desc' as const,
+        size: 100,
+        order_dir: 'desc' as const,
       };
 
       const response: WasteDropRequestListResponse =
@@ -285,6 +280,7 @@ export default function TransactionsInPage() {
         destination_user_id: wasteBankId,
         page: 1,
         size: 100,
+        order_dir: 'asc' as const,
       };
 
       const response: GetWasteTransferRequestsResponse =
@@ -407,13 +403,13 @@ export default function TransactionsInPage() {
     if (deliveryType === 'pickup') {
       return (
         <span className='inline-flex rounded-full bg-green-100 px-2 py-1 text-xs text-green-800'>
-          Pickup
+          Penjemputan
         </span>
       );
     } else {
       return (
         <span className='inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800'>
-          Drop-off
+          Antar Sendiri
         </span>
       );
     }
@@ -422,8 +418,8 @@ export default function TransactionsInPage() {
   // NEW: Format form type for waste transfer requests
   const getFormTypeChip = (formType: string) => {
     const typeMap = {
-      pickup: { text: 'Pickup', color: 'bg-green-100 text-green-800' },
-      dropoff: { text: 'Drop-off', color: 'bg-blue-100 text-blue-800' },
+      pickup: { text: 'Penjemputan', color: 'bg-green-100 text-green-800' },
+      dropoff: { text: 'Antar Sendiri', color: 'bg-blue-100 text-blue-800' },
       delivery: { text: 'Delivery', color: 'bg-purple-100 text-purple-800' },
     };
 
@@ -509,7 +505,7 @@ export default function TransactionsInPage() {
             <div className='ml-5 w-0 flex-1'>
               <dl>
                 <dt className='truncate text-sm font-medium text-gray-500'>
-                  Total Transaksi Sukses
+                  Total Transaksi Selesai
                 </dt>
                 <dd className='text-lg font-medium text-gray-900'>
                   {todayStats.totalTransactions}
@@ -588,8 +584,7 @@ export default function TransactionsInPage() {
       {/* Filter Section */}
       <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
         <div className='mb-4 flex flex-col items-center gap-4 sm:flex-row'>
-          <div className='flex items-center gap-2'>
-            <Calendar className='text-gray-400' size={20} />
+          <div className='flex hidden items-center gap-2'>
             <span className='text-sm font-medium text-gray-700'>
               Filter Tanggal:
             </span>
@@ -608,8 +603,8 @@ export default function TransactionsInPage() {
               className='rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500'
             >
               <option value=''>Semua Tipe</option>
-              <option value='pickup'>Pickup</option>
-              <option value='dropoff'>Drop-off</option>
+              <option value='pickup'>Penjemputan</option>
+              <option value='dropoff'>Antar Sendiri</option>
               {activeTab === 'wastebank' && (
                 <option value='delivery'>Delivery</option>
               )}
@@ -637,7 +632,7 @@ export default function TransactionsInPage() {
             <button
               onClick={handleShowAll}
               disabled={loading}
-              className='rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:opacity-50'
+              className='rounded-lg border border-emerald-600 bg-white px-4 py-2 text-sm text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50'
             >
               Tampilkan Semua
             </button>
@@ -686,7 +681,7 @@ export default function TransactionsInPage() {
         >
           <div className='flex items-center justify-center space-x-2'>
             <Building2 className='h-4 w-4' />
-            <span>Bank Sampah/Industri</span>
+            <span>Transaksi Antar Bank Sampah/Industri</span>
           </div>
         </button>
       </div>
@@ -744,7 +739,6 @@ export default function TransactionsInPage() {
                   const status = getStatusDisplay(transaction.status);
 
                   if (activeTab === 'customer') {
-                    // Original customer transaction display
                     const customerTransaction = transaction as WasteDropRequest;
                     return (
                       <tr
