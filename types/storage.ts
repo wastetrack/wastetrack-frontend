@@ -30,3 +30,28 @@ export interface Storage {
 export interface StorageDetailResponse {
   data: Storage;
 }
+
+// ===================================
+// PUT
+// ===================================
+export interface UpdateStorageParams {
+  length: number;
+  width: number;
+  height: number;
+  is_for_recycled_material: boolean;
+}
+
+export interface StorageSimpleResponse {
+  id: string;
+  user_id: string;
+  length: number;
+  width: number;
+  height: number;
+  is_for_recycled_material: boolean;
+}
+
+// Interface untuk response update storage
+export interface UpdateStorageResponse {
+  message: string;
+  data: StorageSimpleResponse;
+}
