@@ -1,4 +1,4 @@
-import { WasteType } from './waste-type';
+import { WasteTypeStorageItem } from './waste-type';
 
 // ==================================
 // GET
@@ -28,7 +28,7 @@ export interface StorageItem {
   weight_kgs: number;
   created_at: string;
   updated_at: string;
-  waste_type: WasteType;
+  waste_type: WasteTypeStorageItem;
 }
 
 export interface StorageItemDetailResponse {
