@@ -375,6 +375,12 @@ export default function AddPricesPage() {
       {/* Header */}
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex items-center gap-4'>
+          <button
+            onClick={() => router.back()}
+            className='flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-gray-50'
+          >
+            <ArrowLeft size={20} className='mr-2 inline' />
+          </button>
           <div className='shadow-xs rounded-xl border border-zinc-200 bg-white p-4'>
             <Plus className='text-emerald-600' size={28} />
           </div>
@@ -391,7 +397,7 @@ export default function AddPricesPage() {
         <div className='mt-4 sm:mt-0'>
           <button
             onClick={() => router.back()}
-            className='rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'
+            className='hidden rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50'
           >
             <ArrowLeft size={20} className='mr-2 inline' />
             Kembali
