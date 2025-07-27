@@ -433,7 +433,7 @@ export default function AddCollectorPage() {
       </div>
 
       {/* Form Container */}
-      <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-xs'>
+      <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
         {/* Error Message */}
         {error && (
           <div className='mb-6 rounded-lg border border-red-100 bg-red-50 p-3 text-center text-sm text-red-600'>
@@ -443,7 +443,6 @@ export default function AddCollectorPage() {
 
         {/* Form */}
         <form onSubmit={handleFormSubmit} className='space-y-6'>
-          {/* Role Display (disabled) */}
           <div>
             <label className='mb-1 block text-left text-xs font-medium text-gray-500 sm:text-sm'>
               Role Kolektor
