@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { getTokenManager } from '@/lib/token-manager';
 import {
+  UpdateWasteDropRequestStatusResponse,
   CompleteWasteDropRequestParams,
   CompleteWasteDropRequestResponse,
 } from '@/types';
@@ -77,6 +78,32 @@ export const wasteCollectorDropRequestAPI = {
           error.response?.data?.error ||
           error.response?.data?.message ||
           'Failed to complete waste drop request';
+
+        throw new Error(errorMessage);
+      }
+      throw new Error('Network error occurred. Please try again.');
+    }
+  },
+
+  /**
+   * Update waste drop request status
+   * PUT /api/waste-collector/waste-drop-requests/:id?status=
+   */
+  async updateWasteDropRequestStatus(
+    id: string,
+    status: 'assigned' | 'collecting' | 'cancelled'
+  ): Promise<UpdateWasteDropRequestStatusResponse> {
+    try {
+      const response = await authenticatedApiClient.put(
+        `/api/waste-collector/waste-drop-requests/${id}?status=${status}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          'Failed to update waste drop request status';
 
         throw new Error(errorMessage);
       }
