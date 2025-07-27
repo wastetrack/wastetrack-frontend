@@ -1,9 +1,12 @@
+import { WasteCategory } from "./waste-category";
+
 // Waste Type Types
 export interface WasteType {
   id: string;
   category_id: string;
   name: string;
   description: string;
+  waste_category: WasteCategory;
 }
 
 export interface WasteTypesListParams {
