@@ -1,3 +1,5 @@
+import { WasteType } from './waste-type';
+
 // ==================================
 // GET
 // ==================================
@@ -17,20 +19,6 @@ export interface StorageItemListResponse {
     total_item: number;
     total_pages: number;
   };
-}
-
-export interface WasteCategory {
-  id: string;
-  name: string;
-  description: string;
-}
-
-export interface WasteType {
-  category_id: string;
-  description: string;
-  id: string;
-  name: string;
-  waste_category: WasteCategory;
 }
 
 export interface StorageItem {
