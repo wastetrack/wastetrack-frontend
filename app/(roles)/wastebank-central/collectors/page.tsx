@@ -488,20 +488,22 @@ export default function CollectorsPage() {
                       </div>
                     </td>
                     <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm text-gray-900'>
+                      <div className='text-sm text-gray-900'>
                         {collector.phone_number ? (
                           <a
-                          href={`https://wa.me/${collector.phone_number.replace(/[^0-9]/g, '')}`}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                          className='text-emerald-600 hover:text-emerald-800'
+                            href={`https://wa.me/${collector.phone_number
+                              .replace(/[^0-9]/g, '')
+                              .replace(/^0/, '62')}`}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-emerald-600 hover:text-emerald-800'
                           >
-                          {collector.phone_number}
+                            {collector.phone_number}
                           </a>
                         ) : (
                           'Tidak tersedia'
                         )}
-                        </div>
+                      </div>
                     </td>
                     <td className='whitespace-nowrap px-6 py-4'>
                       <span
