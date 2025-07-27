@@ -16,6 +16,8 @@ import {
   Save,
   X,
   CircleDollarSign,
+  Play,
+  XCircle,
 } from 'lucide-react';
 import {
   wasteDropRequestAPI,
@@ -102,6 +104,9 @@ export default function TasksDetailPage() {
     [key: string]: string;
   }>({});
   const [submitting, setSubmitting] = useState(false);
+
+  // State untuk status update
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Decode ID
   const realId = decodeId(encodedId);
@@ -354,17 +359,19 @@ export default function TasksDetailPage() {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    // Reset editing weights to original values
+    // Reset editing weights to original values with comma format (max 2 decimal places)
     const resetWeights: { [key: string]: string } = {};
     wasteItems.forEach((item) => {
-      resetWeights[item.waste_type_id] = item.verified_weight.toString();
+      const formattedWeight = item.verified_weight.toFixed(2).replace('.', ',');
+      resetWeights[item.waste_type_id] = formattedWeight;
     });
     setEditingWeights(resetWeights);
   };
 
   const handleWeightChange = (wasteTypeId: string, value: string) => {
-    // Validate input - only allow numbers and decimal point
-    const regex = /^\d*\.?\d*$/;
+    // Validate input - only allow numbers and comma as decimal separator (Indonesian standard)
+    // Maximum 2 digits after comma
+    const regex = /^\d*,?\d{0,2}$/;
     if (regex.test(value)) {
       setEditingWeights((prev) => ({
         ...prev,
@@ -383,7 +390,9 @@ export default function TasksDetailPage() {
       const weights: number[] = [];
 
       wasteItems.forEach((item) => {
-        const weight = parseFloat(editingWeights[item.waste_type_id] || '0');
+        // Convert comma to dot for parsing as number (API expects dot format)
+        const weightString = editingWeights[item.waste_type_id] || '0';
+        const weight = parseFloat(weightString.replace(',', '.'));
         if (weight > 0) {
           waste_type_ids.push(item.waste_type_id);
           weights.push(weight);
@@ -418,6 +427,33 @@ export default function TasksDetailPage() {
       showToast.error('Gagal memperbarui berat. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdateStatus = async (newStatus: 'collecting' | 'cancelled') => {
+    if (!transaction || !realId || transactionType !== 'drop') return;
+
+    setUpdatingStatus(true);
+    try {
+      await wasteCollectorDropRequestAPI.updateWasteDropRequestStatus(
+        realId,
+        newStatus
+      );
+
+      // Refresh data
+      await fetchDetail();
+
+      // Show success message
+      if (newStatus === 'collecting') {
+        showToast.success('Status berhasil diubah ke Pengambilan!');
+      } else {
+        showToast.success('Tugas berhasil dibatalkan!');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      showToast.error('Gagal mengubah status. Silakan coba lagi.');
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -469,6 +505,24 @@ export default function TasksDetailPage() {
 
   // Check if status allows editing (hanya untuk drop request)
   const canEditWeights = () => {
+    return (
+      transactionType === 'drop' &&
+      transaction &&
+      transaction.status === 'collecting'
+    );
+  };
+
+  // Check if can start collecting (status assigned)
+  const canStartCollecting = () => {
+    return (
+      transactionType === 'drop' &&
+      transaction &&
+      transaction.status === 'assigned'
+    );
+  };
+
+  // Check if can cancel (status collecting)
+  const canCancel = () => {
     return (
       transactionType === 'drop' &&
       transaction &&
@@ -586,6 +640,53 @@ export default function TasksDetailPage() {
         </div>
       </div>
 
+      {/* Status Action Buttons - Only for Drop Request */}
+      {isDropRequest && (canStartCollecting() || canCancel()) && (
+        <div className='rounded-lg border border-blue-200 bg-blue-50 p-4'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <h3 className='font-medium text-blue-900'>Aksi Tugas</h3>
+              <p className='text-sm text-blue-700'>
+                {canStartCollecting()
+                  ? 'Mulai proses pengambilan sampah'
+                  : 'Kelola tugas pengambilan'}
+              </p>
+            </div>
+            <div className='flex gap-2'>
+              {canStartCollecting() && (
+                <button
+                  onClick={() => handleUpdateStatus('collecting')}
+                  disabled={updatingStatus}
+                  className='flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:opacity-50'
+                >
+                  {updatingStatus ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    <Play className='h-4 w-4' />
+                  )}
+                  {updatingStatus ? 'Memproses...' : 'Mulai Pengambilan'}
+                </button>
+              )}
+
+              {canCancel() && (
+                <button
+                  onClick={() => handleUpdateStatus('cancelled')}
+                  disabled={updatingStatus}
+                  className='flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 disabled:opacity-50'
+                >
+                  {updatingStatus ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    <XCircle className='h-4 w-4' />
+                  )}
+                  {updatingStatus ? 'Memproses...' : 'Batalkan Tugas'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Statistics Cards */}
       <div className='my-6 grid grid-cols-1 gap-6 text-left md:grid-cols-3'>
         <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
@@ -643,7 +744,8 @@ export default function TasksDetailPage() {
                 <dd className='text-lg font-medium text-gray-900'>
                   {transaction.appointment_date
                     ? new Date(transaction.appointment_date).toLocaleDateString(
-                        'id-ID'
+                        'id-ID',
+                        { year: 'numeric', month: 'long', day: 'numeric' }
                       )
                     : '-'}
                 </dd>
@@ -907,16 +1009,17 @@ export default function TasksDetailPage() {
                                       )
                                     }
                                     className='mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500'
-                                    placeholder='0.00'
+                                    placeholder='0,00'
                                   />
                                   <p className='mt-1 text-xs text-gray-500'>
-                                    Dalam satuan kg (contoh: 1.5)
+                                    Dalam satuan kg (contoh: 1,50 - maksimal 2
+                                    angka dibelakang koma)
                                   </p>
                                 </div>
                               ) : (
                                 <p className='text-gray-900'>
                                   {item.verified_weight > 0
-                                    ? `${item.verified_weight} kg`
+                                    ? `${item.verified_weight.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg`
                                     : 'Belum diverifikasi'}
                                 </p>
                               )}
@@ -950,7 +1053,7 @@ export default function TasksDetailPage() {
                               </p>
                               <p className='font-medium text-emerald-600'>
                                 {isEditing
-                                  ? `Rp ${(parseFloat(editingWeights[item.waste_type_id] || '0') * (item.price ?? 0)).toLocaleString('id-ID')}`
+                                  ? `Rp ${(parseFloat((editingWeights[item.waste_type_id] || '0').replace(',', '.')) * (item.price ?? 0)).toLocaleString('id-ID')}`
                                   : `Rp ${item.verified_subtotal.toLocaleString('id-ID')}`}
                               </p>
                             </div>
@@ -1103,17 +1206,20 @@ export default function TasksDetailPage() {
                           ? Object.values(editingWeights)
                               .reduce(
                                 (total, weight) =>
-                                  total + parseFloat(weight || '0'),
+                                  total +
+                                  parseFloat((weight || '0').replace(',', '.')),
                                 0
                               )
                               .toFixed(2)
+                              .replace('.', ',')
                           : wasteItems
                               .reduce(
                                 (total, item) => total + item.verified_weight,
                                 0
                               )
                               .toFixed(2)
-                        : totalWeight.toFixed(2)}{' '}
+                              .replace('.', ',')
+                        : totalWeight.toFixed(2).replace('.', ',')}{' '}
                       kg
                     </p>
                   </div>
@@ -1126,7 +1232,9 @@ export default function TasksDetailPage() {
                           ? wasteItems
                               .reduce((total, item) => {
                                 const weight = parseFloat(
-                                  editingWeights[item.waste_type_id] || '0'
+                                  (
+                                    editingWeights[item.waste_type_id] || '0'
+                                  ).replace(',', '.')
                                 );
                                 return total + weight * (item.price ?? 0);
                               }, 0)
