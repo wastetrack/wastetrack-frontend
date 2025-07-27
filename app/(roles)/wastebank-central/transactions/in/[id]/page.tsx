@@ -1600,7 +1600,6 @@ export default function TransactionInDetailPage() {
                       className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
                         transaction.status === 'cancelled' ||
                         transaction.status === 'completed' ||
-                        transaction.status === 'pending' ||
                         updateLoading
                           ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-500'
                           : 'border-gray-200 focus:border-emerald-500 focus:ring-emerald-500'
@@ -1608,7 +1607,6 @@ export default function TransactionInDetailPage() {
                       disabled={
                         transaction.status === 'cancelled' ||
                         transaction.status === 'completed' ||
-                        transaction.status === 'pending' ||
                         updateLoading
                       }
                     >
@@ -1617,6 +1615,7 @@ export default function TransactionInDetailPage() {
                           <option value='pending'>Pending</option>
                           <option value='assigned'>Ditugaskan</option>
                           <option value='collecting'>Pengambilan</option>
+                          <option value='completed'>Selesai</option>
                           <option value='cancelled'>Dibatalkan</option>
                         </>
                       )}
@@ -1719,6 +1718,38 @@ export default function TransactionInDetailPage() {
                 </div>
               </div>
             </div>
+            {isDropRequest && (
+              <div className='mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3'>
+                <div className='flex items-start space-x-2'>
+                  <div className='text-sm'>
+                    <ul className='list-disc space-y-1 pl-5 text-blue-700'>
+                      <li>
+                        Untuk melakukan{' '}
+                        <span className='font-semibold'>penugasan</span>, Anda
+                        hanya perlu memilih collector saja. Setelah Anda simpan,
+                        status akan otomatis berubah menjadi{' '}
+                        <span className='font-semibold'>Ditugaskan</span>.
+                      </li>
+                      <li>
+                        Jika status sudah{' '}
+                        <span className='font-semibold'>Ditugaskan</span>, Anda{' '}
+                        <span className='font-semibold'>tidak dapat</span>{' '}
+                        mengganti collector lagi.
+                      </li>
+                      <li>
+                        Jika status sudah{' '}
+                        <span className='font-semibold'>Selesai</span> atau{' '}
+                        <span className='font-semibold'>Dibatalkan</span>, Anda{' '}
+                        <span className='font-semibold'>tidak dapat</span>{' '}
+                        mengubah status maupun collector. Jadi, pastikan
+                        transaksi Anda sudah benar.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {isTransferRequest && (
               <div className='mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3'>
                 <div className='flex items-start space-x-2'>
