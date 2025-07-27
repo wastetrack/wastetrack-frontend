@@ -87,6 +87,7 @@ export const wasteTransferRequestAPI = {
         queryParams.append('latitude', params.latitude.toString());
       if (params?.longitude)
         queryParams.append('longitude', params.longitude.toString());
+      if (params?.order_dir) queryParams.append('order_dir', params.order_dir);
 
       const queryString = queryParams.toString();
       const url = `/api/waste-transfer-requests${queryString ? `?${queryString}` : ''}`;
