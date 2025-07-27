@@ -11,6 +11,9 @@ import {
   Lock,
   Unlock,
   Trash2,
+  CheckCircle,
+  XCircle,
+  Users,
 } from 'lucide-react';
 import {
   getCollectorManagements,
@@ -68,19 +71,19 @@ export default function CollectorsPage() {
         if (userData.role === 'waste_bank_central') {
           setWasteBankId(userData.id);
         } else {
-          setError('Anda tidak memiliki akses ke halaman ini.');
+          setError('Akses ditolak. Anda bukan pengguna bank sampah.');
           return;
         }
       } catch (err) {
-        console.error('Error getting user profile:', err);
-        setError('Gagal memuat profil pengguna. Silakan coba lagi.');
+        console.error('Failed to get user profile:', err);
+        setError('Gagal mendapatkan profil pengguna. Silakan coba lagi.');
       }
     };
 
     getUserProfile();
   }, []);
 
-  // Fetch collectors data
+  // Fetch collectors when wasteBankId is available
   useEffect(() => {
     if (!wasteBankId) return;
 
@@ -95,6 +98,7 @@ export default function CollectorsPage() {
 
         const response = await getCollectorManagements(params);
 
+        // Handle the actual API response structure
         let collectorsData: CollectorManagement[] = [];
         if (Array.isArray(response.data)) {
           // If data is directly an array
@@ -132,6 +136,7 @@ export default function CollectorsPage() {
             })
           );
 
+        // Set collectors data
         setCollectors(collectorsWithUserInfo);
       } catch (err) {
         console.error('Failed to fetch collectors:', err);
@@ -235,10 +240,12 @@ export default function CollectorsPage() {
     }
   };
 
+  // Navigate to collector detail
   const handleViewDetail = (collectorId: string) => {
     const encodedId = encodeId(collectorId);
     router.push(`/wastebank-central/collectors/${encodedId}`);
   };
+
   const handleDeleteCollector = async (id: string) => {
     const alert = await Alert.confirm({
       title: 'Konfirmasi Hapus Kolektor',
@@ -292,42 +299,93 @@ export default function CollectorsPage() {
               Manajemen Kolektor
             </h1>
             <p className='mt-1 text-gray-600'>
-              Kelola kolektor yang berafiliasi dengan bank sampah Anda
+              Kelola kolektor yang terdaftar di bank sampah Anda.
             </p>
           </div>
         </div>
-        <button
-          onClick={() => router.push('/wastebank-central/collectors/add')}
-          className='mt-4 flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700 sm:mt-0'
-        >
-          <Plus size={20} />
-          Tambah Kolektor
-        </button>
+        <div className='mt-4 sm:mt-0'>
+          <button
+            className='flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700'
+            onClick={() => router.push('/wastebank-central/collectors/add')}
+          >
+            <Plus size={20} />
+            Tambah Kolektor
+          </button>
+        </div>
       </div>
 
       {/* Stats Summary */}
-      <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
         <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
-          <div className='text-center'>
-            <div className='text-2xl font-bold text-emerald-600'>
-              {(collectors || []).filter((c) => c.status === 'active').length}
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
+                <Users className='h-5 w-5' />
+              </div>
             </div>
-            <div className='text-sm text-gray-600'>Kolektor Aktif</div>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Total Kolektor
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {(collectors || []).length}
+                </dd>
+              </dl>
+            </div>
           </div>
         </div>
+
         <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
-          <div className='text-center'>
-            <div className='text-2xl font-bold text-red-600'>
-              {(collectors || []).filter((c) => c.status === 'inactive').length}
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-white'>
+                <CheckCircle className='h-5 w-5' />
+              </div>
             </div>
-            <div className='text-sm text-gray-600'>Kolektor Tidak Aktif</div>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Kolektor Aktif
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {
+                    (collectors || []).filter((c) => c.status === 'active')
+                      .length
+                  }
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-6'>
+          <div className='flex items-center'>
+            <div className='flex-shrink-0'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-white'>
+                <XCircle className='h-5 w-5' />
+              </div>
+            </div>
+            <div className='ml-5 w-0 flex-1'>
+              <dl>
+                <dt className='truncate text-sm font-medium text-gray-500'>
+                  Kolektor Tidak Aktif
+                </dt>
+                <dd className='text-lg font-medium text-gray-900'>
+                  {
+                    (collectors || []).filter((c) => c.status === 'inactive')
+                      .length
+                  }
+                </dd>
+              </dl>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search and Filter */}
       <div className='shadow-xs rounded-lg border border-gray-200 bg-white p-4'>
-        <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
+        <div className='flex flex-col gap-4 sm:flex-row'>
           <div className='relative flex-1'>
             <Search
               className='absolute left-3 top-1/2 -translate-y-1/2 transform text-gray-400'
@@ -430,9 +488,20 @@ export default function CollectorsPage() {
                       </div>
                     </td>
                     <td className='whitespace-nowrap px-6 py-4'>
-                      <div className='text-sm text-gray-900'>
-                        {collector.phone_number || 'Tidak tersedia'}
-                      </div>
+                        <div className='text-sm text-gray-900'>
+                        {collector.phone_number ? (
+                          <a
+                          href={`https://wa.me/${collector.phone_number.replace(/[^0-9]/g, '')}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='text-emerald-600 hover:text-emerald-800'
+                          >
+                          {collector.phone_number}
+                          </a>
+                        ) : (
+                          'Tidak tersedia'
+                        )}
+                        </div>
                     </td>
                     <td className='whitespace-nowrap px-6 py-4'>
                       <span
