@@ -12,7 +12,7 @@ const BottomFooter: React.FC = () => {
             {/* Left side - Copyright */}
             <div className='flex items-center'>
               <p className='text-xs text-gray-400'>
-                Hak Cipta © {currentYear} WasteTrack - Timses AITIES
+                Hak Cipta © {currentYear} WasteTrack
               </p>
             </div>
 
