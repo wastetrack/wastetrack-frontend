@@ -6,6 +6,13 @@ export interface WasteType {
   category_id: string;
   name: string;
   description: string;
+}
+
+export interface WasteTypeStorageItem {
+  id: string;
+  category_id: string;
+  name: string;
+  description: string;
   waste_category: WasteCategory;
 }
 
