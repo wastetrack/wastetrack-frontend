@@ -610,7 +610,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
     // },
   };
 
-  // Enhanced search function dengan multiple providers
+  // Enhanced search function menggunakan searchProviders yang sudah ada
   const handleSearchLocation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -634,36 +634,54 @@ const PickLocation: React.FC<PickLocationProps> = ({
       const proximity = location
         ? { lat: location.latitude, lng: location.longitude }
         : undefined;
+
       type SearchResult = {
         place_name: string;
         center: [number, number];
         relevance: number;
         properties: Record<string, unknown>;
       };
+
       let results: SearchResult[] = [];
       let searchProvider = '';
 
+      // // Debug: Check environment variables
+      // console.log(
+      //   'Mapbox token exists:',
+      //   !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+      // );
+      // console.log('mapboxgl.accessToken exists:', !!mapboxgl.accessToken);
+
       // Try providers in order of preference for Indonesia
-      // const providers = ['nominatim', 'mapbox', 'google'] as const;
       const providers = ['nominatim', 'mapbox'] as const;
 
       for (const providerName of providers) {
         try {
           // console.log(`🔄 Trying ${providerName}...`);
+
+          // Use the existing searchProviders
           results = await searchProviders[providerName](cleanQuery, proximity);
+          // console.log(`Raw results from ${providerName}:`, results);
 
           if (results && results.length > 0) {
             searchProvider = providerName;
-            // console.log(
-            //   `✅ Found ${results.length} results from ${providerName}`
-            // );
-            // break;
+            console.log(
+              // `✅ Found ${results.length} results from ${providerName}`
+            );
+            break; // PENTING: Break setelah dapat hasil!
           }
         } catch (providerError) {
-          console.warn(`❌ ${providerName} failed:`, providerError);
+          console.error(`❌ ${providerName} failed with error:`, providerError);
+          // Log more details about the error
+          if (providerError instanceof Error) {
+            console.error('Error message:', providerError.message);
+          }
           continue; // Try next provider
         }
       }
+
+      // console.log('Final results array:', results);
+      // console.log('Results length:', results.length);
 
       if (results.length === 0) {
         throw new Error(
@@ -673,22 +691,24 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
       // Use the best result (first one, usually most relevant)
       const bestResult = results[0];
-      const [newLng, newLat] = bestResult.center;
+      // console.log('Best result selected:', bestResult);
 
-      console.log('Selected result:', {
-        name: bestResult.place_name,
-        coordinates: [newLng, newLat],
-        provider: searchProvider,
-        relevance: bestResult.relevance,
-      });
+      const [newLng, newLat] = bestResult.center;
+      // console.log('New coordinates:', { newLat, newLng });
+
+      // Validasi koordinat
+      if (isNaN(newLat) || isNaN(newLng)) {
+        throw new Error('Invalid coordinates from search result');
+      }
 
       const newLocation = { latitude: newLat, longitude: newLng };
       setLocation(newLocation);
       setAddress(bestResult.place_name);
 
+      // Parse address components - gunakan properties dari result
       const parsedFromSearch = parseIndonesianAddress(
         bestResult.place_name,
-        bestResult
+        bestResult.properties // Pass properties instead of bestResult
       );
       // console.log('🎯 Parsed from search result:', parsedFromSearch);
       setAddressComponents(parsedFromSearch);
@@ -703,13 +723,14 @@ const PickLocation: React.FC<PickLocationProps> = ({
           essential: true,
         });
         markerRef.current.setLngLat(newLngLat);
+        // console.log('✅ Map updated to new location');
+      } else {
+        console.warn('Map or marker ref not available');
       }
 
       // Clear search query after successful search
       setSearchQuery('');
-
-      // Show success feedback
-      // console.log(`✅ Location found using ${searchProvider}`);
+      console.log(`Location found using ${searchProvider}`);
     } catch (err) {
       console.error('🚫 All search providers failed:', err);
 
@@ -717,7 +738,25 @@ const PickLocation: React.FC<PickLocationProps> = ({
         'Gagal mencari lokasi. Silakan coba lagi dengan kata kunci yang berbeda.';
 
       if (err instanceof Error) {
-        errorMessage = err.message;
+        console.error('Detailed error:', {
+          message: err.message,
+          name: err.name,
+        });
+
+        // Specific error handling
+        if (err.message.includes('Failed to fetch')) {
+          errorMessage = 'Koneksi internet bermasalah. Periksa koneksi Anda.';
+        } else if (err.message.includes('Invalid coordinates')) {
+          errorMessage = 'Data lokasi tidak valid. Coba kata kunci lain.';
+        } else if (
+          err.message.includes('Nominatim error') ||
+          err.message.includes('Mapbox error')
+        ) {
+          errorMessage =
+            'Layanan pencarian sementara bermasalah. Coba lagi dalam beberapa saat.';
+        } else {
+          errorMessage = err.message; // Use specific error message
+        }
       }
 
       // Provide helpful suggestions for common search issues
@@ -730,6 +769,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
       setError(errorMessage);
     } finally {
       setIsSearching(false);
+      // console.log('Search process completed');
     }
   };
 
