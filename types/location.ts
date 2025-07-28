@@ -80,15 +80,15 @@ export type NominatimResult = {
   address?: Record<string, unknown>;
 };
 
-export type GooglePlacesResult = {
-  name: string;
-  formatted_address: string;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
-  rating?: number;
-  types?: string[];
-};
+// export type GooglePlacesResult = {
+//   name: string;
+//   formatted_address: string;
+//   geometry: {
+//     location: {
+//       lat: number;
+//       lng: number;
+//     };
+//   };
+//   rating?: number;
+//   types?: string[];
+// };
