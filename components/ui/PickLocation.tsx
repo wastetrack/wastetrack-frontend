@@ -83,19 +83,19 @@ const PickLocation: React.FC<PickLocationProps> = ({
   });
 
   // Debug log untuk melihat props yang diterima
-  useEffect(() => {
-    console.log('PickLocation props:', {
-      initialLocation,
-      pageTitle,
-      allowBack,
-      onSaveLocation: !!onSaveLocation,
-      onCancel: !!onCancel,
-    });
-  }, [initialLocation, pageTitle, allowBack, onSaveLocation, onCancel]);
+  // useEffect(() => {
+  //   console.log('PickLocation props:', {
+  //     initialLocation,
+  //     pageTitle,
+  //     allowBack,
+  //     onSaveLocation: !!onSaveLocation,
+  //     onCancel: !!onCancel,
+  //   });
+  // }, [initialLocation, pageTitle, allowBack, onSaveLocation, onCancel]);
 
   const fetchAddressFromCoordinates = useCallback(
     async (lat: number, lng: number) => {
-      console.log('Fetching address for:', { lat, lng });
+      // console.log('Fetching address for:', { lat, lng });
       try {
         const providers = [
           {
@@ -138,7 +138,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
           try {
             const result = await provider.fetch();
             if (result.address && result.address.length > 20) {
-              console.log(`Address from ${provider.name}:`, result.address);
+              // console.log(`Address from ${provider.name}:`, result.address);
               setAddress(result.address);
 
               // Parse komponen alamat dengan parser yang cerdas
@@ -147,7 +147,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
                 result.components
               );
               setAddressComponents(parsedComponents);
-              console.log('Parsed components:', parsedComponents);
+              // console.log('Parsed components:', parsedComponents);
 
               return;
             }
@@ -170,7 +170,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
     fullAddress: string,
     geocodingData?: NominatimGeocodingData | MapboxGeocodingData
   ) => {
-    console.log('Parsing address:', fullAddress);
+    // console.log('Parsing address:', fullAddress);
 
     const result = {
       kota: '',
@@ -191,7 +191,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
       const postalMatch = fullAddress.match(/\b\d{5}\b/);
       if (postalMatch) {
         result.kodePos = postalMatch[0];
-        console.log('✅ Found postal code:', result.kodePos);
+        // console.log('✅ Found postal code:', result.kodePos);
       }
 
       // ✅ Step 2: DIRECT MATCHING - Cari kota dari daftar yang PASTI BENAR
@@ -215,7 +215,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
           // "...Surabaya"
 
           result.kota = kota;
-          console.log('✅ Found city match:', kota);
+          // console.log('✅ Found city match:', kota);
           break; // Stop setelah ketemu yang pertama
         }
       }
@@ -226,14 +226,14 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
         if (lowerAddress.includes(lowerProvinsi)) {
           result.provinsi = provinsi;
-          console.log('✅ Found province match:', provinsi);
+          // console.log('✅ Found province match:', provinsi);
           break; // Stop setelah ketemu yang pertama
         }
       }
 
       // ✅ Step 4: Fallback - Ambil detail dari structured data (hanya jika belum ketemu)
       if (geocodingData && (!result.kota || !result.provinsi)) {
-        console.log('🔄 Using structured data as fallback...');
+        // console.log('🔄 Using structured data as fallback...');
 
         if (geocodingData.address) {
           // Nominatim structure
@@ -252,7 +252,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
               );
               if (matchedCity) {
                 result.kota = matchedCity;
-                console.log('✅ Found city from structured data:', matchedCity);
+                // console.log('✅ Found city from structured data:', matchedCity);
               }
             }
           }
@@ -269,10 +269,10 @@ const PickLocation: React.FC<PickLocationProps> = ({
               );
               if (matchedProv) {
                 result.provinsi = matchedProv;
-                console.log(
-                  '✅ Found province from structured data:',
-                  matchedProv
-                );
+                // console.log(
+                //   '✅ Found province from structured data:',
+                //   matchedProv
+                // );
               }
             }
           }
@@ -310,7 +310,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
               );
               if (matchedCity) {
                 result.kota = matchedCity;
-                console.log('✅ Found city from Mapbox context:', matchedCity);
+                // console.log('✅ Found city from Mapbox context:', matchedCity);
               }
             } else if (ctx.id.includes('region') && !result.provinsi) {
               // Hanya ambil jika ada di daftar provinsi kita
@@ -322,10 +322,10 @@ const PickLocation: React.FC<PickLocationProps> = ({
               );
               if (matchedProv) {
                 result.provinsi = matchedProv;
-                console.log(
-                  '✅ Found province from Mapbox context:',
-                  matchedProv
-                );
+                // console.log(
+                //   '✅ Found province from Mapbox context:',
+                //   matchedProv
+                // );
               }
             } else if (ctx.id.includes('district') && !result.kecamatan) {
               result.kecamatan = ctx.text;
@@ -338,12 +338,12 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
       // ✅ Final validation - Pastikan hasil adalah kota/provinsi yang valid
       if (result.kota && !kotaIndonesia.includes(result.kota)) {
-        console.log('❌ Invalid city detected, clearing:', result.kota);
+        // console.log('❌ Invalid city detected, clearing:', result.kota);
         result.kota = '';
       }
 
       if (result.provinsi && !provinsiIndonesia.includes(result.provinsi)) {
-        console.log('❌ Invalid province detected, clearing:', result.provinsi);
+        // console.log('❌ Invalid province detected, clearing:', result.provinsi);
         result.provinsi = '';
       }
 
@@ -354,11 +354,11 @@ const PickLocation: React.FC<PickLocationProps> = ({
         }
       });
 
-      console.log('🎯 Final parsed result:', {
-        kota: result.kota,
-        provinsi: result.provinsi,
-        kodePos: result.kodePos,
-      });
+      // console.log('🎯 Final parsed result:', {
+      //   kota: result.kota,
+      //   provinsi: result.provinsi,
+      //   kodePos: result.kodePos,
+      // });
 
       return result;
     } catch (error) {
@@ -369,7 +369,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
   const initializeMap = useCallback(
     (lat: number, lng: number) => {
-      console.log('Initializing map with:', { lat, lng });
+      // console.log('Initializing map with:', { lat, lng });
 
       if (mapContainerRef.current && !mapRef.current) {
         const map = new mapboxgl.Map({
@@ -390,12 +390,12 @@ const PickLocation: React.FC<PickLocationProps> = ({
           .setLngLat([lng, lat])
           .addTo(map);
 
-        console.log('Marker created and added to map');
+        // console.log('Marker created and added to map');
 
         // Event listener saat marker selesai digeser
         marker.on('dragend', () => {
           const newPos = marker.getLngLat();
-          console.log('Marker dragged to:', newPos);
+          // console.log('Marker dragged to:', newPos);
           const newLocation = { latitude: newPos.lat, longitude: newPos.lng };
           setLocation(newLocation);
           fetchAddressFromCoordinates(newPos.lat, newPos.lng);
@@ -404,7 +404,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
         // Event listener saat peta diklik
         map.on('click', (e) => {
           const newPos = e.lngLat;
-          console.log('Map clicked at:', newPos);
+          // console.log('Map clicked at:', newPos);
           marker.setLngLat(newPos);
           const newLocation = { latitude: newPos.lat, longitude: newPos.lng };
           setLocation(newLocation);
@@ -413,7 +413,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
         // Event saat map selesai dimuat
         map.on('load', () => {
-          console.log('Map loaded successfully');
+          // console.log('Map loaded successfully');
           setLoading(false);
         });
 
@@ -429,10 +429,10 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
   // Efek untuk memuat lokasi awal & inisialisasi peta
   useEffect(() => {
-    console.log(
-      'Location effect triggered. Token exists:',
-      !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN
-    );
+    // console.log(
+    //   'Location effect triggered. Token exists:',
+    //   !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+    // );
 
     // Validasi token Mapbox
     if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
@@ -442,7 +442,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
     }
 
     const setInitialLocation = (lat: number, lng: number) => {
-      console.log('Setting initial location:', { lat, lng });
+      // console.log('Setting initial location:', { lat, lng });
       setLocation({ latitude: lat, longitude: lng });
 
       // Small delay to ensure container is ready
@@ -454,13 +454,13 @@ const PickLocation: React.FC<PickLocationProps> = ({
     };
 
     if (initialLocation) {
-      console.log('Using provided initial location');
+      // console.log('Using provided initial location');
       setInitialLocation(initialLocation.latitude, initialLocation.longitude);
     } else {
-      console.log('Getting current location');
+      // console.log('Getting current location');
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          console.log('Geolocation success:', position.coords);
+          // console.log('Geolocation success:', position.coords);
           setInitialLocation(
             position.coords.latitude,
             position.coords.longitude
@@ -480,7 +480,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
     // Cleanup function
     return () => {
       if (mapRef.current) {
-        console.log('Cleaning up map');
+        // console.log('Cleaning up map');
         mapRef.current.remove();
         mapRef.current = null;
       }
@@ -616,7 +616,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
     if (!searchQuery.trim()) return;
 
     const cleanQuery = searchQuery.trim();
-    console.log('🔍 Searching for:', cleanQuery);
+    // console.log('🔍 Searching for:', cleanQuery);
 
     setIsSearching(true);
     setError(null);
@@ -648,15 +648,15 @@ const PickLocation: React.FC<PickLocationProps> = ({
 
       for (const providerName of providers) {
         try {
-          console.log(`🔄 Trying ${providerName}...`);
+          // console.log(`🔄 Trying ${providerName}...`);
           results = await searchProviders[providerName](cleanQuery, proximity);
 
           if (results && results.length > 0) {
             searchProvider = providerName;
-            console.log(
-              `✅ Found ${results.length} results from ${providerName}`
-            );
-            break;
+            // console.log(
+            //   `✅ Found ${results.length} results from ${providerName}`
+            // );
+            // break;
           }
         } catch (providerError) {
           console.warn(`❌ ${providerName} failed:`, providerError);
@@ -674,7 +674,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
       const bestResult = results[0];
       const [newLng, newLat] = bestResult.center;
 
-      console.log('📍 Selected result:', {
+      console.log('Selected result:', {
         name: bestResult.place_name,
         coordinates: [newLng, newLat],
         provider: searchProvider,
@@ -689,7 +689,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
         bestResult.place_name,
         bestResult
       );
-      console.log('🎯 Parsed from search result:', parsedFromSearch);
+      // console.log('🎯 Parsed from search result:', parsedFromSearch);
       setAddressComponents(parsedFromSearch);
 
       // Update map and marker with smooth animation
@@ -708,7 +708,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
       setSearchQuery('');
 
       // Show success feedback
-      console.log(`✅ Location found using ${searchProvider}`);
+      // console.log(`✅ Location found using ${searchProvider}`);
     } catch (err) {
       console.error('🚫 All search providers failed:', err);
 
@@ -750,7 +750,7 @@ const PickLocation: React.FC<PickLocationProps> = ({
         addressComponents: addressComponents,
       };
 
-      console.log('Saving location with parsed components:', payload);
+      // console.log('Saving location with parsed components:', payload);
 
       if (onSaveLocation) {
         await onSaveLocation(payload);
