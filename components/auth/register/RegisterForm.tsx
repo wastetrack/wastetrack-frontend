@@ -335,9 +335,9 @@ export default function RegisterForm({
   };
 
   const handleSaveLocationFromPicker = (payload: SavedLocationPayload) => {
-    console.log('=== LOCATION PICKER SAVE ===');
-    console.log('Raw address:', payload.address);
-    console.log('Parsed components:', payload.addressComponents);
+    // console.log('=== LOCATION PICKER SAVE ===');
+    // console.log('Raw address:', payload.address);
+    // console.log('Parsed components:', payload.addressComponents);
 
     const locationData = {
       address: payload.address,
@@ -352,9 +352,9 @@ export default function RegisterForm({
     const provinceFromPicker =
       payload.province || payload.addressComponents?.provinsi || '';
 
-    console.log('Using parsed data:');
-    console.log('City:', cityFromPicker);
-    console.log('Province:', provinceFromPicker);
+    // console.log('Using parsed data:');
+    // console.log('City:', cityFromPicker);
+    // console.log('Province:', provinceFromPicker);
 
     onFormDataChange({
       ...formData,
@@ -370,7 +370,7 @@ export default function RegisterForm({
     });
 
     setShowLocationPicker(false);
-    console.log('=== DONE ===');
+    // console.log('=== DONE ===');
   };
 
   const handleCancelLocationPicker = () => {
