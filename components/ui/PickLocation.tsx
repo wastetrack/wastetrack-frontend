@@ -24,7 +24,7 @@ import {
   NominatimAddress,
   MapboxGeocodingData,
   NominatimResult,
-  GooglePlacesResult,
+  // GooglePlacesResult,
 } from '@/types';
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
@@ -570,44 +570,44 @@ const PickLocation: React.FC<PickLocationProps> = ({
     },
 
     // Google Places API sebagai backup premium (jika ada API key)
-    google: async (query: string, proximity?: { lat: number; lng: number }) => {
-      const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (!googleApiKey) {
-        throw new Error('Google API key not available');
-      }
+    // google: async (query: string, proximity?: { lat: number; lng: number }) => {
+    //   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    //   if (!googleApiKey) {
+    //     throw new Error('Google API key not available');
+    //   }
 
-      const params = new URLSearchParams({
-        query: query,
-        key: googleApiKey,
-        region: 'id', // Indonesia
-        language: 'id',
-      });
+    //   const params = new URLSearchParams({
+    //     query: query,
+    //     key: googleApiKey,
+    //     region: 'id', // Indonesia
+    //     language: 'id',
+    //   });
 
-      if (proximity) {
-        params.set('location', `${proximity.lat},${proximity.lng}`);
-        params.set('radius', '50000'); // 50km radius
-      }
+    //   if (proximity) {
+    //     params.set('location', `${proximity.lat},${proximity.lng}`);
+    //     params.set('radius', '50000'); // 50km radius
+    //   }
 
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?${params.toString()}`
-      );
+    //   const response = await fetch(
+    //     `https://maps.googleapis.com/maps/api/place/textsearch/json?${params.toString()}`
+    //   );
 
-      if (!response.ok) {
-        throw new Error(`Google error: ${response.status}`);
-      }
+    //   if (!response.ok) {
+    //     throw new Error(`Google error: ${response.status}`);
+    //   }
 
-      const data = await response.json();
-      return (data.results || []).map((item: GooglePlacesResult) => ({
-        place_name: `${item.name}, ${item.formatted_address}`,
-        center: [item.geometry.location.lng, item.geometry.location.lat],
-        relevance: item.rating ? item.rating / 5 : 0.5,
-        properties: {
-          category: item.types?.[0],
-          rating: item.rating,
-          address: item.formatted_address,
-        },
-      }));
-    },
+    //   const data = await response.json();
+    //   return (data.results || []).map((item: GooglePlacesResult) => ({
+    //     place_name: `${item.name}, ${item.formatted_address}`,
+    //     center: [item.geometry.location.lng, item.geometry.location.lat],
+    //     relevance: item.rating ? item.rating / 5 : 0.5,
+    //     properties: {
+    //       category: item.types?.[0],
+    //       rating: item.rating,
+    //       address: item.formatted_address,
+    //     },
+    //   }));
+    // },
   };
 
   // Enhanced search function dengan multiple providers
@@ -644,7 +644,8 @@ const PickLocation: React.FC<PickLocationProps> = ({
       let searchProvider = '';
 
       // Try providers in order of preference for Indonesia
-      const providers = ['nominatim', 'mapbox', 'google'] as const;
+      // const providers = ['nominatim', 'mapbox', 'google'] as const;
+      const providers = ['nominatim', 'mapbox'] as const;
 
       for (const providerName of providers) {
         try {
